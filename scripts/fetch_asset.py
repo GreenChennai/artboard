@@ -33,8 +33,9 @@ from _config import cfg
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 STUDIO = cfg("studio_dir", r"E:\平日资料\GitHub\artboard-studio")
-UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) artboard-asset-fetch/1.0",
-      "Accept": "*/*"}
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+      "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+      "Accept": "*/*", "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"}
 RISK_PREFIX = "版权风险-"
 
 
@@ -44,7 +45,7 @@ def emit(obj: dict) -> None:
 
 def http_get(url: str, headers: dict | None = None, timeout: int = 20,
              proxy: str | None = None, data: str | None = None) -> bytes:
-    req = urllib.request.Request(url, headers={**UA, **(headers or [])},
+    req = urllib.request.Request(url, headers={**UA, **(headers or {})},
                                  data=data.encode("utf-8") if isinstance(data, str) else None)
     handlers = []
     if proxy:
@@ -149,8 +150,9 @@ def search_baidu(q: str, limit: int) -> list[dict]:
             continue
         url = d.get("middleURL") or d.get("thumbURL")
         if url:
+            author = re.sub(r"<[^>]+>", "", d.get("fromPageTitle", "网页来源"))[:60] or "网页来源"
             out.append({"source": "baidu", "url": url, "page_url": d.get("fromUrl", ""),
-                        "author": d.get("fromPageTitle", "网页来源")[:60],
+                        "author": author,
                         "license": "不确定(爬虫结果)", "risk": True})
         if len(out) >= limit:
             break

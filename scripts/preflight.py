@@ -132,7 +132,7 @@ def main() -> int:
             "在 config.json 填 pexels_key/pixabay_key 启用授权干净的图库源")
 
     # 7.5 VQA(看图理解)
-    vqa = cfg("vqa_path")
+    vqa = cfg("vqa_path", r"E:\平日资料\GitHub\VQA")
     if vqa and os.path.isdir(vqa):
         add("VQA", "PASS", vqa)
     else:

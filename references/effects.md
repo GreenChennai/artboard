@@ -262,6 +262,19 @@ conic + radial 混合,科技底纹。
   text-shadow:1px 1px 0 rgba(255,255,255,.6), -1px -1px 1px rgba(0,0,0,.35); }
 ```
 
+### fx-highlight 荧光笔划线
+关键词高亮标准件(小红书知识卡常用,比整块底色更"手写感")。
+```css
+.fx-highlight { background:linear-gradient(transparent 60%, var(--c-accent) 60%);
+  padding:0 4px; border-radius:3px; }
+```
+
+### fx-table-stripe 表格行交替底
+对比/分级型知识卡的行分隔(比边框线更轻)。
+```css
+.fx-table-stripe tr:nth-child(even) { background:rgba(0,0,0,.035); }
+```
+
 ---
 
 ## 附:导出适配注意

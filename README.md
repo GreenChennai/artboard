@@ -109,6 +109,7 @@ artboard/
 设计方法与规则提炼自(均为思想借鉴,代码自写):
 [baoyu-skills](https://github.com/JimLiu/baoyu-skills)(MIT) ·
 [diagram-design](https://github.com/cathrynlavery/diagram-design)(MIT) ·
+[stylekit](https://github.com/AnxForever/stylekit)(MIT,风格 schema/反 AI 味自检/原子化方法) ·
 [html-anything](https://github.com/nexu-io/html-anything)(Apache-2.0) ·
 [esther-design-system](https://github.com/esthersjw/esther-design-system)(CC BY-NC-SA,仅思想) ·
 [Art](https://github.com/zhuxice-ctrl/Art)(仅特效原理) ·

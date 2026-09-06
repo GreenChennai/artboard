@@ -18,6 +18,7 @@ import sys
 
 from _config import cfg
 
+DEFAULT_VQA_PATH = r"E:\平日资料\GitHub\VQA"  # 内置默认路径,config.json 可覆盖
 DEFAULT_PROMPT = "用中文详细描述这张图片的内容,包括主体、颜色、场景和可见文字。"
 
 
@@ -26,7 +27,7 @@ def emit(obj: dict) -> None:
 
 
 def run_qora(img: str, prompt: str) -> str:
-    vqa = cfg("vqa_path")
+    vqa = cfg("vqa_path", DEFAULT_VQA_PATH)
     exe = os.path.join(vqa, "qora_assets", "qor08b.exe")
     if not os.path.isfile(exe):
         raise FileNotFoundError(f"qor08b.exe 不存在: {exe}")
@@ -40,7 +41,7 @@ def run_qora(img: str, prompt: str) -> str:
 
 
 def run_caption(img: str) -> str:
-    vqa = cfg("vqa_path")
+    vqa = cfg("vqa_path", DEFAULT_VQA_PATH)
     py = os.path.join(vqa, "venv", "Scripts", "python.exe")
     script = os.path.join(vqa, "caption.py")
     for p in (py, script):

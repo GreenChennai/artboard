@@ -71,6 +71,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 素材分册 | references/materials.md | 找图(Pexels/Pixabay+爬虫)/抠图/版权风险机制/产品图红线 |
 | 需求追问 | references/intake.md | 开工前五问(用途/尺寸/风格/配色/素材),防盲做 |
 | 新增风格指南 | references/style-guide.md | 30 分钟登记一个新风格 |
+| 风格气质总表 | references/styles-catalog.md | 145 方向速查,模糊需求匹配 + 原子混搭 |
 | 品类规范(名片/易拉宝/A4/三折页) | references/formats/*.md | 印刷尺寸/字号下限/折线/盲区 |
 | 字体库 | fonts/README.md | 5 款开源字体,两级筛查 |
 | 参考案例 | assets/cases/*.html | 4 风格各一个"及格线答卷" |

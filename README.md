@@ -105,7 +105,7 @@ artboard/
 │   ├── styles/             # 4 个视觉风格分册(+参考案例)
 │   └── formats/            # 名片/A4/三折页/易拉宝/PPT 品类规范
 ├── scripts/                # preflight/scaffold/export/cutout/fetch_asset/vqa/add_font
-├── fonts/                  # 19 款开源中文字体(仓库内置 6 款代表,其余 fetch_font.py 按需下载)
+├── fonts/                  # 中英 21 款开源字体(11 中文 + 10 英文点缀;仓库内置代表款,其余 fetch_font.py 按需下载)
 ├── assets/                 # ECharts/GSAP · Tabler 图标 · Open Doodles · 案例 HTML
 └── tools/cookie-extension/ # 素材站 Cookie 助手(MV3,Edge/Chrome)
 ```

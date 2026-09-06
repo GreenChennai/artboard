@@ -27,3 +27,13 @@
 | [yshi-new-hei]yshi-new-hei/INTRO.md | YShi新黑 | 正文可读·古籍补全 | 古籍,规范字,生僻字,庄重 | Regular 单字重 |
 | [black-sugar-plum]black-sugar-plum/INTRO.md | 黑糖话梅 | 标题冲击·可爱手写 | 可爱,手写,糖果,手账,霞鹜作者 | Bold 单字重 |
 | [liyu-shoushu]liyu-shoushu/INTRO.md | 漓雨手书 | 文艺人文·书法 | 毛笔,楷书,国潮,书法标题 | Regular 单字重 |
+| [english-roboto-flex]english-roboto-flex/INTRO.md | Roboto Flex | 英文点缀·现代无衬线 | VF,现代,万能,数字,眉题 | 可变字体(多轴) |
+| [english-shantell]english-shantell/INTRO.md | Shantell Sans | 英文点缀·手写圆润 | 手写,圆润,bouncy,轻松 | Bouncy Regular(多变体可加) |
+| [english-eb-garamond]english-eb-garamond/INTRO.md | EB Garamond | 英文点缀·古典衬线 | 古典,衬线,优雅,正文 | Regular+Italic |
+| [english-rozha-one]english-rozha-one/INTRO.md | Rozha One | 英文点缀·奢华展示 | Didone,奢华,大标题,高对比 | Regular |
+| [english-sigmar]english-sigmar/INTRO.md | Sigmar | 英文点缀·海报重显示 | 重显示,海报,粗壮 | Regular |
+| [english-chewy]english-chewy/INTRO.md | Chewy | 英文点缀·趣味圆润 | 趣味,圆润,可爱 | Regular |
+| [english-ranchers]english-ranchers/INTRO.md | Ranchers | 英文点缀·窄体活力 | 窄体,活力,运动感 | Regular |
+| [english-frijole]english-frijole/INTRO.md | Frijole | 英文点缀·粗糙质感 | 粗糙,质感,街头 | Regular |
+| [english-trochut]english-trochut/INTRO.md | Trochut | 英文点缀·装饰几何 | 装饰,几何,艺术 | Regular |
+| [english-miss-fajardose]english-miss-fajardose/INTRO.md | Miss Fajardose | 英文点缀·优雅签名 | 签名,手写,优雅,花体 | Regular |

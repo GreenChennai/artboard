@@ -76,7 +76,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 新增风格指南 | references/style-guide.md | 30 分钟登记一个新风格 |
 | 风格气质总表 | references/styles-catalog.md | 145 方向速查,模糊需求匹配 + 原子混搭 |
 | 品类规范(名片/易拉宝/A4/三折页/PPT 页) | references/formats/*.md | 印刷尺寸/字号下限/折线/盲区/多页组织 |
-| 字体库 | fonts/README.md | 19 款开源字体,两级筛查;缺字体跑 fetch_font.py |
+| 字体库 | fonts/README.md | 中英 21 款开源字体,两级筛查;英文点缀专类;缺字体跑 fetch_font.py |
 | 参考案例 | assets/cases/*.html | 4 风格各一个"及格线答卷" |
 | vendor | assets/vendor/ | echarts.min.js / gsap.min.js |
 | 图标 | assets/icons/ | Tabler SVG(内联使用) |

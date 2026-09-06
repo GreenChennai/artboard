@@ -200,5 +200,119 @@
     ],
     "license": "OFL 1.1(楷书毛笔手书)",
     "url": "https://github.com/InkPantherType/LiyuShoushu/releases/download/v0.107/LiyuShoushu.ttf"
+  },
+  "english-roboto-flex": {
+    "in_repo": true,
+    "files": [
+      "RobotoFlex-VF.ttf"
+    ],
+    "license": "OFL 1.1",
+    "role": "现代无衬线(VF 全轴)",
+    "url": "https://github.com/googlefonts/roboto-flex/releases/download/3.200/roboto-flex-fonts.zip",
+    "zip_files": [
+      "RobotoFlex-VF.ttf=RobotoFlex[GRAD,XOPQ,XTRA,YOPQ,YTAS,YTDE,YTFI,YTLC,YTUC,opsz,slnt,wdth,wght].ttf"
+    ],
+    "category": "英文点缀"
+  },
+  "english-shantell": {
+    "in_repo": true,
+    "files": [
+      "ShantellSans-Bouncy-Regular.otf"
+    ],
+    "license": "OFL 1.1",
+    "role": "手写圆润体",
+    "url": "https://github.com/arrowtype/shantell-sans/releases/download/1.011/Shantell_Sans_1.011.zip",
+    "zip_files": [
+      "ShantellSans-Bouncy-Regular.otf=Shantell_Sans-Bouncy_Regular.otf"
+    ],
+    "category": "英文点缀"
+  },
+  "english-eb-garamond": {
+    "in_repo": true,
+    "files": [
+      "EBGaramond-Regular.ttf",
+      "EBGaramond-Italic.ttf"
+    ],
+    "license": "OFL 1.1",
+    "role": "古典衬线",
+    "url": "https://github.com/georgd/EB-Garamond/releases/download/nightly/EBGaramond.zip",
+    "zip_files": [
+      "EBGaramond-Regular.ttf=EBGaramond08-Regular.ttf",
+      "EBGaramond-Italic.ttf=EBGaramond08-Italic.ttf"
+    ],
+    "category": "英文点缀"
+  },
+  "english-rozha-one": {
+    "in_repo": true,
+    "files": [
+      "RozhaOne-Regular.otf"
+    ],
+    "license": "OFL 1.1",
+    "role": "奢华展示衬线",
+    "url": "https://github.com/itfoundry/rozhaone/releases/download/v2.000/RozhaOne-2_000.zip",
+    "zip_files": [
+      "RozhaOne-Regular.otf=RozhaOne-Regular.otf"
+    ],
+    "category": "英文点缀"
+  },
+  "english-sigmar": {
+    "in_repo": true,
+    "files": [
+      "Sigmar-Regular.ttf"
+    ],
+    "license": "OFL 1.1",
+    "role": "海报重显示",
+    "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/sigmar/Sigmar-Regular.ttf",
+    "category": "英文点缀"
+  },
+  "english-chewy": {
+    "in_repo": true,
+    "files": [
+      "Chewy-Regular.ttf"
+    ],
+    "license": "Apache 2.0",
+    "role": "趣味圆润",
+    "url": "https://raw.githubusercontent.com/google/fonts/main/apache/chewy/Chewy-Regular.ttf",
+    "category": "英文点缀"
+  },
+  "english-ranchers": {
+    "in_repo": true,
+    "files": [
+      "Ranchers-Regular.ttf"
+    ],
+    "license": "OFL 1.1",
+    "role": "窄体活力",
+    "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/ranchers/Ranchers-Regular.ttf",
+    "category": "英文点缀"
+  },
+  "english-frijole": {
+    "in_repo": true,
+    "files": [
+      "Frijole-Regular.ttf"
+    ],
+    "license": "OFL 1.1",
+    "role": "粗糙质感显示",
+    "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/frijole/Frijole-Regular.ttf",
+    "category": "英文点缀"
+  },
+  "english-trochut": {
+    "in_repo": true,
+    "files": [
+      "Trochut-Regular.ttf"
+    ],
+    "license": "OFL 1.1",
+    "role": "装饰几何",
+    "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/trochut/Trochut-Regular.ttf",
+    "category": "英文点缀"
+  },
+  "english-miss-fajardose": {
+    "in_repo": true,
+    "files": [
+      "MissFajardose-Regular.ttf"
+    ],
+    "license": "OFL 1.1",
+    "role": "优雅签名手写体",
+    "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/missfajardose/MissFajardose-Regular.ttf",
+    "category": "英文点缀"
   }
 }

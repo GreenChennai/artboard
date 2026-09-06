@@ -22,6 +22,7 @@ ENV_MAP = {
     "huaban_cookie": "HUABAN_COOKIE",
     "iconfont_cookie": "ARTBOARD_ICONFONT_COOKIE",
     "pinterest_cookie": "ARTBOARD_PINTEREST_COOKIE",
+    "proxy": "ARTBOARD_PROXY",
     "vqa_path": "ARTBOARD_VQA",
 }
 

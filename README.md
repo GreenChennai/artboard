@@ -53,6 +53,8 @@ AI 生图工具做海报的三座大山:**文字必糊、配色看运气、改�
 ```bash
 python scripts/fetch_asset.py --query "coffee dark" --theme promo --download  # 搜图入库
 python scripts/cutout.py product.jpg --sticker --shadow                       # 抠图+投影
+python scripts/qr.py generate --data "https://…" --out img/qr.png --logo logo.png  # 品牌二维码
+python scripts/qr.py decode poster.png                                        # 解析二维码内容
 python scripts/export.py --source <项目>/src --output out.png \
     --width 1080 --scale 2 --height 1440                                      # 2x 高清导出
 ```

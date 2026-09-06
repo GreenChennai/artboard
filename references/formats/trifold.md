@@ -29,6 +29,9 @@
 ## 参考案例
 [assets/cases/trifold-case.html](../../assets/cases/trifold-case.html) · 双面:[trifold-case-back.html](../../assets/cases/trifold-case-back.html)
 
+### 二维码
+设计稿放「二维码占位」框即可;终稿前 `python scripts/qr.py generate --data "…" --out src/img/qr.png`(支持品牌色/内嵌 logo,H 级纠错)替换,重导。码宽 ≥ 版面宽 8%,四周留白 ≥1 模块;解析用 `qr.py decode <图>`(本地 zxing,离线),公网图片可走草料 API `read-qr-code`。
+
 ## 调性禁则
 1. 封面只放:logo + 主标 + 一句副标,禁止把内页内容挤上封面。
 2. 文字/关键图形禁跨折线;每栏独立成篇。

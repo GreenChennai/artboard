@@ -23,6 +23,9 @@
 - **底对齐**:全部信息沉底,上 2/3 留白放 logo(高级感)。
 - **居中仪式感**:居中排版,适合极简风。
 
+### 二维码
+设计稿放「二维码占位」框即可;终稿前 `python scripts/qr.py generate --data "…" --out src/img/qr.png`(支持品牌色/内嵌 logo,H 级纠错)替换,重导。码宽 ≥ 版面宽 8%,四周留白 ≥1 模块;解析用 `qr.py decode <图>`(本地 zxing,离线),公网图片可走草料 API `read-qr-code`。
+
 ## 参考案例
 [assets/cases/card-case.html](../../assets/cases/card-case.html) · 双面:[card-case-back.html](../../assets/cases/card-case-back.html)
 

@@ -23,6 +23,9 @@ logo → 主标语(1–8 字,占位最大)→ 副标 → 3 个要点(图标+短�
 ## 参考案例
 [assets/cases/rollup-case.html](../../assets/cases/rollup-case.html)
 
+### 二维码
+设计稿放「二维码占位」框即可;终稿前 `python scripts/qr.py generate --data "…" --out src/img/qr.png`(支持品牌色/内嵌 logo,H 级纠错)替换,重导。码宽 ≥ 版面宽 8%,四周留白 ≥1 模块;解析用 `qr.py decode <图>`(本地 zxing,离线),公网图片可走草料 API `read-qr-code`。
+
 ## 调性禁则
 1. 禁段落文字——易拉宝是海报的极端形态,全部短语化。
 2. 要点 ≤3 条;禁贴边、禁进盲区(顶部 25cm/底部 30cm)。

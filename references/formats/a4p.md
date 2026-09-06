@@ -19,6 +19,9 @@
 题图区(主标+视觉锤,占上 40%)→ 信息区(要点/时间/地点)→ 底部 CTA(条码/二维码/联系方式)。
 活动海报:时间地点必须占独立层级,不少于正文字号 1.5 倍。
 
+### 二维码
+设计稿放「二维码占位」框即可;终稿前 `python scripts/qr.py generate --data "…" --out src/img/qr.png`(支持品牌色/内嵌 logo,H 级纠错)替换,重导。码宽 ≥ 版面宽 8%,四周留白 ≥1 模块;解析用 `qr.py decode <图>`(本地 zxing,离线),公网图片可走草料 API `read-qr-code`。
+
 ## 参考案例
 [assets/cases/a4p-case.html](../../assets/cases/a4p-case.html)
 

@@ -98,6 +98,8 @@ python $S/add_font.py <目录名> --name 显示名 --category 分类 --tags 关�
 python $S/fetch_asset.py --query "coffee cup" --theme <主题> --download --limit 6  # 搜图/下载
 python $S/cutout.py <图片...> [--sticker] [--shadow] [--model isnet-anime]      # 抠图+后处理
 python $S/vqa.py <图片...> [--prompt "问题"]                                    # VQA 解读图片内容
+python $S/qr.py generate --data "https://…" --out img/qr.png --logo logo.png    # 二维码(品牌色/内嵌logo)
+python $S/qr.py decode <图片>                                                   # 解析二维码(本地 zxing)
 ```
 
 - 项目落盘:`E:\平日资料\GitHub\artboard-studio\<slug>\`(src/ + export/)。
@@ -115,6 +117,7 @@ python $S/vqa.py <图片...> [--prompt "问题"]                                
    循环时长能被帧间隔整除;**终态必须仍是合格静态海报**;规范见 references/animation.md。
 7. **电商/食品/吉祥物类海报必须有真实素材**——产品本体只能用户提供;爬虫图自动带 `版权风险-` 前缀,交付时列出并提醒更换;抠图默认模型链禁用 bria-rmbg(商用付费)。
 8. **开工前先过 intake 五问**(用途/尺寸/风格/配色/素材),用户明说「直接做/全按推荐」才可跳过;跳过也必须在开工前复述全部假设。
+9. 二维码占位在**终稿前**用 `scripts/qr.py generate` 换成真码;成品码宽 ≥ 版面宽 8%、四周留白 ≥1 模块、纠错用 H 级(内嵌 logo 时)。
 
 ## 环境配置
 

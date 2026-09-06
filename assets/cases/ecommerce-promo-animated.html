@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>ecommerce-promo-animated · 半价狂欢(动图版,循环 3.2s)</title>
+<!-- 素材:materials/promo-coffee-land/promo-coffee-land-pexels-01.jpg(Pexels License / hello aesthe)
+     动效规范见 references/animation.md:入场 0-1.1s(decelerate),循环 3.2s(=25fps 80帧,无缝)
+     终态 = 静态合格海报(PNG 导出走终态) -->
+<style>
+@font-face { font-family:'SmileySans'; src:url('fonts/SmileySans-Oblique.ttf') format('truetype');
+  font-weight:normal; font-display:block; }
+@font-face { font-family:'SourceHanSans'; src:url('fonts/NotoSansSC-VF.ttf') format('truetype');
+  font-weight:100 900; font-display:block; }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#ffffff; }
+.poster { position:relative; width:1080px; height:1080px; overflow:hidden; background:#1c0606; }
+
+:root {
+  --c-ink:#fff5f0; --c-bg:#2a0a0a; --c-primary:#e0231c;
+  --c-accent:#ffc300; --c-muted:#cfa794;
+  --ease-in:  cubic-bezier(0.0,0.0,0.0,1.0);   /* decelerate 进场 */
+  --ease-emph:cubic-bezier(0.4,0.0,0.2,1);      /* emphasized */
+}
+
+.bg-photo { position:absolute; inset:0; }
+.bg-photo img { width:100%; height:100%; object-fit:cover; object-position:left center;
+  filter:brightness(.92) saturate(.9); }
+.bg-warm { position:absolute; inset:0;
+  background:linear-gradient(97deg, rgba(42,10,10,.18) 0%, rgba(42,10,10,.62) 46%,
+             rgba(32,7,7,.94) 72%, #1c0606 100%); }
+.fx-noise { position:absolute; inset:0; opacity:.06; mix-blend-mode:overlay; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+/* ===== 入场:decelerate,stagger 150ms;fill both ===== */
+@keyframes drop-in { from { transform:translateY(-36px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+@keyframes price-bounce {           /* 预备(上抬)→ 落地挤压(体积守恒) */
+  0%   { transform:translateY(-56px) scale(1);        opacity:0; }
+  55%  { transform:translateY(0)     scale(1.06,.90); opacity:1; }
+  75%  { transform:translateY(-6px)  scale(.97,1.05); }
+  100% { transform:translateY(0)     scale(1,1);       opacity:1; }
+}
+@keyframes slide-coupon { from { transform:translateX(90px); opacity:0; } to { transform:translateX(0); opacity:1; } }
+
+.brand { position:absolute; top:56px; left:88px; right:88px;
+  display:flex; justify-content:space-between; align-items:center;
+  animation:drop-in .4s var(--ease-in) both; }
+.brand .logo { font:700 30px/1 'SourceHanSans'; color:var(--c-ink); letter-spacing:.28em;
+  text-shadow:0 2px 8px rgba(0,0,0,.6); }
+.brand .date { font:500 24px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.14em; }
+
+.copy { position:absolute; top:210px; right:88px; width:560px; text-align:center; }
+.copy .pre { font:500 34px/1 'SourceHanSans'; color:var(--c-ink); letter-spacing:.5em; text-indent:.5em;
+  text-shadow:0 2px 8px rgba(0,0,0,.5);
+  animation:drop-in .4s var(--ease-in) .15s both; }
+.copy h1 { margin-top:26px; font:400 132px/1 'SmileySans'; letter-spacing:.01em;
+  background:linear-gradient(100deg, #7a5a1e 0%, #d8b45a 22%, #fff0c2 38%, #c9992e 55%, #8a6a24 72%, #e8c96a 100%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 8px 22px rgba(0,0,0,.55));
+  animation:drop-in .5s var(--ease-in) .3s both; }
+.copy .sub { margin-top:24px; font:500 34px/1.5 'SourceHanSans'; color:var(--c-ink);
+  letter-spacing:.1em; text-shadow:0 2px 8px rgba(0,0,0,.6);
+  animation:drop-in .45s var(--ease-in) .5s both; }
+.copy .sub b { color:var(--c-accent); font-weight:800; }
+
+.price { margin-top:36px; display:flex; align-items:baseline; justify-content:center; gap:8px;
+  animation:price-bounce .6s var(--ease-emph) .7s both; }
+.price .cur { font:400 46px/1 'SmileySans'; color:var(--c-accent); }
+.price .num { font:400 130px/1 'SmileySans'; color:var(--c-accent);
+  filter:drop-shadow(0 6px 16px rgba(0,0,0,.5)); }
+.price .unit { font:400 40px/1 'SmileySans'; color:var(--c-accent); }
+.price .was { margin-left:18px; font:500 30px/1 'SourceHanSans'; color:var(--c-muted);
+  text-decoration:line-through; }
+
+.coupon { margin:44px auto 0; width:470px; height:92px; background:var(--c-ink); color:#2a0a0a;
+  -webkit-mask:radial-gradient(circle 12px at left 50%, transparent 97%, #000) left / 51% 100% no-repeat,
+               radial-gradient(circle 12px at right 50%, transparent 97%, #000) right / 51% 100% no-repeat;
+  display:flex; align-items:center; justify-content:center; gap:18px;
+  box-shadow:0 12px 30px rgba(0,0,0,.45);
+  animation:slide-coupon .5s var(--ease-in) 1.05s both; }
+.coupon .big { font:400 44px/1 'SmileySans'; }
+.coupon .cut { width:2px; height:56px; border-left:2px dashed rgba(42,10,10,.35); }
+.coupon .cond { font:500 23px/1.3 'SourceHanSans'; color:#6b4a3e; }
+
+.terms { position:absolute; bottom:96px; right:88px; width:560px; text-align:center;
+  font:400 19px/1.7 'SourceHanSans'; color:var(--c-muted);
+  animation:drop-in .4s var(--ease-in) 1.2s both; }
+
+/* ===== 无缝循环 3.2s(80 帧 @25fps):0%/100% 状态一致 ===== */
+@keyframes float-y { 0%,100% { transform:translateY(-8px) rotate(-8deg); } 50% { transform:translateY(8px) rotate(-5deg); } }
+@keyframes breathe { 0%,100% { transform:scale(1); } 50% { transform:scale(1.035); } }
+@keyframes glow-pulse { 0%,100% { opacity:.75; } 50% { opacity:1; } }
+
+.burst { position:absolute; top:130px; left:88px; width:190px; height:190px;
+  animation:float-y 3.2s ease-in-out infinite; }
+.burst .ray { position:absolute; inset:0; border-radius:50%;
+  background:repeating-conic-gradient(var(--c-accent) 0 11.25deg, transparent 11.25deg 22.5deg); }
+.burst .core { position:absolute; inset:20px; border-radius:50%; background:var(--c-accent);
+  display:flex; align-items:center; justify-content:center; text-align:center;
+  font:400 36px/1.15 'SmileySans'; color:#2a0a0a; }
+
+.terms2 { position:absolute; bottom:40px; left:88px; right:88px; display:none; }
+.price-glow { animation:glow-pulse 3.2s ease-in-out infinite; }
+.copy .cta-breathe { animation:breathe 3.2s var(--ease-emph) infinite; }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="bg-photo"><img src="img/promo-coffee-land-pexels-01.jpg" alt=""></div>
+  <div class="bg-warm"></div>
+  <div class="fx-noise"></div>
+
+  <div class="brand">
+    <span class="logo">山雾茶町</span>
+    <span class="date">88 会员日 · 9.9 — 9.11</span>
+  </div>
+
+  <div class="burst">
+    <div class="ray"></div>
+    <div class="core">限时<br>48 小时</div>
+  </div>
+
+  <div class="copy">
+    <div class="pre">会员专享</div>
+    <h1>半价狂欢</h1>
+    <div class="sub">桂花拿铁上新 · <b>第二杯 0 元</b></div>
+    <div class="price">
+      <span class="cur">¥</span><span class="num price-glow">12</span><span class="unit">/ 杯</span>
+      <span class="was">日常价 ¥24</span>
+    </div>
+    <div class="coupon cta-breathe">
+      <span class="big">满 99 减 30</span>
+      <span class="cut"></span>
+      <span class="cond">全场饮品可用<br>到店出示</span>
+    </div>
+  </div>
+
+  <div class="terms">活动时间 9 月 9 日至 9 月 11 日,半价饮品每单限 2 杯,与会员折扣不同享。<br>图片仅供参考,活动最终解释权归门店所有。</div>
+</div>
+</body>
+</html>

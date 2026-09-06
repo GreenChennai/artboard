@@ -41,6 +41,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | A4 海报 | `a4p` | formats/a4p.md | scale 2=300dpi;Z 动线;禁荧光色 |
 | 三折页 | `trifold` | formats/trifold.md | 双面双画布;折线 x=585/1169;文字禁跨折线 |
 | 易拉宝 80×200cm | `rollup` | formats/rollup.md | scale 2=150dpi;顶部/底部盲区;短语化 |
+| PPT 页 16:9 | `slide` | formats/ppt.md | scale 2=2560×1440;一页一主张;多页图片序列+PDF |
 
 > 视觉风格与品类是正交的:任何品类可配任何风格(如「名片 × 科技 KV 风」「易拉宝 × 电商大促风」)。
 > 没有匹配风格:找最近似 + 告知偏差;或按 references/style-guide.md 新建(先给用户报价)。
@@ -54,6 +55,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 横幅 | 1920×600 | `--width 1920 --scale 2` |
 | 主 KV | 1920×1080 | `--width 1920 --scale 2` |
 | 方图 / 竖屏 | 1080×1080 / 1080×1920 | `--scale 2` |
+| PPT 页 16:9 | 1280×720 | `--width 1280 --scale 2 --height 720`(多页 slide-01.html…) |
 | 名片 | 1063×638 | `--width 1063 --scale 1` |
 | A4 海报 | 1240×1754 | `--width 1240 --scale 2` |
 | 三折页单面 | 1754×1240 | `--width 1754 --scale 2`(正/背各一) |
@@ -70,9 +72,10 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 导出手册 | references/export.md | 命令/参数/故障处理 |
 | 素材分册 | references/materials.md | 找图(Pexels/Pixabay+爬虫)/抠图/版权风险机制/产品图红线 |
 | 需求追问 | references/intake.md | 开工前五问(用途/尺寸/风格/配色/素材),防盲做 |
+| 动效分册(M2) | references/animation.md | 十二法则/M3 缓动 token/循环规范/导出命令 |
 | 新增风格指南 | references/style-guide.md | 30 分钟登记一个新风格 |
 | 风格气质总表 | references/styles-catalog.md | 145 方向速查,模糊需求匹配 + 原子混搭 |
-| 品类规范(名片/易拉宝/A4/三折页) | references/formats/*.md | 印刷尺寸/字号下限/折线/盲区 |
+| 品类规范(名片/易拉宝/A4/三折页/PPT 页) | references/formats/*.md | 印刷尺寸/字号下限/折线/盲区/多页组织 |
 | 字体库 | fonts/README.md | 5 款开源字体,两级筛查 |
 | 参考案例 | assets/cases/*.html | 4 风格各一个"及格线答卷" |
 | vendor | assets/vendor/ | echarts.min.js / gsap.min.js |
@@ -108,7 +111,8 @@ python $S/vqa.py <图片...> [--prompt "问题"]                                
 3. 一图一个焦点、层级 ≤3 层、强调 ≤2 处、特效 ≤3 种、字体 ≤3 款。
 4. 文案逐字来自用户,不编造数据与条款。
 5. 交付前必须 Read 导出 PNG 自检,上限 2 轮。
-6. 动图(M2)遵守:无缝循环 2–6s、总长 ≤15s、fps∈{10,20,25,50}。
+6. 动图(M2 已启用):无缝循环 2–6s、总长 ≤15s、fps∈{10,20,25,50};只用 transform/opacity;
+   循环时长能被帧间隔整除;**终态必须仍是合格静态海报**;规范见 references/animation.md。
 7. **电商/食品/吉祥物类海报必须有真实素材**——产品本体只能用户提供;爬虫图自动带 `版权风险-` 前缀,交付时列出并提醒更换;抠图默认模型链禁用 bria-rmbg(商用付费)。
 8. **开工前先过 intake 五问**(用途/尺寸/风格/配色/素材),用户明说「直接做/全按推荐」才可跳过;跳过也必须在开工前复述全部假设。
 

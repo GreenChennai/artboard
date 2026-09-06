@@ -104,4 +104,6 @@ python "<skill>/scripts/export_fallback.py" --source "<project>/src/index.html" 
 - 一切动画必须**无缝循环**,单循环 2–6 秒,总录制时长 ≤ 15 秒。
 - fps ∈ {10, 20, 25, 50}(GIF)——循环时长须能被帧间隔整除(如 25fps 下循环 2.0s / 2.4s / 3.2s)。
 - 只用 `transform` / `opacity` / `background-position`(可被逐帧采样的属性);**禁用依赖交互/滚动/音频的动画**。
-- 导出:`--format GIF --fps 25 --max-wait 6`;MP4 需 ffmpeg。
+- 动效模式库、缓动 token、无缝循环写法、导出自检 → **references/animation.md**(M2 已启用)。
+- 录制从页面加载完成后开始:入场动画可能被错过,**动图主体靠循环表达**。
+- 导出:`--format GIF --fps 25 --max-wait 6`(无 ffmpeg 时 Pillow 回退);MP4 需 ffmpeg。

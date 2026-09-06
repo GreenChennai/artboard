@@ -1,0 +1,13 @@
+# 字体二进制默认不入库:仓库只随附每类一款代表字体,其余用 scripts/fetch_font.py 按需下载
+*.ttf
+*.otf
+*.woff
+*.woff2
+
+# 代表字体(每类一款,随仓库分发)
+!source-han-sans/NotoSansSC-VF.ttf
+!source-han-serif/NotoSerifSC-VF.ttf
+!smiley-sans/SmileySans-Oblique.ttf
+!lxgw-wenkai/LXGWWenKai-Regular.ttf
+!zcool-kuaile/ZCOOLKuaiLe-Regular.ttf
+!misans/MiSans-Regular.ttf

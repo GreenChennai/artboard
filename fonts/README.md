@@ -1,5 +1,9 @@
 # artboard 字体库总目录
 
+> **按需下载**:GitHub 仓库只随附每类一款代表字体;其余字体本地缺失时,
+> 跑 `python ../../scripts/fetch_font.py <目录名>` 自动取回(清单见 fonts/download.json;
+> 网盘字体需按 manual 链接手动下载后 add_font 登记)。
+
 > 两级筛查法:先按「分类」选定大类 → 点进对应 `<目录>/INTRO.md` 细读气质与适用场景 → 定稿 ≤3 款(标题/正文/数字各司其职)。
 > 新增字体:建目录放字体文件 + INTRO.md,然后跑 `scripts/add_font.py <目录名> --name 显示名 --category 分类 --tags 关键词`。
 
@@ -16,3 +20,10 @@
 | [cheese-oolong-song]cheese-oolong-song/INTRO.md | 芝士奶盖乌龙宋 | 文艺人文·标题 | 宋体,奶酪感,圆头,食品,温暖,标题 | Bold(全量)/Lite-Bold(缩小字符集) |
 | [chill-zhuo-kai]chill-zhuo-kai/INTRO.md | 寒蝉拙楷 | 文艺人文·手写 | 楷体,拙朴,手写,温润,笔记 | Regular 单字重 |
 | [yao-yuan-ti]yao-yuan-ti/INTRO.md | 耀圆体 | 标题冲击·圆体 | 圆润,可爱,寒蝉圆体改造,国标规范,标题 | Regular 单字重 |
+| [nano-tik-baz-hei]nano-tik-baz-hei/INTRO.md | 纳挼崩音黑 | 标题冲击 | 抖音感,硬朗,方正,短视频标题 | Bold 单字重 |
+| [fanmei]fanmei/INTRO.md | 繁梅黑体/繁梅明体 | 正文可读·繁体专属 | 繁体,黑体,明体,书卷,0BSD | Hei/Ming 各单字重 |
+| [eqhi-sans]eqhi-sans/INTRO.md | 嗷呜等高体 | 正文可读·中英混排 | 等高,中英混排,可变字体,参数表 | 可变字体 Regular~Bold |
+| [insomnia-fangsong]insomnia-fangsong/INTRO.md | 不寐仿宋 | 文艺人文·仿宋 | 仿宋,古典,公文,引文,三字重 | Book/Bold/Demi |
+| [yshi-new-hei]yshi-new-hei/INTRO.md | YShi新黑 | 正文可读·古籍补全 | 古籍,规范字,生僻字,庄重 | Regular 单字重 |
+| [black-sugar-plum]black-sugar-plum/INTRO.md | 黑糖话梅 | 标题冲击·可爱手写 | 可爱,手写,糖果,手账,霞鹜作者 | Bold 单字重 |
+| [liyu-shoushu]liyu-shoushu/INTRO.md | 漓雨手书 | 文艺人文·书法 | 毛笔,楷书,国潮,书法标题 | Regular 单字重 |

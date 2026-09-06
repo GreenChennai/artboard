@@ -1,0 +1,204 @@
+{
+  "_comment": "字体按需下载清单。in_repo=true 的字重随仓库分发;false 的只登记下载方式,本地缺失时用 scripts/fetch_font.py <目录名> 取回。url 直接给文件;zip_url+zip_files 表示从压缩包内取。manual=true 表示无直链(网盘),需人工下载。",
+  "source-han-sans": {
+    "in_repo": true,
+    "files": [
+      "NotoSansSC-VF.ttf"
+    ],
+    "license": "SIL OFL 1.1",
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-cjk/main/Sans/Variable/TTF/Subset/NotoSansSC-VF.ttf"
+  },
+  "source-han-serif": {
+    "in_repo": true,
+    "files": [
+      "NotoSerifSC-VF.ttf"
+    ],
+    "license": "SIL OFL 1.1",
+    "url": "https://raw.githubusercontent.com/googlefonts/noto-cjk/main/Serif/Variable/TTF/Subset/NotoSerifSC-VF.ttf"
+  },
+  "smiley-sans": {
+    "in_repo": true,
+    "files": [
+      "SmileySans-Oblique.ttf"
+    ],
+    "license": "SIL OFL 1.1",
+    "url": "https://github.com/atelier-anchor/smiley-sans/releases/download/v2.0.1/smiley-sans-v2.0.1.zip",
+    "zip_files": [
+      "SmileySans-Oblique.ttf"
+    ]
+  },
+  "lxgw-wenkai": {
+    "in_repo": true,
+    "files": [
+      "LXGWWenKai-Regular.ttf"
+    ],
+    "license": "SIL OFL 1.1",
+    "url": "https://github.com/lxgw/LxgwWenKai/releases/download/v1.520/LXGWWenKai-Regular.ttf"
+  },
+  "zcool-kuaile": {
+    "in_repo": true,
+    "files": [
+      "ZCOOLKuaiLe-Regular.ttf"
+    ],
+    "license": "SIL OFL 1.1(免费商用)",
+    "url": "https://raw.githubusercontent.com/google/fonts/main/ofl/zcoolkuaile/ZCOOLKuaiLe-Regular.ttf"
+  },
+  "misans": {
+    "in_repo": true,
+    "files": [
+      "MiSans-Regular.ttf",
+      "MiSans-Semibold.ttf",
+      "MiSans-Bold.ttf"
+    ],
+    "license": "小米字体许可,免费商用",
+    "url": "https://hyperos.mi.com/font-download/MiSans.zip",
+    "zip_files": [
+      "MiSans/ttf/MiSans-Regular.ttf",
+      "MiSans/ttf/MiSans-Semibold.ttf",
+      "MiSans/ttf/MiSans-Bold.ttf"
+    ]
+  },
+  "alibaba-puhuiti": {
+    "in_repo": false,
+    "files": [
+      "AlibabaPuHuiTi-3-55-Regular.ttf",
+      "AlibabaPuHuiTi-3-85-Bold.ttf",
+      "AlibabaPuHuiTi-3-105-Heavy.ttf"
+    ],
+    "license": "免费商用(全社会永久免费,不得单独售卖字体文件)",
+    "url": "https://fonts.alibabadesign.com/AlibabaPuHuiTi-3/{w}/{f}",
+    "headers": {
+      "Referer": "https://www.alibabafonts.com/"
+    },
+    "expand": [
+      {
+        "w": "AlibabaPuHuiTi-3-55-Regular",
+        "f": "AlibabaPuHuiTi-3-55-Regular.ttf"
+      },
+      {
+        "w": "AlibabaPuHuiTi-3-85-Bold",
+        "f": "AlibabaPuHuiTi-3-85-Bold.ttf"
+      },
+      {
+        "w": "AlibabaPuHuiTi-3-105-Heavy",
+        "f": "AlibabaPuHuiTi-3-105-Heavy.ttf"
+      }
+    ]
+  },
+  "harmonyos-sans": {
+    "in_repo": false,
+    "files": [
+      "HarmonyOS_Sans_SC.ttf"
+    ],
+    "license": "鸿蒙字体许可,免费商用",
+    "manual": "https://developer.huawei.com/consumer/cn/design/resource/ (zip 内取 HarmonyOS_Sans_SC.ttf 可变字体;直链带签名会过期)"
+  },
+  "cheese-oolong-song": {
+    "in_repo": false,
+    "files": [
+      "CheeseFoamOolongSong-Bold.ttf"
+    ],
+    "license": "SIL OFL 1.1",
+    "url": "https://github.com/InkPantherType/CheeseFoamOolongSong/releases/download/V0.103/0.103.zip",
+    "zip_files": [
+      "芝士奶盖乌龙宋 0.103 版/CheeseFoamOolongSong-Bold.ttf"
+    ]
+  },
+  "chill-zhuo-kai": {
+    "in_repo": false,
+    "files": [
+      "ChillZhuoKai_R.ttf"
+    ],
+    "license": "SIL OFL 1.1",
+    "url": "https://github.com/Warren2060/ChillZhuoKai/releases/download/v1.300/ChillZhuoKai_R.ttf"
+  },
+  "yao-yuan-ti": {
+    "in_repo": false,
+    "files": [
+      "KirakaraMaru.ttf"
+    ],
+    "license": "OFL 基底(寒蝉全圆体改造),免费商用",
+    "url": "https://github.com/feiyangjun-1/KirakaraMaru/releases/download/1.001/KirakaraMaru_v1.001.ttf"
+  },
+  "nano-tik-baz-hei": {
+    "in_repo": false,
+    "files": [
+      "NanoTikBazHei-Bold.ttf"
+    ],
+    "license": "OFL 1.1(抖音美好体字库补全)",
+    "url": "https://github.com/Hansha2011/NanoTikBazHei/releases/download/1.0/NanoTikBazHei-Bold.ttf"
+  },
+  "fanmei": {
+    "in_repo": false,
+    "files": [
+      "Fanmei-Hei.ttf",
+      "Fanmei-Ming.ttf"
+    ],
+    "license": "0BSD",
+    "url": "https://github.com/lxgw/Fanmei/releases/download/v0.004.1/{f}",
+    "expand": [
+      {
+        "f": "Fanmei-Hei.ttf"
+      },
+      {
+        "f": "Fanmei-Ming.ttf"
+      }
+    ]
+  },
+  "eqhi-sans": {
+    "in_repo": false,
+    "files": [
+      "HowlingEqHiSans-VF.ttf"
+    ],
+    "license": "OFL 1.1(中西文等高)",
+    "url": "https://github.com/howlingFounts/EqHiSans/releases/download/v1.2.0/HowlingEqHiSans-Variable.zip",
+    "zip_files": [
+      "HowlingEqHiSans-VF.ttf=HowlingEqHiSans[wght,wdth].ttf"
+    ]
+  },
+  "insomnia-fangsong": {
+    "in_repo": false,
+    "files": [
+      "InsomniaFangSong-Book.ttf",
+      "InsomniaFangSong-Bold.ttf",
+      "InsomniaFangSong-Demi.ttf"
+    ],
+    "license": "自定义自由许可(免费商用;承 HZ Socho/M+ 与 GlyphWiki 条款)",
+    "url": "https://github.com/InkPantherType/InsomniaFangsong/releases/download/v0.102/{f}",
+    "expand": [
+      {
+        "f": "InsomniaFangSong-Book.ttf"
+      },
+      {
+        "f": "InsomniaFangSong-Bold.ttf"
+      },
+      {
+        "f": "InsomniaFangSong-Demi.ttf"
+      }
+    ]
+  },
+  "yshi-new-hei": {
+    "in_repo": false,
+    "files": [
+      "YShiNewHeiGGJ-Regular.ttf"
+    ],
+    "license": "IPA Font License v1.0(古籍规范字补全)",
+    "url": "https://github.com/Steve-Yuu/YShi-NewHei/releases/download/v1.001/YShiNewHeiGGJ-Regular.ttf"
+  },
+  "black-sugar-plum": {
+    "in_repo": false,
+    "files": [
+      "BlackSugarPlumCandy-Bold.ttf"
+    ],
+    "license": "OFL 1.1(可爱手写)",
+    "url": "https://raw.githubusercontent.com/lxgw/BlackSugarPlumCandy/main/TTF/BlackSugarPlumCandy-Bold.ttf"
+  },
+  "liyu-shoushu": {
+    "in_repo": false,
+    "files": [
+      "LiyuShoushu.ttf"
+    ],
+    "license": "OFL 1.1(楷书毛笔手书)",
+    "url": "https://github.com/InkPantherType/LiyuShoushu/releases/download/v0.107/LiyuShoushu.ttf"
+  }
+}

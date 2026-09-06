@@ -100,11 +100,17 @@ def main() -> int:
         loaded = [f for f in fams if any(
             fn.lower().endswith(FONT_EXTS)
             for fn in os.listdir(os.path.join(fonts_dir, f)))]
-        if loaded:
-            add("字体库", "PASS", f"{len(loaded)} 款: {', '.join(loaded)}")
-        else:
-            add("字体库", "WARN", "fonts/ 下没有字体文件",
-                "运行 scripts/download_fonts 或手动放入,渲染将回退系统字体")
+        import json as _json
+        manifest = _json.load(open(os.path.join(fonts_dir, "download.json"),
+                                   encoding="utf-8")) if os.path.isfile(
+            os.path.join(fonts_dir, "download.json")) else {}
+        missing = [d for d, e in manifest.items() if not d.startswith("_") and any(
+            not os.path.isfile(os.path.join(fonts_dir, d, f))
+            for f in e.get("files", []))]
+        add("字体库", "PASS" if loaded else "WARN",
+            f"{len(loaded)} 款在位" + (f",缺 {len(missing)} 款: {', '.join(missing)}" if missing else ""),
+            "缺的跑 scripts/fetch_font.py <目录名> 按需下载" if missing else
+            ("渲染将回退系统字体" if not loaded else ""))
     else:
         add("字体库", "WARN", "fonts/ 目录不存在", "静态海报仍可用系统字体渲染")
 

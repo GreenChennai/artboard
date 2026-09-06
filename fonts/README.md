@@ -13,3 +13,6 @@
 | [misans]misans/INTRO.md | MiSans | 正文可读·标题 | 现代,圆润,中性,屏幕优化,小米生态 | Regular/Semibold/Bold(另 12 字重可加) |
 | [alibaba-puhuiti]alibaba-puhuiti/INTRO.md | 阿里巴巴普惠体 3.0 | 正文可读·标题 | 现代,中性,电商,阿里生态,真字重 | Regular/Bold/Heavy(官方 9 字重可加) |
 | [harmonyos-sans]harmonyos-sans/INTRO.md | HarmonyOS Sans SC | 正文可读·标题 | 现代,鸿蒙,可变字体,数字優美 | 可变字体 Regular~Bold 单文件 |
+| [cheese-oolong-song]cheese-oolong-song/INTRO.md | 芝士奶盖乌龙宋 | 文艺人文·标题 | 宋体,奶酪感,圆头,食品,温暖,标题 | Bold(全量)/Lite-Bold(缩小字符集) |
+| [chill-zhuo-kai]chill-zhuo-kai/INTRO.md | 寒蝉拙楷 | 文艺人文·手写 | 楷体,拙朴,手写,温润,笔记 | Regular 单字重 |
+| [yao-yuan-ti]yao-yuan-ti/INTRO.md | 耀圆体 | 标题冲击·圆体 | 圆润,可爱,寒蝉圆体改造,国标规范,标题 | Regular 单字重 |

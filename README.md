@@ -105,7 +105,7 @@ artboard/
 │   ├── styles/             # 4 个视觉风格分册(+参考案例)
 │   └── formats/            # 名片/A4/三折页/易拉宝/PPT 品类规范
 ├── scripts/                # preflight/scaffold/export/cutout/fetch_asset/vqa/add_font
-├── fonts/                  # 8 款开源中文字体(思源黑宋/MiSans/普惠体/鸿蒙/得意黑/文楷/快乐体)
+├── fonts/                  # 11 款开源中文字体(思源黑宋/MiSans/普惠体/鸿蒙/得意黑/文楷/快乐体/乌龙宋/拙楷/耀圆体)
 ├── assets/                 # ECharts/GSAP · Tabler 图标 · Open Doodles · 案例 HTML
 └── tools/cookie-extension/ # 素材站 Cookie 助手(MV3,Edge/Chrome)
 ```

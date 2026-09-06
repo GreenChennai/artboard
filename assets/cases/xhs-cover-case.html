@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>xhs-cover-case · 新手摄影避雷清单</title>
+<style>
+/* ===== 字体(scaffold 复制后路径 fonts/) ===== */
+@font-face { font-family:'SourceHanSans'; src:url('fonts/NotoSansSC-VF.ttf') format('truetype');
+  font-weight:100 900; font-display:block; }
+@font-face { font-family:'LxgwWenkai'; src:url('fonts/LXGWWenKai-Regular.ttf') format('truetype');
+  font-weight:normal; font-display:block; }
+@font-face { font-family:'SmileySans'; src:url('fonts/SmileySans-Oblique.ttf') format('truetype');
+  font-weight:normal; font-display:block; }
+
+/* ===== 画布 ===== */
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#ffffff; }
+.poster { position:relative; width:1080px; height:1440px; overflow:hidden;
+  background:radial-gradient(120% 90% at 20% 10%, #fffdf8 0%, #fdf3e7 55%, #f3e6d2 100%); }
+
+/* ===== tokens ===== */
+:root {
+  --c-ink:#3a2c1e; --c-bg:#fdf3e7; --c-primary:#c96f2e;
+  --c-accent:#e05a33; --c-muted:#8a7a66;
+}
+
+/* ===== 特效层 ===== */
+.fx-noise { position:absolute; inset:0; opacity:.05; mix-blend-mode:multiply; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+/* ===== 内容 ===== */
+.wrap { position:relative; padding:64px 86px; height:100%; display:flex; flex-direction:column; }
+
+.sticker { display:inline-block; align-self:flex-start; background:var(--c-accent); color:#fff;
+  font:700 26px/1 'SourceHanSans'; letter-spacing:.08em; padding:12px 26px;
+  border-radius:12px; transform:rotate(-2deg);
+  box-shadow:0 0 0 5px #fff, 0 6px 16px rgba(58,44,30,.18); }
+
+.eyebrow { margin-top:34px; font:500 24px/1 'SourceHanSans'; color:var(--c-muted);
+  letter-spacing:.3em; }
+
+.title { margin-top:14px; font:900 96px/1.16 'SourceHanSans'; color:var(--c-ink);
+  letter-spacing:.02em; }
+.title .num { font-family:'SmileySans'; color:var(--c-accent); font-size:120px;
+  vertical-align:-8px; margin:0 6px; }
+
+.list { margin-top:44px; flex:1; display:flex; flex-direction:column; justify-content:space-between; }
+.item { display:flex; gap:26px; align-items:flex-start; padding:14px 0;
+  border-bottom:2px dotted rgba(58,44,30,.18); }
+.item:last-child { border-bottom:none; }
+.item .no { font:44px/1 'SmileySans'; color:var(--c-primary); min-width:64px; }
+.item h3 { font:700 33px/1.3 'SourceHanSans'; color:var(--c-ink); letter-spacing:.01em; }
+.item p { margin-top:6px; font:400 25px/1.5 'SourceHanSans'; color:var(--c-muted); }
+.note { position:relative; font:26px/1.4 'LxgwWenkai'; color:var(--c-accent); margin-left:14px; }
+.note::after { content:""; position:absolute; left:0; right:-8px; bottom:-4px; height:8px;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='8'%3E%3Cpath d='M0 4 Q6 0 12 4 T24 4' stroke='%23e05a33' fill='none' stroke-width='2'/%3E%3C/svg%3E") repeat-x; }
+
+.footer { display:flex; justify-content:space-between; align-items:center;
+  padding-top:26px; border-top:2px solid rgba(58,44,30,.2); }
+.footer .who { font:700 24px/1 'SourceHanSans'; color:var(--c-ink); letter-spacing:.06em; }
+.footer .hint { display:flex; align-items:center; gap:10px;
+  font:400 22px/1 'SourceHanSans'; color:var(--c-muted); }
+.footer svg { width:24px; height:24px; }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="fx-noise"></div>
+  <div class="wrap">
+    <span class="sticker">避雷指南</span>
+    <div class="eyebrow">新手摄影 · 省钱篇</div>
+    <h1 class="title">先别买镜头,这 <span class="num">6</span> 个坑我替你踩过了</h1>
+
+    <div class="list">
+      <div class="item">
+        <span class="no">01</span>
+        <div><h3>套机镜头不是原罪 <span class="note">先练构图!</span></h3>
+          <p>狗头拍不好,牛头也救不了;钱先留给练手。</p></div>
+      </div>
+      <div class="item">
+        <span class="no">02</span>
+        <div><h3>三脚架别买最便宜的</h3>
+          <p>它是唯一会"摔了心疼"的配件,承重看剩余量。</p></div>
+      </div>
+      <div class="item">
+        <span class="no">03</span>
+        <div><h3>存储卡按机身规格买</h3>
+          <p>写速不够连拍卡壳,标称≠持续速度。</p></div>
+      </div>
+      <div class="item">
+        <span class="no">04</span>
+        <div><h3>UV 镜只在野外需要</h3>
+          <p>日常挂机反而拉画质,滤光比想象中贵。</p></div>
+      </div>
+      <div class="item">
+        <span class="no">05</span>
+        <div><h3>二手看快门数更要看成色</h3>
+          <p>快门可以换,霉斑进灰救不了。</p></div>
+      </div>
+      <div class="item">
+        <span class="no">06</span>
+        <div><h3>预算的一半留给灯和后期</h3>
+          <p>光比机身更出片,学习比器材更保值。</p></div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <span class="who">@山雾胶片社</span>
+      <span class="hint">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 18h-8a2 2 0 0 1 -2 -2v-13a1 1 0 0 1 1 -1h9a1 1 0 0 1 1 1v13a2 2 0 0 0 2 2h-11a2 2 0 0 0 -2 2v2"/><path d="M13 6v4l2 -1l2 1v-4"/></svg>
+        收藏慢慢看 · 转发给你那个要买相机的朋友
+      </span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>tech-kv-case · 星阑 OS 3.0</title>
+<style>
+@font-face { font-family:'SourceHanSans'; src:url('fonts/NotoSansSC-VF.ttf') format('truetype');
+  font-weight:100 900; font-display:block; }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#ffffff; }
+.poster { position:relative; width:1920px; height:1080px; overflow:hidden; background:#0e0b1e; }
+
+:root {
+  --c-ink:#f2eeff; --c-bg:#0e0b1e; --c-primary:#7c5cff;
+  --c-accent:#2ee6a8; --c-muted:#8f89a8;
+}
+
+/* 光幕:主光在标题后方,边缘衰减 */
+.fx-mesh-dark { position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(58% 52% at 34% 44%, rgba(124,92,255,.42) 0%, transparent 62%),
+    radial-gradient(36% 30% at 76% 20%, rgba(46,230,168,.10) 0%, transparent 60%),
+    radial-gradient(46% 42% at 84% 88%, rgba(124,92,255,.20) 0%, transparent 58%); }
+.fx-grid { position:absolute; inset:0; pointer-events:none;
+  background:
+    linear-gradient(rgba(242,238,255,.05) 1px, transparent 1px) 0 0/ 96px 96px,
+    linear-gradient(90deg, rgba(242,238,255,.05) 1px, transparent 1px) 0 0/ 96px 96px;
+  -webkit-mask-image:radial-gradient(80% 70% at 45% 45%, #000 30%, transparent 100%); }
+.fx-noise { position:absolute; inset:0; opacity:.05; mix-blend-mode:overlay; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+.topbar { position:absolute; top:64px; left:96px; right:96px;
+  display:flex; justify-content:space-between; align-items:flex-start; }
+.topbar .logo { font:500 30px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.42em; }
+.topbar .right { text-align:right; }
+.topbar .date { display:block; font:400 26px/1.7 'SourceHanSans'; color:var(--c-muted); letter-spacing:.18em; }
+.topbar .tagline { display:block; font:400 22px/1 'SourceHanSans'; color:rgba(143,137,168,.7); letter-spacing:.3em; }
+
+.version { position:absolute; top:252px; left:96px; display:inline-flex; align-items:center;
+  gap:14px; padding:12px 30px; border-radius:999px;
+  background:rgba(46,230,168,.10); border:1px solid rgba(46,230,168,.45);
+  box-shadow:0 0 24px rgba(46,230,168,.18), inset 0 1px 0 rgba(255,255,255,.15); }
+.version .dot { width:10px; height:10px; border-radius:50%; background:var(--c-accent);
+  box-shadow:0 0 12px var(--c-accent); }
+.version span { font:600 26px/1 'SourceHanSans'; color:var(--c-accent); letter-spacing:.2em; }
+
+.hero { position:absolute; top:320px; left:96px; width:1280px; }
+.hero h1 { font:900 172px/1.12 'SourceHanSans'; color:var(--c-ink); letter-spacing:.04em;
+  white-space:nowrap; }
+.hero .sub { margin-top:34px; font:300 48px/1.6 'SourceHanSans'; color:var(--c-muted);
+  letter-spacing:.14em; }
+.hero .sub b { font-weight:600; color:var(--c-ink); }
+
+.cards { position:absolute; left:96px; right:96px; bottom:96px; display:flex; gap:44px; }
+.card { flex:1; padding:40px 44px; border-radius:22px;
+  background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.16);
+  backdrop-filter:blur(18px);
+  box-shadow:0 10px 36px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.18); }
+.card .ic { width:44px; height:44px; color:var(--c-primary); opacity:.95; }
+.card h3 { margin-top:22px; font:700 34px/1 'SourceHanSans'; color:var(--c-ink);
+  letter-spacing:.08em; }
+.card p { margin-top:14px; font:300 26px/1.6 'SourceHanSans'; color:var(--c-muted);
+  letter-spacing:.04em; }
+
+/* 页脚已并入顶栏右侧(.tagline),底部水平带完全让给玻璃卡 */
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="fx-mesh-dark"></div>
+  <div class="fx-grid"></div>
+  <div class="fx-noise"></div>
+
+  <div class="topbar">
+    <span class="logo">星阑 XINGLAN</span>
+    <span class="right">
+      <span class="date">2026.09.24 · 线上发布</span>
+      <span class="tagline">XINGLAN OS · BEYOND SCREENS</span>
+    </span>
+  </div>
+
+  <div class="version"><span class="dot"></span><span>v3.0 正式版</span></div>
+
+  <div class="hero">
+    <h1>星阑 OS 3.0</h1>
+    <div class="sub">把智能,装进<b>每一寸日常</b>。</div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2l-1 8h5l-8 12 1-10h-5l8-10"/></svg>
+      <h3>疾速内核</h3>
+      <p>全新调度引擎,冷启动快 41%,重载场景依然冷静。</p>
+    </div>
+    <div class="card">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3.5l1.5 3.5 3.5 1.5-3.5 1.5-1.5 3.5-1.5-3.5-3.5-1.5 3.5-1.5zM17 3.7l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7zM18.6 13.3l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"/></svg>
+      <h3>全域智能</h3>
+      <p>端侧小模型 + 云端大脑,离线也能听懂你的下一句。</p>
+    </div>
+    <div class="card">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5a10 10 0 0 0 11 11M3 3l18 18M8.5 3.5a9 9 0 0 0 12 12M3.5 8.5a9 9 0 0 0 12 12"/></svg>
+      <h3>云端一体</h3>
+      <p>手机、平板、车机同一份状态,接力从未如此无声。</p>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

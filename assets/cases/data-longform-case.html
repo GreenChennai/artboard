@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>data-longform-case · 城市咖啡图鉴</title>
+<script src="vendor/echarts.min.js"></script>
+<style>
+@font-face { font-family:'SourceHanSans'; src:url('fonts/NotoSansSC-VF.ttf') format('truetype');
+  font-weight:100 900; font-display:block; }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#f4f6fa; }
+.poster { position:relative; width:2400px; overflow:hidden; background:#f4f6fa; }
+
+:root {
+  --c-ink:#101a2e; --c-bg:#f4f6fa; --c-primary:#1f4e9c;
+  --c-accent:#e8b93c; --c-muted:#6b7688;
+  --f-sans:'SourceHanSans';
+}
+
+/* ===== 题图 ===== */
+.hero { position:relative; padding:150px 200px 110px;
+  background:
+    radial-gradient(55% 75% at 14% 20%, rgba(31,78,156,.14) 0%, transparent 60%),
+    radial-gradient(45% 60% at 88% 70%, rgba(232,185,60,.18) 0%, transparent 60%),
+    linear-gradient(180deg, #eef2f9 0%, #f4f6fa 100%); }
+.hero .kicker { font:500 36px/1 var(--f-sans); color:var(--c-primary); letter-spacing:.5em; }
+.hero h1 { margin-top:36px; font:900 230px/1.1 var(--f-sans); color:var(--c-ink); letter-spacing:.02em; }
+.hero .sub { margin-top:30px; font:400 52px/1.6 var(--f-sans); color:var(--c-muted); }
+.hero .meta { margin-top:56px; display:flex; gap:48px; font:500 30px/1 var(--f-sans); color:var(--c-muted); }
+.hero .meta b { color:var(--c-ink); font-weight:700; }
+
+/* ===== 导语卡 ===== */
+.intro { margin:0 200px; padding:56px 64px; border-radius:24px; background:#ffffff;
+  border:1px solid rgba(16,26,46,.07); box-shadow:0 10px 40px rgba(16,26,46,.05); }
+.intro p { font:400 44px/1.8 var(--f-sans); color:var(--c-ink); }
+.intro p b { color:var(--c-primary); font-weight:800; }
+
+/* ===== 数据板块 ===== */
+.section { margin:110px 200px 0; }
+.section .head { display:flex; align-items:baseline; gap:32px; }
+.section .no { font:800 150px/1 var(--f-sans); color:rgba(31,78,156,.14); }
+.section h2 { font:900 84px/1.2 var(--f-sans); color:var(--c-ink); letter-spacing:.02em; }
+
+.panel { margin-top:44px; display:flex; gap:56px; align-items:stretch; }
+.chart-box { width:1330px; flex:none; padding:48px; background:#ffffff; border-radius:24px;
+  border:1px solid rgba(16,26,46,.07); box-shadow:0 10px 40px rgba(16,26,46,.05); }
+.chart { width:1234px; height:600px; }
+.read { flex:1; display:flex; flex-direction:column; justify-content:center; gap:40px; }
+.read .point { display:flex; gap:22px; }
+.read .bullet { width:14px; height:14px; border-radius:50%; background:var(--c-primary);
+  margin-top:22px; flex:none; }
+.read .point.hl .bullet { background:var(--c-accent); }
+.read .point p { font:400 40px/1.65 var(--f-sans); color:var(--c-ink); }
+.read .point p b { font-weight:800; }
+.read .point.hl p b { color:var(--c-primary); }
+
+/* ===== 大数字卡 ===== */
+.bignum { margin:110px 200px 0; padding:90px 100px; border-radius:28px; color:#101a2e;
+  background:linear-gradient(120deg, #10203c 0%, #1f4e9c 90%);
+  display:flex; align-items:center; justify-content:space-between; }
+.bignum .num { font:800 320px/1 var(--f-sans); color:var(--c-accent);
+  font-variant-numeric:tabular-nums; }
+.bignum .num small { font:800 140px/1 var(--f-sans); }
+.bignum .desc { width:900px; }
+.bignum .desc h3 { font:800 64px/1.4 var(--f-sans); color:#ffffff; }
+.bignum .desc p { margin-top:24px; font:300 40px/1.7 var(--f-sans); color:rgba(255,255,255,.72); }
+
+/* ===== 结论 ===== */
+.conclusion { margin:110px 200px 0; }
+.conclusion h2 { font:900 84px/1.2 var(--f-sans); color:var(--c-ink); }
+.takeaway { margin-top:44px; display:flex; gap:28px; align-items:flex-start; }
+.takeaway .idx { font:400 60px/1 var(--f-sans); font-weight:800;
+  color:var(--c-accent); min-width:70px; }
+.takeaway p { font:400 46px/1.65 var(--f-sans); color:var(--c-ink); }
+.takeaway p mark { background:linear-gradient(transparent 62%, rgba(232,185,60,.55) 62%); color:inherit; }
+
+/* ===== 页脚 ===== */
+.footer { margin:130px 200px 0; padding:56px 0 90px; border-top:2px solid rgba(16,26,46,.12);
+  display:flex; justify-content:space-between; align-items:flex-end; }
+.footer .src { font:400 30px/1.8 var(--f-sans); color:var(--c-muted); }
+.footer .brand { text-align:right; }
+.footer .brand .name { font:800 36px/1 var(--f-sans); color:var(--c-ink); letter-spacing:.2em; }
+.footer .brand .sub { margin-top:16px; font:400 26px/1 var(--f-sans); color:var(--c-muted); letter-spacing:.1em; }
+</style>
+</head>
+<body>
+<div class="poster">
+
+  <!-- 题图 -->
+  <header class="hero">
+    <div class="kicker">雾数研究所 · 年度观察</div>
+    <h1>城市咖啡图鉴</h1>
+    <div class="sub">八座城市、四千二百份问卷,关于我们为什么离不开咖啡。</div>
+    <div class="meta">
+      <span>出品 <b>雾数研究所</b></span>
+      <span>周期 <b>2026.01 — 2026.08</b></span>
+      <span>版本 <b>v1.0</b></span>
+    </div>
+  </header>
+
+  <!-- 导语 -->
+  <section class="intro">
+    <p>过去八年,咖啡从"提神工具"变成了城市生活的<b>基础设施</b>。本报告用三个视角拆解这件事:
+    <b>喝多少</b>、<b>在哪儿喝</b>、<b>为谁买单</b>。所有图表均可单独引用。</p>
+  </section>
+
+  <!-- 板块 01:折线 -->
+  <section class="section">
+    <div class="head"><span class="no">01</span><h2>人均杯数持续走高,增速开始分化</h2></div>
+    <div class="panel">
+      <div class="chart-box"><div id="chart-line" class="chart"></div></div>
+      <div class="read">
+        <div class="point"><span class="bullet"></span>
+          <p>一线人均 <b>19 杯/年</b>,是 2019 年的两倍多。</p></div>
+        <div class="point"><span class="bullet"></span>
+          <p>2023 年后增速放缓:存量市场转向<b>品质竞争</b>。</p></div>
+        <div class="point hl"><span class="bullet"></span>
+          <p>新一线成为增量主引擎,贡献 <b>62%</b> 的新增杯量。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 板块 02:对垒柱 -->
+  <section class="section">
+    <div class="head"><span class="no">02</span><h2>连锁扩张,独立馆转向"小而美"</h2></div>
+    <div class="panel">
+      <div class="chart-box"><div id="chart-bar" class="chart"></div></div>
+      <div class="read">
+        <div class="point"><span class="bullet"></span>
+          <p>连锁门店数三年翻番,渗透到<b>县域市场</b>。</p></div>
+        <div class="point hl"><span class="bullet"></span>
+          <p>独立咖啡馆数量持平,但<b>客单价高出 28%</b>。</p></div>
+        <div class="point"><span class="bullet"></span>
+          <p>两者客群重叠度仅 31%:不是替代,是<b>分工</b>。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 大数字 -->
+  <section class="bignum">
+    <div class="num">62<small>%</small></div>
+    <div class="desc">
+      <h3>的受访者愿意为"更好的一杯"多付 5 元</h3>
+      <p>品质溢价已经成立——前提是风味、空间或情绪价值至少占一样。</p>
+    </div>
+  </section>
+
+  <!-- 结论 -->
+  <section class="conclusion">
+    <h2>三句话带走</h2>
+    <div class="takeaway"><span class="idx">1.</span>
+      <p>数量红利见顶,<mark>品质红利</mark>正在开场。</p></div>
+    <div class="takeaway"><span class="idx">2.</span>
+      <p>连锁做普及,独立馆做<mark>意义感</mark>,别用同一套打法。</p></div>
+    <div class="takeaway"><span class="idx">3.</span>
+      <p>下一个战场在新一线与县域,<mark>供应链</mark>决定谁留在牌桌。</p></div>
+  </section>
+
+  <!-- 页脚 -->
+  <footer class="footer">
+    <div class="src">数据来源:雾数研究所问卷(n=4200)与公开行业数据整理<br>本长图为样式演示,<b>全部数据为虚构</b>,请勿引用。</div>
+    <div class="brand">
+      <div class="name">雾数研究所</div>
+      <div class="sub">WUSHU LAB · 2026</div>
+    </div>
+  </footer>
+</div>
+
+<script>
+// 统一图表语言:字体/轴色/系列色见 data-longform.md
+const FONT = 'SourceHanSans';
+const INK = '#101a2e', MUTED = '#6b7688', PRIMARY = '#1f4e9c', ACCENT = '#e8b93c';
+const GRID = 'rgba(16,26,46,.08)';
+
+function axisStyle(showName) {
+  return {
+    axisLine: { lineStyle: { color: 'rgba(16,26,46,.25)' } },
+    axisTick: { show: false },
+    axisLabel: { color: MUTED, fontFamily: FONT, fontSize: 28 },
+    splitLine: { lineStyle: { color: GRID } },
+    name: showName, nameTextStyle: { color: MUTED, fontSize: 28, fontFamily: FONT }
+  };
+}
+
+const line = echarts.init(document.getElementById('chart-line'), null,
+  { renderer: 'canvas', width: 1234, height: 600 });
+line.setOption({
+  animation: false,
+  grid: { left: 90, right: 60, top: 80, bottom: 70 },
+  tooltip: { show: false },
+  xAxis: { type: 'category', data: ['2019','2020','2021','2022','2023','2024','2025','2026E'],
+    ...axisStyle() },
+  yAxis: { type: 'value', max: 22, ...axisStyle('杯/人·年') },
+  series: [{
+    type: 'line', data: [9, 11, 12, 13, 14, 16, 17, 19],
+    lineStyle: { color: PRIMARY, width: 6 }, itemStyle: { color: PRIMARY },
+    symbol: 'circle', symbolSize: 14,
+    areaStyle: { color: 'rgba(31,78,156,.10)' },
+    label: { show: true, fontFamily: FONT, fontSize: 28, color: INK,
+      formatter: p => ['2019','2025','2026E'].includes(p.dataIndex) ? p.value : '' },
+    markPoint: { symbol: 'circle', symbolSize: 20, itemStyle: { color: ACCENT },
+      data: [{ coord: ['2026E', 19] }] }
+  }]
+});
+
+const bar = echarts.init(document.getElementById('chart-bar'), null,
+  { renderer: 'canvas', width: 1234, height: 600 });
+bar.setOption({
+  animation: false,
+  grid: { left: 90, right: 60, top: 110, bottom: 70 },
+  tooltip: { show: false },
+  legend: { top: 10, right: 20, itemWidth: 28, itemHeight: 18,
+    textStyle: { color: INK, fontFamily: FONT, fontSize: 30 } },
+  xAxis: { type: 'category', data: ['2024', '2025', '2026H1'], ...axisStyle() },
+  yAxis: { type: 'value', max: 130, ...axisStyle('门店指数(2023=100)') },
+  series: [
+    { name: '连锁门店', type: 'bar', data: [112, 124, 133], barWidth: 110,
+      itemStyle: { color: PRIMARY, borderRadius: [10, 10, 0, 0] },
+      label: { show: true, position: 'top', fontFamily: FONT, fontSize: 28, color: INK } },
+    { name: '独立咖啡馆', type: 'bar', data: [100, 101, 102], barWidth: 110,
+      itemStyle: { color: ACCENT, borderRadius: [10, 10, 0, 0] },
+      label: { show: true, position: 'top', fontFamily: FONT, fontSize: 28, color: INK } }
+  ]
+});
+</script>
+</body>
+</html>

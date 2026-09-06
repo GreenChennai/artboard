@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "artboard Cookie 助手",
+  "description": "在花瓣/阿里巴巴图标库/Pinterest 登录后,一键抓取当前站点 Cookie 并复制为 artboard config.json 片段。",
+  "version": "1.0.0",
+  "permissions": ["cookies", "clipboardWrite", "activeTab"],
+  "host_permissions": [
+    "*://*.huaban.com/*",
+    "*://*.iconfont.cn/*",
+    "*://*.pinterest.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "artboard Cookie 助手"
+  }
+}

@@ -2,16 +2,16 @@
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><title>trifold-case · 山雾茶町三折页(正面:内页一/二/三)</title>
 <!-- 素材:materials/brand-coffee(Pexels License)。三折页规范见 references/formats/trifold.md
-     折线 x=585/1169;文字禁跨折线;包心折栏位映射见规范 -->
+     折线 x=585/1169;文字禁跨折线;包心折栏位映射见规范。字体:MiSans -->
 <style>
-@font-face { font-family:'SourceHanSerif'; src:url('fonts/NotoSerifSC-VF.ttf') format('truetype');
-  font-weight:200 900; font-display:block; }
-@font-face { font-family:'SourceHanSans'; src:url('fonts/NotoSansSC-VF.ttf') format('truetype');
-  font-weight:100 900; font-display:block; }
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Regular.ttf') format('truetype'); font-weight:400; font-display:block; }
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Semibold.ttf') format('truetype'); font-weight:600; font-display:block; }
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Bold.ttf') format('truetype'); font-weight:700; font-display:block; }
+@font-face { font-family:'SmileySans'; src:url('fonts/SmileySans-Oblique.ttf') format('truetype');
+  font-weight:normal; font-display:block; }
 * { margin:0; padding:0; box-sizing:border-box; }
 html,body { margin:0; background:#fff; }
-.poster { position:relative; width:1754px; height:1240px; overflow:hidden;
-  background:#faf6ef; }
+.poster { position:relative; width:1754px; height:1240px; overflow:hidden; background:#faf6ef; }
 :root { --c-ink:#241a10; --c-brown:#6d4326; --c-gold:#b98a2e; --c-amber:#e0a458; --c-muted:#8a7a62; }
 
 /* 内页一:照片 + 引言 */
@@ -20,32 +20,32 @@ html,body { margin:0; background:#fff; }
   filter:brightness(.68) saturate(.95); }
 .c1 .veil { position:absolute; inset:0; background:linear-gradient(180deg, rgba(24,17,9,.2), rgba(24,17,9,.66)); }
 .c1 .quote { position:absolute; left:56px; right:56px; bottom:88px;
-  font:600 40px/1.75 'SourceHanSerif'; color:#f2e6cf; }
-.c1 .quote small { display:block; margin-top:26px; font:400 24px/1 'SourceHanSans';
+  font:700 40px/1.75 'MiSans'; color:#f2e6cf; }
+.c1 .quote small { display:block; margin-top:26px; font:400 24px/1 'MiSans';
   color:#c9b389; letter-spacing:.3em; }
 
 /* 内页二:主张 + 三条理念 */
 .c2 { position:absolute; left:585px; top:0; bottom:0; width:584px; background:#fff;
   padding:96px 64px; }
-.c2 .kicker { font:500 24px/1 'SourceHanSans'; color:var(--c-gold); letter-spacing:.4em; }
-.c2 h2 { margin-top:26px; font:900 56px/1.3 'SourceHanSerif'; color:var(--c-ink); }
-.c2 .lead { margin-top:30px; font:400 27px/1.85 'SourceHanSans'; color:var(--c-muted); }
+.c2 .kicker { font:600 24px/1 'MiSans'; color:var(--c-gold); letter-spacing:.4em; }
+.c2 h2 { margin-top:26px; font:700 58px/1.3 'MiSans'; color:var(--c-ink); }
+.c2 .lead { margin-top:30px; font:400 27px/1.85 'MiSans'; color:var(--c-muted); }
 .item { margin-top:52px; display:flex; gap:26px; }
 .item .dot { width:52px; height:52px; flex:none; border-radius:50%; background:var(--c-amber);
-  color:#fff; display:flex; align-items:center; justify-content:center; font:700 26px/1 'SourceHanSans'; }
-.item h3 { font:800 32px/1.3 'SourceHanSans'; color:var(--c-ink); }
-.item p { margin-top:10px; font:400 25px/1.7 'SourceHanSans'; color:var(--c-muted); }
+  color:#fff; display:flex; align-items:center; justify-content:center; font:600 26px/1 'MiSans'; }
+.item h3 { font:600 33px/1.3 'MiSans'; color:var(--c-ink); }
+.item p { margin-top:10px; font:400 25px/1.7 'MiSans'; color:var(--c-muted); }
 
 /* 内页三(折口):豆单 */
 .c3 { position:absolute; left:1169px; top:0; bottom:0; width:585px; padding:96px 60px;
   background:#f2e8d8; }
-.c3 .kicker { font:500 24px/1 'SourceHanSans'; color:var(--c-gold); letter-spacing:.4em; }
-.c3 h2 { margin-top:26px; font:900 52px/1.3 'SourceHanSerif'; color:var(--c-ink); }
+.c3 .kicker { font:600 24px/1 'MiSans'; color:var(--c-gold); letter-spacing:.4em; }
+.c3 h2 { margin-top:26px; font:700 54px/1.3 'MiSans'; color:var(--c-ink); }
 .bean { margin-top:56px; padding-bottom:44px; border-bottom:2px dotted rgba(36,26,16,.22); }
 .bean .row { display:flex; justify-content:space-between; align-items:baseline; }
-.bean h3 { font:800 34px/1.3 'SourceHanSans'; color:var(--c-ink); }
-.bean .origin { font:500 24px/1 'SourceHanSans'; color:var(--c-amber); }
-.bean p { margin-top:14px; font:400 25px/1.65 'SourceHanSans'; color:var(--c-muted); }
+.bean h3 { font:600 34px/1.3 'MiSans'; color:var(--c-ink); }
+.bean .origin { font:600 24px/1 'MiSans'; color:var(--c-amber); }
+.bean p { margin-top:14px; font:400 25px/1.65 'MiSans'; color:var(--c-muted); }
 </style></head>
 <body><div class="poster">
   <div class="c1">

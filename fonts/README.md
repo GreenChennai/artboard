@@ -10,3 +10,6 @@
 | [smiley-sans]smiley-sans/INTRO.md | 得意黑 | 标题冲击 | 冲刺,动势,促销,竞技 | Oblique 单字重 |
 | [lxgw-wenkai]lxgw-wenkai/INTRO.md | 霞鹜文楷 | 文艺人文·手写批注 | 温润,手写,信笺,小清新 | Regular 单字重 |
 | [zcool-kuaile]zcool-kuaile/INTRO.md | 站酷快乐体 | 标题冲击·可爱手账 | 俏皮,圆润,零食感,童趣 | Regular 单字重 |
+| [misans]misans/INTRO.md | MiSans | 正文可读·标题 | 现代,圆润,中性,屏幕优化,小米生态 | Regular/Semibold/Bold(另 12 字重可加) |
+| [alibaba-puhuiti]alibaba-puhuiti/INTRO.md | 阿里巴巴普惠体 3.0 | 正文可读·标题 | 现代,中性,电商,阿里生态,真字重 | Regular/Bold/Heavy(官方 9 字重可加) |
+| [harmonyos-sans]harmonyos-sans/INTRO.md | HarmonyOS Sans SC | 正文可读·标题 | 现代,鸿蒙,可变字体,数字優美 | 可变字体 Regular~Bold 单文件 |

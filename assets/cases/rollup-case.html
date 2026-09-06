@@ -3,50 +3,53 @@
 <head><meta charset="UTF-8"><title>rollup-case · 山雾茶町会员招募(易拉宝)</title>
 <!-- 素材:materials/brand-coffee/brand-coffee-pexels-02.jpg(Pexels License / Daniel Tello)
      易拉宝规范见 references/formats/rollup.md:2362×5906,scale 2 → 4724×11811(150dpi)
-     顶部 25cm / 底部 30cm 为卷轴盲区:重要信息放在高度 25%–85% 带 -->
+     顶部 25cm / 底部 30cm 为卷轴盲区:重要信息放在高度 25%–85% 带。字体:MiSans + 得意黑 -->
 <style>
 @font-face { font-family:'SmileySans'; src:url('fonts/SmileySans-Oblique.ttf') format('truetype');
   font-weight:normal; font-display:block; }
-@font-face { font-family:'SourceHanSans'; src:url('fonts/NotoSansSC-VF.ttf') format('truetype');
-  font-weight:100 900; font-display:block; }
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Regular.ttf') format('truetype'); font-weight:400; font-display:block; }
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Semibold.ttf') format('truetype'); font-weight:600; font-display:block; }
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Bold.ttf') format('truetype'); font-weight:700; font-display:block; }
 * { margin:0; padding:0; box-sizing:border-box; }
 html,body { margin:0; background:#fff; }
 .poster { position:relative; width:2362px; height:5906px; overflow:hidden; background:#241a10; }
 :root { --c-ink:#fdf6ea; --c-cream:#f2e6cf; --c-gold:#d9a648; --c-amber:#e0a458; --c-muted:#b39b74; }
 
-.hero { position:absolute; top:0; left:0; right:0; height:2160px; overflow:hidden; }
+.hero { position:absolute; top:0; left:0; right:0; height:2260px; overflow:hidden; }
 .hero img { width:100%; height:100%; object-fit:cover; object-position:center 42%;
   filter:saturate(1.02); }
 .hero .fade { position:absolute; inset:0;
-  background:linear-gradient(180deg, rgba(36,26,16,.18) 0%, rgba(36,26,16,0) 30%, rgba(36,26,16,.88) 92%, #241a10 100%); }
-.brand { position:absolute; top:460px; left:0; right:0; text-align:center; }
-.brand .mark { width:190px; height:190px; margin:0 auto; border-radius:50%;
+  background:linear-gradient(180deg, rgba(36,26,16,.34) 0%, rgba(36,26,16,.10) 24%,
+             rgba(36,26,16,0) 40%, rgba(36,26,16,.88) 92%, #241a10 100%); }
+.brand { position:absolute; top:480px; left:0; right:0; text-align:center; }
+.brand .mark { width:200px; height:200px; margin:0 auto; border-radius:50%;
   border:3px solid var(--c-gold); color:var(--c-gold);
-  display:flex; align-items:center; justify-content:center; font:900 84px/1 'SourceHanSans';
+  display:flex; align-items:center; justify-content:center; font:700 88px/1 'MiSans';
   background:rgba(36,26,16,.55); }
-.brand .name { margin-top:50px; font:900 128px/1 'SourceHanSans'; color:var(--c-cream);
-  letter-spacing:.3em; text-indent:.3em; text-shadow:0 6px 24px rgba(0,0,0,.5); }
-.brand .en { margin-top:30px; font:600 38px/1 'SourceHanSans'; color:var(--c-gold); letter-spacing:.52em; text-indent:.52em; }
+.brand .name { margin-top:56px; font:700 140px/1 'MiSans'; color:var(--c-cream);
+  letter-spacing:.3em; text-indent:.3em; text-shadow:0 6px 24px rgba(0,0,0,.6); }
+.brand .en { margin-top:32px; font:400 42px/1 'MiSans'; color:var(--c-gold); letter-spacing:.52em; text-indent:.52em;
+  text-shadow:0 3px 14px rgba(0,0,0,.75), 0 0 2px rgba(0,0,0,.5); }
 
-.body { position:absolute; top:2360px; left:240px; right:240px; text-align:center; }
-.h1 { font:400 250px/1.1 'SmileySans'; color:var(--c-cream); letter-spacing:.04em; }
+.body { position:absolute; top:2500px; left:240px; right:240px; text-align:center; }
+.h1 { font:400 260px/1.1 'SmileySans'; color:var(--c-cream); letter-spacing:.04em; }
 .h1 .gold { color:var(--c-gold); }
-.sub { margin-top:56px; font:300 80px/1.6 'SourceHanSans'; color:var(--c-muted); letter-spacing:.12em; }
+.sub { margin-top:60px; font:400 84px/1.6 'MiSans'; color:var(--c-muted); letter-spacing:.12em; }
 
-.points { margin-top:150px; display:flex; flex-direction:column; gap:90px; text-align:left; }
-.point { display:flex; gap:60px; align-items:flex-start;
-  background:rgba(253,246,234,.05); border:2px solid rgba(217,166,72,.35);
-  border-radius:24px; padding:64px 84px; }
-.point .no { font:400 110px/1 'SmileySans'; color:var(--c-gold); min-width:150px; }
-.point h3 { font:800 86px/1.25 'SourceHanSans'; color:var(--c-cream); }
-.point p { margin-top:22px; font:300 64px/1.6 'SourceHanSans'; color:var(--c-muted); }
+.points { margin-top:150px; display:flex; flex-direction:column; text-align:left; }
+.point { display:flex; gap:64px; align-items:flex-start;
+  padding:78px 40px; border-bottom:3px solid rgba(217,166,72,.28); }
+.point:first-child { border-top:3px solid rgba(217,166,72,.28); }
+.point .no { font:400 120px/1 'SmileySans'; color:var(--c-gold); min-width:160px; }
+.point h3 { font:700 92px/1.25 'MiSans'; color:var(--c-cream); }
+.point p { margin-top:24px; font:400 66px/1.6 'MiSans'; color:var(--c-muted); }
 
-.foot { position:absolute; left:240px; right:240px; bottom:660px; text-align:center; }
-.qr { width:470px; height:470px; margin:0 auto; background:var(--c-cream); border-radius:32px;
-  display:flex; align-items:center; justify-content:center;
-  font:800 84px/1.4 'SourceHanSans'; color:#241a10; }
-.foot .cta { margin-top:64px; font:800 104px/1 'SourceHanSans'; color:var(--c-gold); letter-spacing:.1em; }
-.foot .meta { margin-top:40px; font:300 58px/1.7 'SourceHanSans'; color:var(--c-muted); }
+.foot { position:absolute; left:240px; right:240px; bottom:680px; text-align:center; }
+.qr { width:480px; height:480px; margin:0 auto; background:var(--c-cream); border-radius:32px;
+  display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.qr img { width:86%; height:86%; }
+.foot .cta { margin-top:70px; font:700 116px/1 'MiSans'; color:var(--c-gold); letter-spacing:.1em; }
+.foot .meta { margin-top:44px; font:400 62px/1.7 'MiSans'; color:var(--c-muted); }
 </style></head>
 <body><div class="poster">
   <div class="hero">
@@ -73,7 +76,7 @@ html,body { margin:0; background:#fff; }
   </div>
 
   <div class="foot">
-    <div class="qr"><img src="img/qr.png" style="width:86%;height:86%" alt=""></div>
+    <div class="qr"><img src="img/qr.png" alt=""></div>
     <div class="cta">扫码入会 · 首杯立减 15 元</div>
     <div class="meta">杭州市西湖区雾山路 88 号 · 09:00 – 21:00</div>
   </div>

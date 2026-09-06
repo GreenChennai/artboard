@@ -1,49 +1,46 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head><meta charset="UTF-8"><title>card-case · 山雾茶町名片(正面)</title>
-<!-- 素材:materials/brand-coffee(Pexels License)。名片规范见 references/formats/card.md -->
+<!-- 素材:materials/brand-coffee(Pexels License)。名片规范见 references/formats/card.md
+     字体:MiSans(标题 Bold / 正文 Regular) -->
 <style>
-@font-face { font-family:'SourceHanSans'; src:url('fonts/NotoSansSC-VF.ttf') format('truetype');
-  font-weight:100 900; font-display:block; }
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Regular.ttf') format('truetype'); font-weight:400; font-display:block; }
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Semibold.ttf') format('truetype'); font-weight:600; font-display:block; }
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Bold.ttf') format('truetype'); font-weight:700; font-display:block; }
 * { margin:0; padding:0; box-sizing:border-box; }
 html,body { margin:0; background:#fff; }
 .poster { position:relative; width:1063px; height:638px; overflow:hidden;
-  background:radial-gradient(120% 90% at 22% 14%, #fffdf8 0%, #faf6ef 52%, #efe6d6 100%); }
+  background:radial-gradient(120% 90% at 20% 12%, #fffdf8 0%, #faf6ef 55%, #eee4d2 100%); }
 :root { --c-ink:#231a10; --c-gold:#b98a2e; --c-amber:#e0a458; --c-muted:#8a7a62; }
 
-.band { position:absolute; left:0; top:0; bottom:0; width:388px; background:#181109; }
-.band::after { content:""; position:absolute; top:0; bottom:0; right:0; width:6px;
+/* 右侧满版照片 */
+.photo { position:absolute; right:0; top:0; bottom:0; width:400px; overflow:hidden; }
+.photo img { width:100%; height:100%; object-fit:cover; object-position:center 45%;
+  filter:brightness(.9); }
+.photo::after { content:""; position:absolute; left:0; top:0; bottom:0; width:5px;
   background:linear-gradient(180deg, var(--c-amber), #7a5a1e); }
-.band .mark { position:absolute; left:66px; top:64px; width:128px; height:128px; border-radius:50%;
-  border:2px solid var(--c-amber); color:var(--c-amber);
-  display:flex; align-items:center; justify-content:center;
-  font:900 56px/1 'SourceHanSans'; letter-spacing:.06em; }
-.band .slogan { position:absolute; left:66px; bottom:154px; font:500 26px/1.9 'SourceHanSans';
-  color:#e8dcc4; letter-spacing:.3em; }
-.band .en { position:absolute; left:66px; bottom:70px; font:600 24px/1 'SourceHanSans';
-  color:#8a7452; letter-spacing:.3em; }
 
-.info { position:absolute; left:462px; top:80px; width:530px; }
-.name { font:900 64px/1 'SourceHanSans'; color:var(--c-ink); letter-spacing:.1em; }
-.title { margin-top:14px; font:500 28px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.3em; }
-.divider { margin:24px 0 20px; width:72px; height:4px; background:var(--c-gold); }
-.contact { font:400 29px/1.8 'SourceHanSans'; color:var(--c-ink); }
-.contact b { font-weight:700; color:var(--c-muted); margin-right:18px; font-size:25px; }
-.foot { position:absolute; left:462px; right:48px; bottom:36px;
-  display:flex; justify-content:space-between; align-items:flex-end; }
-.qr { width:177px; height:177px; background:#fff; border:2px solid var(--c-gold);
+.mark { position:absolute; left:64px; top:60px; width:112px; height:112px; border-radius:50%;
+  border:2px solid var(--c-gold); color:var(--c-gold);
   display:flex; align-items:center; justify-content:center;
-  font:700 26px/1.4 'SourceHanSans'; color:var(--c-muted); text-align:center; }
-.foot .note { font:400 29px/1.9 'SourceHanSans'; color:var(--c-muted); width:292px;
-  padding-bottom:4px; }
+  font:700 50px/1 'MiSans'; }
+.info { position:absolute; left:64px; top:186px; width:520px; }
+.name { font:700 66px/1 'MiSans'; color:var(--c-ink); letter-spacing:.12em; }
+.title { margin-top:16px; font:400 28px/1 'MiSans'; color:var(--c-muted); letter-spacing:.32em; }
+.divider { margin:26px 0 22px; width:64px; height:4px; background:var(--c-gold); }
+.contact { font:400 28px/1.75 'MiSans'; color:var(--c-ink); }
+.contact b { font-weight:600; color:var(--c-muted); margin-right:16px; font-size:24px; }
+.foot { position:absolute; left:64px; bottom:44px; }
+.foot .note { font:400 29px/1.8 'MiSans'; color:var(--c-muted); }
 .foot .note span { white-space:nowrap; }
+.qr { position:absolute; right:40px; bottom:40px; width:177px; height:177px;
+  background:#fff; border:2px solid var(--c-gold);
+  display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.qr img { width:100%; height:100%; }
 </style></head>
 <body><div class="poster">
-  <div class="band">
-    <div class="mark">雾</div>
-    <div class="slogan">山雾之间<br>一杯日常</div>
-    <div class="en">SHANWU TEATOWN</div>
-  </div>
+  <div class="photo"><img src="img/brand-coffee-pexels-01.jpg" alt=""></div>
+  <div class="mark">雾</div>
   <div class="info">
     <div class="name">林深见</div>
     <div class="title">主理人 · 咖啡师</div>
@@ -56,6 +53,6 @@ html,body { margin:0; background:#fff; }
   </div>
   <div class="foot">
     <div class="note"><span>营业 09:00–21:00</span><br><span>周二 · 第二杯半价</span></div>
-    <div class="qr"><img src="img/qr.png" style="width:100%;height:100%" alt=""></div>
   </div>
+  <div class="qr"><img src="img/qr.png" alt=""></div>
 </div></body></html>

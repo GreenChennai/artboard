@@ -3,7 +3,7 @@
   <desc id="d">五问追问 → 选风格字体 → 素材抠图搜图 → 按护栏写 HTML → Playwright 导出 → 看图自检,最多两轮。</desc>
   <rect width="1200" height="240" rx="18" fill="#181109"/>
 
-  <g font-family="-apple-system,'PingFang SC',sans-serif" text-anchor="middle">
+  <g font-family="'Segoe UI','Microsoft YaHei','PingFang SC','Noto Sans SC',sans-serif" text-anchor="middle">
     <!-- 六步 -->
     <g>
       <rect x="34" y="52" width="160" height="104" rx="12" fill="#241a10" stroke="#b98a2e" stroke-width="1.5"/>
@@ -53,6 +53,6 @@
     </g>
   </g>
 
-  <text x="600" y="206" text-anchor="middle" font-family="-apple-system,'PingFang SC',sans-serif"
+  <text x="600" y="206" text-anchor="middle" font-family="'Segoe UI','Microsoft YaHei','PingFang SC','Noto Sans SC',sans-serif"
         font-size="18" fill="#8a7a62">动图:CSS 动画 → GIF/MP4(无缝循环,帧差校验) · 静图:整页截图 + 分块拼接 · 印刷:300dpi 直出</text>
 </svg>

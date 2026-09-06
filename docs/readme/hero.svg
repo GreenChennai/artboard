@@ -16,26 +16,25 @@
     <path d="M30 352v-22M8 330h22"/><path d="M1170 352v-22M1192 330h-22"/>
   </g>
 
-  <!-- 标题区(左 58%) -->
-  <g transform="translate(64 56)">
-    <text x="0" y="0" font-family="ui-monospace,Menlo,monospace" font-size="19" letter-spacing="6" fill="#b98a2e">AGENT SKILL · HTML 海报工作室</text>
-    <text x="-4" y="92" font-family="-apple-system,'Segoe UI','PingFang SC',sans-serif" font-size="82" font-weight="800" fill="#241a10">artboard</text>
-    <text x="2" y="146" font-family="-apple-system,'Segoe UI','PingFang SC',sans-serif" font-size="27" fill="#4a3a26">把文案与照片,画成印刷级的设计图。</text>
-    <text x="2" y="192" font-family="-apple-system,'Segoe UI','PingFang SC',sans-serif" font-size="21" fill="#8a7a62">小红书封面 · 电商主图 · 主 KV · 数据长图 · 名片 · 三折页 · 易拉宝 · PPT 页</text>
-    <g font-family="ui-monospace,Menlo,monospace" font-size="18" fill="#6d4326">
-      <rect x="0" y="220" width="196" height="40" rx="20" fill="none" stroke="#b98a2e" stroke-width="1.5"/>
-      <text x="26" y="246">PNG·GIF·MP4·PDF</text>
-      <rect x="212" y="220" width="150" height="40" rx="20" fill="none" stroke="#b98a2e" stroke-width="1.5"/>
-      <text x="240" y="246">145 风格方向</text>
-      <rect x="378" y="220" width="150" height="40" rx="20" fill="none" stroke="#b98a2e" stroke-width="1.5"/>
-      <text x="404" y="246">10 画布预设</text>
+  <!-- 标题区(限宽 660,右栏 756 起) -->
+  <g transform="translate(64 52)" font-family="'Segoe UI','Microsoft YaHei','PingFang SC','Noto Sans SC',sans-serif">
+    <text x="0" y="0" font-family="ui-monospace,'Cascadia Mono',Consolas,monospace" font-size="18" letter-spacing="5" fill="#b98a2e">AGENT SKILL · HTML 海报工作室</text>
+    <text x="-3" y="86" font-size="76" font-weight="800" fill="#241a10">artboard</text>
+    <text x="2" y="138" font-size="26" fill="#4a3a26">把文案与照片,画成印刷级的设计图。</text>
+    <text x="2" y="182" font-size="20" fill="#8a7a62">小红书封面 · 电商主图 · 主 KV · 数据长图</text>
+    <text x="2" y="212" font-size="20" fill="#8a7a62">名片 · 三折页 · 易拉宝 · PPT 页 · GIF 动图</text>
+    <g font-family="ui-monospace,'Cascadia Mono',Consolas,monospace" font-size="18" fill="#6d4326">
+      <rect x="0" y="236" width="196" height="40" rx="20" fill="none" stroke="#b98a2e" stroke-width="1.5"/>
+      <text x="26" y="262">PNG·GIF·MP4·PDF</text>
+      <rect x="212" y="236" width="150" height="40" rx="20" fill="none" stroke="#b98a2e" stroke-width="1.5"/>
+      <text x="240" y="262">145 风格方向</text>
+      <rect x="378" y="236" width="150" height="40" rx="20" fill="none" stroke="#b98a2e" stroke-width="1.5"/>
+      <text x="404" y="262">10 画布预设</text>
     </g>
-    <text x="0" y="298" font-family="ui-monospace,Menlo,monospace" font-size="18" fill="#a08b6c">五问追问 → 选风格 → 素材抠图 → 写 HTML → Playwright 出图 → 看图自检</text>
   </g>
 
-  <!-- 右侧:mini 画布(海报微缩)+ 折叠卡 -->
-  <g transform="translate(756 52)">
-    <!-- 裁切标记 -->
+  <!-- 右侧:mini 画布(海报微缩) -->
+  <g transform="translate(756 52)" font-family="'Segoe UI','Microsoft YaHei',sans-serif">
     <g stroke="#c9b389" stroke-width="1.6">
       <path d="M-8 -8h16M0 -8v16"/><path d="M372 -8h-16M380 -8v16"/>
       <path d="M-8 308h16M0 300v16"/><path d="M372 308h-16M380 300v16"/>
@@ -43,7 +42,7 @@
     <rect x="14" y="10" width="352" height="282" fill="#181109" stroke="#241a10"/>
     <rect x="14" y="10" width="352" height="120" fill="#2a1e13"/>
     <circle cx="74" cy="70" r="26" fill="none" stroke="#e0a458" stroke-width="2"/>
-    <text x="74" y="79" text-anchor="middle" font-family="-apple-system,'PingFang SC',sans-serif" font-size="26" font-weight="700" fill="#e0a458">雾</text>
+    <text x="74" y="79" text-anchor="middle" font-size="26" font-weight="700" fill="#e0a458">雾</text>
     <rect x="126" y="52" width="190" height="16" rx="3" fill="#f2e6cf"/>
     <rect x="126" y="82" width="130" height="10" rx="3" fill="#8a7452"/>
     <rect x="44" y="160" width="240" height="42" rx="4" fill="#f2e6cf"/>

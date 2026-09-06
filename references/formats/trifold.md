@@ -26,6 +26,9 @@
 ## 字号阶(1754 宽画布)
 封面主标 110–150px / 栏内标题 44–56px / 正文 26–30px / 封底联系方式 26–32px / 页脚 20px。
 
+## 参考案例
+[assets/cases/trifold-case.html](../../assets/cases/trifold-case.html) · 双面:[trifold-case-back.html](../../assets/cases/trifold-case-back.html)
+
 ## 调性禁则
 1. 封面只放:logo + 主标 + 一句副标,禁止把内页内容挤上封面。
 2. 文字/关键图形禁跨折线;每栏独立成篇。

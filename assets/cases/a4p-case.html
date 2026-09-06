@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>a4p-case · 秋日咖啡品鉴会(A4 海报)</title>
+<!-- 素材:materials/promo-coffee-clean/promo-coffee-clean-pexels-02.jpg(Pexels License / Lood Goosen)
+     A4 品类规范见 references/formats/a4p.md:1240×1754,scale 2 = 300dpi -->
+<style>
+@font-face { font-family:'SourceHanSerif'; src:url('fonts/NotoSerifSC-VF.ttf') format('truetype');
+  font-weight:200 900; font-display:block; }
+@font-face { font-family:'SourceHanSans'; src:url('fonts/NotoSansSC-VF.ttf') format('truetype');
+  font-weight:100 900; font-display:block; }
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { margin:0; background:#fff; }
+.poster { position:relative; width:1240px; height:1754px; overflow:hidden;
+  background:radial-gradient(120% 70% at 18% 8%, #fffdf8 0%, #f7f1e6 55%, #ead9c2 100%); }
+:root { --c-ink:#241a10; --c-brown:#6d4326; --c-gold:#b98a2e; --c-amber:#d98e3a; --c-muted:#8a7a62; }
+
+.kicker { position:absolute; top:96px; left:0; right:0; text-align:center;
+  font:500 28px/1 'SourceHanSans'; color:var(--c-brown); letter-spacing:.62em; text-indent:.62em; }
+.title { position:absolute; top:170px; left:0; right:0; text-align:center;
+  font:900 128px/1.22 'SourceHanSerif'; color:var(--c-ink); letter-spacing:.06em; }
+.title .thin { font-weight:600; }
+.sub { position:absolute; top:520px; left:0; right:0; text-align:center;
+  font:400 32px/1.7 'SourceHanSans'; color:var(--c-muted); }
+
+.hero { position:absolute; top:640px; left:130px; right:130px; height:640px;
+  border-radius:14px; overflow:hidden;
+  box-shadow:0 24px 60px rgba(36,26,16,.22); }
+.hero img { width:100%; height:100%; object-fit:cover; object-position:center 30%; }
+.hero .tag { position:absolute; left:36px; bottom:36px; background:rgba(24,17,9,.82);
+  color:#f2e6cf; font:500 24px/1 'SourceHanSans'; letter-spacing:.22em;
+  padding:16px 26px; border-radius:8px; }
+
+.info { position:absolute; top:1360px; left:130px; right:130px;
+  display:flex; gap:0; border-top:3px solid var(--c-ink); border-bottom:1px solid rgba(36,26,16,.25); }
+.info .cell { flex:1; padding:34px 10px 30px; text-align:center; }
+.info .cell + .cell { border-left:1px solid rgba(36,26,16,.18); }
+.info .k { font:500 24px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.4em; text-indent:.4em; }
+.info .v { margin-top:18px; font:800 34px/1.4 'SourceHanSans'; color:var(--c-ink); }
+.info .v small { font:500 24px/1.4 'SourceHanSans'; color:var(--c-brown); }
+
+.cta { position:absolute; bottom:118px; left:0; right:0; text-align:center;
+  font:700 30px/1 'SourceHanSans'; color:var(--c-brown); letter-spacing:.14em; }
+.cta b { color:var(--c-amber); }
+.foot { position:absolute; bottom:56px; left:0; right:0; text-align:center;
+  font:400 20px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.18em; }
+</style></head>
+<body><div class="poster">
+  <div class="kicker">山雾茶町 · 秋季限定</div>
+  <div class="title">秋日咖啡<span class="thin">品鉴会</span></div>
+  <div class="sub">六款产地豆 · 手冲与奶咖双线品鉴 · 主理人带你喝懂一杯</div>
+
+  <div class="hero">
+    <img src="img/promo-coffee-clean-pexels-02.jpg" alt="">
+    <div class="tag">现场 · 金沫飞溅冲演示</div>
+  </div>
+
+  <div class="info">
+    <div class="cell"><div class="k">时间</div><div class="v">10.21 <small>周六</small></div></div>
+    <div class="cell"><div class="k">地点</div><div class="v">山雾茶町 <small>二号店</small></div></div>
+    <div class="cell"><div class="k">席位</div><div class="v">限 16 席</div></div>
+    <div class="cell"><div class="k">费用</div><div class="v">¥88 <small>/ 位</small></div></div>
+  </div>
+
+  <div class="cta">扫码预约席位 · 到店出示本海报立减 <b>¥10</b></div>
+  <div class="foot">SHANWU TEATOWN · 杭州市西湖区雾山路 88 号</div>
+</div></body></html>

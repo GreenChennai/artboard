@@ -23,6 +23,9 @@
 - **底对齐**:全部信息沉底,上 2/3 留白放 logo(高级感)。
 - **居中仪式感**:居中排版,适合极简风。
 
+## 参考案例
+[assets/cases/card-case.html](../../assets/cases/card-case.html) · 双面:[card-case-back.html](../../assets/cases/card-case-back.html)
+
 ## 调性禁则
 1. 字体 ≤2 款;整卡元素 ≤5 组(姓名/职位/联系方式/logo/二维码)。
 2. 禁 7pt 以下任何文字;禁满铺重底纹压字。

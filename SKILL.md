@@ -104,6 +104,7 @@ python $S/qr.py decode <图片>                                                 
 ```
 
 - 项目落盘:`E:\平日资料\GitHub\artboard-studio\<slug>\`(src/ + export/)。
+- **瘦身影子(默认)**:src/fonts 与 src/vendor 是指向 Skill 资产库的目录联接,HTML 用相对引用,批量制作零拷贝;交付迁移用 `pack.py` 穿透收集打包(自包含 zip,HTML 引用自动改写);`--embed-fonts` 则真拷贝(体积大,仅单件交付用)。
 - 环境变量:`ARTBOARD_WPI`(WPI 根目录)、`ARTBOARD_FFMPEG`(ffmpeg.exe)、
   `ARTBOARD_STUDIO`(工作室目录)——均有默认值,见各脚本头注释。
 

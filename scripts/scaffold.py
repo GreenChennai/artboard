@@ -15,6 +15,7 @@ import argparse
 import json
 import os
 import shutil
+import subprocess
 import sys
 
 from _config import cfg
@@ -44,14 +45,28 @@ SIZES = {
 VF_HINT = {"NotoSansSC-VF": True, "NotoSerifSC-VF": True}
 
 
-def font_face_block(family: str, files: list[str]) -> str:
-    f = files[0]
-    url = f"fonts/{f}"
-    fmt = "truetype" if f.lower().endswith((".ttf", ".ttc")) else \
-        "opentype" if f.lower().endswith(".otf") else "woff2"
-    weight = "100 900" if any(k in f for k in VF_HINT) else "normal"
-    return (f"@font-face {{\n  font-family: '{family}';\n  src: url('{url}') format('{fmt}');\n"
+WEIGHT_BY_FILE = {
+    "Thin": "200", "Light": "300", "Regular": "400", "Medium": "500",
+    "Semibold": "600", "Bold": "700", "ExtraBold": "800", "Heavy": "900",
+    "Black": "900",
+}
+
+
+def font_face_block(family: str, files: list[str], url_base: str = "fonts/") -> str:
+    """多文件逐一声明 @font-face(按文件名匹配字重);可变字体仍用全范围。"""
+    blocks = []
+    for f in files:
+        url = url_base + f
+        fmt = ("truetype" if f.lower().endswith((".ttf", ".ttc"))
+               else "opentype" if f.lower().endswith(".otf") else "woff2")
+        if any(k in f for k in VF_HINT):
+            weight = "100 900"
+        else:
+            weight = next((w for k, w in WEIGHT_BY_FILE.items() if k in f), "normal")
+        blocks.append(
+            f"@font-face {{\n  font-family: '{family}';\n  src: url('{url}') format('{fmt}');\n"
             f"  font-weight: {weight};\n  font-display: block;\n}}")
+    return "\n".join(blocks)
 
 
 def main() -> int:
@@ -64,6 +79,8 @@ def main() -> int:
     p.add_argument("--size", default="xhs", choices=list(SIZES))
     p.add_argument("--fonts", default="source-han-sans", help="逗号分隔的 fonts/ 目录名")
     p.add_argument("--force", action="store_true", help="允许写入已存在项目")
+    p.add_argument("--embed-fonts", action="store_true", dest="embed_fonts",
+                   help="字体拷贝进项目(自包含);默认绝对路径引用 Skill 字体库省空间")
     args = p.parse_args()
 
     proj = os.path.join(STUDIO, args.slug)
@@ -73,8 +90,13 @@ def main() -> int:
         return 1
     os.makedirs(os.path.join(proj, "src"), exist_ok=True)
     os.makedirs(os.path.join(proj, "export"), exist_ok=True)
-    os.makedirs(os.path.join(proj, "src", "fonts"), exist_ok=True)
-    os.makedirs(os.path.join(proj, "src", "vendor"), exist_ok=True)
+
+    # --embed-fonts:把字体拷进项目(自包含,迁移友好);默认绝对路径引用 Skill
+    # 字体库,批量制作时省空间。打包交付用 scripts/pack.py 收集。
+    embed = args.embed_fonts
+    if embed:
+        os.makedirs(os.path.join(proj, "src", "fonts"), exist_ok=True)
+        os.makedirs(os.path.join(proj, "src", "vendor"), exist_ok=True)
 
     faces, font_vars = [], []
     for fam_dir in [s.strip() for s in args.fonts.split(",") if s.strip()]:
@@ -82,18 +104,41 @@ def main() -> int:
         if not os.path.isdir(src_dir):
             print(f"△ 字体目录不存在,跳过: {fam_dir}", file=sys.stderr)
             continue
-        files = [f for f in os.listdir(src_dir) if f.lower().endswith(FONT_EXTS)]
-        for f in files:
-            shutil.copy2(os.path.join(src_dir, f),
-                         os.path.join(proj, "src", "fonts", f))
+        files = sorted(f for f in os.listdir(src_dir) if f.lower().endswith(FONT_EXTS))
         family = fam_dir.replace("-", " ").title().replace(" ", "")
-        faces.append(font_face_block(family, files))
+        faces.append(font_face_block(family, files, f"fonts/{fam_dir}/"))
         font_vars.append(f"  --font-{fam_dir.replace('-', '-')}: '{family}';")
 
-    for js in ("echarts.min.js", "gsap.min.js"):
-        src = os.path.join(VENDOR_DIR, js)
-        if os.path.isfile(src):
-            shutil.copy2(src, os.path.join(proj, "src", "vendor", js))
+    if embed:
+        # 自包含:字体/vendor 真拷贝进项目
+        os.makedirs(os.path.join(proj, "src", "fonts"), exist_ok=True)
+        os.makedirs(os.path.join(proj, "src", "vendor"), exist_ok=True)
+        for fam_dir in [s.strip() for s in args.fonts.split(",") if s.strip()]:
+            src_dir = os.path.join(FONTS_DIR, fam_dir)
+            if not os.path.isdir(src_dir):
+                continue
+            for f in os.listdir(src_dir):
+                if f.lower().endswith(FONT_EXTS):
+                    shutil.copy2(os.path.join(src_dir, f),
+                                 os.path.join(proj, "src", "fonts", f))
+        for js in ("echarts.min.js", "gsap.min.js"):
+            src = os.path.join(VENDOR_DIR, js)
+            if os.path.isfile(src):
+                shutil.copy2(src, os.path.join(proj, "src", "vendor", js))
+    else:
+        # 瘦身影子:src/fonts 与 src/vendor 建为指向 Skill 资产库的 NTFS 目录联接。
+        # 相对引用 "fonts/…" 经 OS 穿透到 Skill 库——http 静态服务与 file:// 双通。
+        # (file:/// 绝对引用在 http 页面会被 Chromium 拦截,故必须用联接。)
+        for link_name, target in (("fonts", FONTS_DIR), ("vendor", VENDOR_DIR)):
+            link = os.path.join(proj, "src", link_name)
+            if os.path.lexists(link) and not os.path.isdir(link):
+                os.remove(link)
+            if not os.path.lexists(link):
+                r = subprocess.run(["cmd", "/c", "mklink", "/J", link, target],
+                                   capture_output=True)
+                if r.returncode != 0:
+                    print(f"△ 联接创建失败({link_name}): "
+                          f"{r.stderr.decode(errors='ignore')[:120]}", file=sys.stderr)
 
     size = SIZES[args.size]
     css_size = (f"width: {size['w']}px;" if size["h"] else
@@ -109,6 +154,7 @@ def main() -> int:
 
     meta = {"slug": args.slug, "size": args.size, "width": size["w"],
             "height": size["h"], "fonts": args.fonts,
+            "embed_fonts": embed,
             "created_by": "artboard.scaffold"}
     with open(os.path.join(proj, "project.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)

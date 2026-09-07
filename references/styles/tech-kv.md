@@ -1,7 +1,7 @@
 # 科技发布 KV(tech-kv)
 
 > 一句话定位:产品发布会/版本更新主视觉,深底、克制、高级,"少即是多"的代言人。
-> 光效原理研究自 Art 视觉特效组件(无 LICENSE,原理参考后自写)。
+> 来源统一见仓库 README「致谢」。
 
 ## 画布与安全边距
 - 尺寸:kv 预设(1920×1080,scale 2);衍生 vertical(1080×1920)社媒竖版。
@@ -55,6 +55,3 @@
 [assets/cases/tech-kv-case.html](../../assets/cases/tech-kv-case.html)
 balanced 原型:大版本号 + 光幕网格底 + 3 张玻璃特性卡 + accent 胶囊。
 
-## 来源与灵感
-- Art 视觉特效实验室(无 LICENSE):光晕/星云/网格的**原理**参考,代码自写。
-- html-anything deck 模板(Apache-2.0):深色发布的排版密度参考。

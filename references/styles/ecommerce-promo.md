@@ -1,7 +1,7 @@
 # 电商大促(ecommerce-promo)
 
 > 一句话定位:大促主图/推广横幅,价格与紧迫感优先,声音要"炸"。
-> 版式思想参考 html-anything 的 poster-hero 分区范式(Apache-2.0,结构思想重述)。
+> 来源统一见仓库 README「致谢」。
 
 ## 画布与安全边距
 - 尺寸:square(1080×1080)主图 / banner(1920×600)横幅 / vertical(1080×1920)详情头图。
@@ -61,6 +61,3 @@
 [assets/cases/ecommerce-promo-case.html](../../assets/cases/ecommerce-promo-case.html)
 square 大字报原型:超级促销词 + 价格锚 + 爆炸贴 + 优惠券条。
 
-## 来源与灵感
-- html-anything `poster-hero` 模板(Apache-2.0):上留白/中主张/下要点的分区思想。
-- 爆炸贴、票券等组件为常见平面电商语言,effects.md 配方自写。

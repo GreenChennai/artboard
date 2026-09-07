@@ -11,9 +11,10 @@
 |---|---|---|---|
 | 1 | Pexels API(`ARTBOARD_PEXELS_KEY`) | 免费商用免署名,最干净 | 无 |
 | 1 | Pixabay API(`ARTBOARD_PIXABAY_KEY`),`--image-type illustration/vector` 可搜插画 | 免费商用免署名(要求展示来源→CREDITS.md 履行) | 无 |
-| 2 | 爬虫兜底:bing / baidu / **huaban / iconfont / pinterest**(需 Cookie,可用 `tools/cookie-extension` 浏览器插件抓取后填进 config.json 的 `*_cookie`) | **不确定** | **文件名自动加前缀 `版权风险-`** |
+| 2 | 爬虫兜底:bing / baidu / **huaban / iconfont / pinterest**(需 Cookie,可用 `tools/cookie-extension` 浏览器插件抓取后填进 config.json 的 `*_cookie`) / **miankoutu**(免抠 PNG 聚合站,签名 API 免 Cookie) | **不确定** | **文件名自动加前缀 `版权风险-`** |
 
-> Cookie 插件(MV3,Edge/Chrome 通用):`tools/cookie-extension/` → 浏览器「加载解压缩的扩展」→ 登录目标站 → 点插件复制片段 → 粘贴进 config.json。Cookie 只存本机。iconfont 是矢量/图标源(`--source iconfont`);huaban/pinterest 用 `--source` 显式指定,不进 auto 通道。
+> Cookie 插件(MV3,Edge/Chrome 通用):`tools/cookie-extension/` → 浏览器「加载解压缩的扩展」→ 登录目标站 → 点插件复制片段 → 粘贴进 config.json。Cookie 只存本机。iconfont 是矢量/图标源(`--source iconfont`);huaban/pinterest/miankoutu 用 `--source` 显式指定,不进 auto 通道。
+> **miankoutu 通道**:`--source miankoutu` 直搜免抠 PNG(透明底,适合产品/吉祥物贴纸),搜索免 Cookie(内置签名),下载按源站自动带 Referer;聚合源无统一授权,保留风险前缀;版权禁词会静默返回空。
 
 > Openverse 已于 2026-09-06 经用户决定移除(实测本机网络直连超时)。
 > 两把图库 key 已配置为用户级环境变量,新会话自动生效。

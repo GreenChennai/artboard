@@ -14,13 +14,17 @@ description: 用 HTML/CSS 绘制平面设计级图片并导出成品的海报工
 Step 0 预检     scripts/preflight.py   — FATAL 停;ffmpeg 缺失且要动图 → 先问用户
 Step 1 追问+路由 references/intake.md   — 五问(用途/尺寸/风格/配色/素材)打包问完带推荐;
                                           B/C 模式只问用途+尺寸;用户明说「直接做」才可跳过
+Step 1.5 设计简报  输出「生图式提示词」(一句话画面 + 风格/配色/字体/素材清单)
+                                          — 与 AI 生图习惯一致:先看到"要画什么"再动工
+                                          — 用户确认或说「直接做」即出图;此后改稿不重跑,见 Step 6
 Step 2 选风格   下表 → references/styles/<slug>.md
 Step 3 选字体   fonts/README.md 两级筛查 → ≤3 款
 Step 4 写图     scripts/scaffold.py 建项目;电商/食品/吉祥物类先走 Step 4.5
 Step 4.5 素材   references/materials.md — 用户图抠图(cutout.py)/ 图库搜图(fetch_asset.py)/
                                           图片内容拿不准 → VQA 解读(config.json vqa_path)
 Step 5 导出     scripts/export.py(WPI)→ 失败走 export_fallback.py(仅 PNG)
-Step 6 自检     Read 导出图 → 过 7 条清单 → 修复重导(≤2 轮)
+Step 6 自检+改稿 Read 导出图 → 过自检清单 → 修复重导(≤2 轮);
+                用户不满意 → **不重新生成**:按用户指定部位改现有 HTML(同 AI 生图的局部重绘)
 Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材并提醒更换
 ```
 
@@ -73,6 +77,8 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 素材分册 | references/materials.md | 找图(Pexels/Pixabay+爬虫)/抠图/版权风险机制/产品图红线 |
 | 需求追问 | references/intake.md | 开工前五问(用途/尺寸/风格/配色/素材),防盲做 |
 | 动效分册(M2) | references/animation.md | 十二法则/M3 缓动 token/循环规范/导出命令 |
+| 排版细则 | references/typography-rules.md | 断行孤字/层级/留白/对齐/数字 硬规则清单 |
+| 标题手法库 | references/title-fx.md | 多重描边/剪切蒙版/模糊/重组 错位 |
 | 新增风格指南 | references/style-guide.md | 30 分钟登记一个新风格 |
 | 风格气质总表 | references/styles-catalog.md | 145 方向速查,模糊需求匹配 + 原子混搭 |
 | 品类规范(名片/易拉宝/A4/三折页/PPT 页) | references/formats/*.md | 印刷尺寸/字号下限/折线/盲区/多页组织 |

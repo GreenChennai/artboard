@@ -152,8 +152,47 @@ def main() -> int:
         "" if packs else "人物/吉祥物插画兜底不可用")
 
     emit(results)
-    fatal = any(r["level"] == "FATAL" for r in results)
-    print("== 预检" + ("未通过,存在 FATAL 项 ==" if fatal else "通过,可开工 =="))
+    fatal = [r for r in results if r["level"] == "FATAL"]
+    warns = [r for r in results if r["level"] == "WARN"]
+    pass_n = len(results) - len(fatal) - len(warns)
+
+    # 环境自检报告(人类可读)
+    print()
+    print("═" * 62)
+    print(" artboard 环境自检报告")
+    print("═" * 62)
+    print(f"  就绪  {pass_n:>2} 项   △ 待补 {len(warns):>2} 项   ✗ 阻断 {len(fatal):>2} 项")
+    if fatal:
+        for r in fatal:
+            print(f"  ✗ {r['check']}: {r['detail']}")
+            if r["hint"]:
+                print(f"     ↳ {r['hint']}")
+    if warns:
+        for r in warns:
+            print(f"  △ {r['check']}: {r['detail']}")
+            if r["hint"]:
+                print(f"     ↳ {r['hint']}")
+    print("─" * 62)
+    # 能力结论(按任务类型)
+    def has(name):
+        return any(r["check"] == name and r["level"] == "PASS" for r in results)
+    caps = []
+    caps.append(("静态海报", not fatal))
+    caps.append(("动图 GIF", not fatal and (has("ffmpeg") or True)))  # Pillow 回退可用
+    caps.append(("MP4 视频", has("ffmpeg")))
+    caps.append(("抠图/贴纸", has("rembg(抠图)")))
+    caps.append(("授权图库", has("图库 key")))
+    caps.append(("二维码", True))
+    caps.append(("VQA 看图", has("VQA")))
+    line = " · ".join(f"{'✓' if ok else '✗'}{name}" for name, ok in caps)
+    print(f"  能力: {line}")
+    if fatal:
+        print("  结论: 存在阻断项,先按上面提示处理后开工。")
+    elif warns:
+        print("  结论: 可开工;待补项按需处理(不阻断当前任务)。")
+    else:
+        print("  结论: 环境全就绪,可直接开工。")
+    print("═" * 62)
     return 1 if fatal else 0
 
 

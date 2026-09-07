@@ -235,6 +235,56 @@ def search_huaban(q: str, limit: int) -> list[dict]:
              "risk": True}]
 
 
+MK_SIGN_KEY = "d9fd3ec394"
+MK_REFERER_MAP = (("huaban.com", "https://huaban.com/"),
+                  ("aicdn.com", "https://huaban.com/"),
+                  ("duitang.com", "https://www.duitang.com/"),
+                  ("sinaimg.cn", "https://weibo.com/"))
+
+
+def _mk_headers(body_params: dict) -> tuple[str, dict]:
+    """miankoutupian(soutushenqi)签名:参数字典序拼串 + 固定盐 MD5。"""
+    import hashlib
+    import time
+    pv = {k: str(v) for k, v in body_params.items() if v not in (None, "")}
+    base = "&".join(f"{k}={pv[k]}" for k in sorted(pv)) + f"&key={MK_SIGN_KEY}"
+    sign = __import__("hashlib").md5(base.encode("utf-8")).hexdigest().upper()
+    ts = int(time.time())
+    hdr = {"timestamp": f"{ts}{(ts ^ 334) % 1000:03d}",
+           "Content-Type": "application/x-www-form-urlencoded"}
+    body = "&".join(f"{k}={urllib.parse.quote(pv[k], safe='')}" for k in pv) + f"&sign={sign}"
+    return body, hdr
+
+
+def search_miankoutu(q: str, limit: int) -> list[dict]:
+    """免抠图片站 miankoutupian.com(搜图神器系):JSON API 逆向,
+    搜索无需 Cookie;图片为聚合源(huaban/sinaimg 等),按域带 Referer 下载。"""
+    body, hdr = _mk_headers({"page": 1, "loose": "true", "page_size": max(limit, 5),
+                             "search_word": q, "scene_type": 13, "is_large_scale": -1})
+    try:
+        raw = http_get("https://wallpaper.soutushenqi.com/api/v1/avoid_cut/list",
+                       hdr, timeout=20, data=body).decode("utf-8", "ignore")
+        items = json.loads(raw).get("data", []) or []
+    except Exception as exc:
+        return [{"source": "miankoutu", "url": "", "page_url": "", "author": "",
+                 "license": f"接口失败({type(exc).__name__}):换词重试;禁词会返回空",
+                 "risk": True}]
+    out = []
+    for it in items[:limit]:
+        url = (it.get("largeUrl") or "").replace("http://", "https://", 1)
+        if not url:
+            continue
+        out.append({"source": "miankoutu", "url": url,
+                    "page_url": f"https://miankoutupian.com/image/{it.get('id','')}",
+                    "author": (it.get("detailInfo") or "免抠图源")[:40],
+                    "license": "不确定(聚合搜索结果,源站不一,商用逐图确认)",
+                    "risk": True,
+                    "dl_headers": {"Referer": next(
+                        (v for d, v in MK_REFERER_MAP if d in url),
+                        "https://miankoutupian.com/")}})
+    return out
+
+
 def search_clipboard(q: str, limit: int) -> list[dict]:
     """剪贴板入库:读取 cookie-extension「导出本页素材」生成的 JSON。"""
     try:
@@ -273,6 +323,7 @@ SOURCES = {
     "iconfont": lambda q, l, o, t: search_iconfont(q, l),
     "pinterest": lambda q, l, o, t: search_pinterest(q, l),
     "clipboard": lambda q, l, o, t: search_clipboard(q, l),
+    "miankoutu": lambda q, l, o, t: search_miankoutu(q, l),
 }
 AUTO_ORDER = ["pexels", "pixabay", "bing", "baidu"]
 
@@ -308,7 +359,7 @@ def download_one(c: dict, theme_dir: str, base: str) -> tuple[str, str]:
         if not url:
             continue
         try:
-            data = http_get(url, timeout=30)
+            data = http_get(url, timeout=30, headers=c.get("dl_headers") or None)
             if len(data) < 3000:
                 raise RuntimeError(f"过小 {len(data)}B")
             return finalize(f"{base}{sniff_ext(data)}", data), ""
@@ -316,7 +367,8 @@ def download_one(c: dict, theme_dir: str, base: str) -> tuple[str, str]:
             for curl_proxy in (None, cfg("proxy") or None):  # 直连优先,代理其次
                 tmp = os.path.join(theme_dir, base + ".bin")
                 try:
-                    code = curl_get(url, out_path=tmp, proxy=curl_proxy, timeout=45)
+                    code = curl_get(url, out_path=tmp, proxy=curl_proxy, timeout=45,
+                                    headers=c.get("dl_headers") or None)
                     if (os.path.isfile(tmp) and os.path.getsize(tmp) > 3000
                             and code.decode(errors="ignore").startswith(("2", "3"))):
                         data = open(tmp, "rb").read()

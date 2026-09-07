@@ -277,6 +277,73 @@ conic + radial 混合,科技底纹。
 
 ---
 
+## 七、文字特效九式(全部假设标题带 data-text 属性;导出安全见 title-fx.md)
+
+### tx-shadow-drop 下拉式模糊投影
+```css
+.tx-drop { text-shadow:0 12px 28px rgba(0,0,0,.35); }
+/* 透明填充字改用: filter:drop-shadow(0 12px 28px rgba(0,0,0,.35)); */
+```
+
+### tx-glow 荧光
+```css
+.tx-glow { color:#fff; text-shadow:0 0 7px #fff, 0 0 10px #fff, 0 0 21px #fff,
+  0 0 42px var(--c-accent), 0 0 82px var(--c-accent), 0 0 102px var(--c-accent); }
+```
+灯芯白色小模糊 + 主色逐级大模糊;**仅深底可用**(浅底发灰)。
+
+### tx-grad-shadow 渐变投影
+text-shadow 不支持渐变——伪元素垫层:
+```css
+.tx-gs { position:relative; z-index:1; }
+.tx-gs::before { content:attr(data-text); position:absolute; left:.04em; top:.04em;
+  z-index:-1; color:var(--c-primary); }
+```
+两层字号字重必须严格一致。
+
+### tx-outline 轮廓(空心字)
+```css
+.tx-outline { color:transparent; -webkit-text-stroke:2px var(--c-ink); }
+```
+中文细体配 `paint-order:stroke fill`;杂乱背景上加半透明底色块。
+
+### tx-chip 文字背景块
+```css
+.tx-chip { display:inline; background:var(--c-ink); color:#fff;
+  padding:.08em .25em; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
+```
+多行断开逐行补块;行高 ≥1.6。
+
+### tx-stroke 描边
+见 title-fx.md 第一节(paint-order 方案/伪元素多层方案/阴影兜底)。
+
+### tx-knockout 镂空(透明字露底图)
+```css
+.tx-knockout { background:url(img/hero.jpg) center/cover;
+  -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:#888; }
+```
+字内必须"有东西可露";真挖洞露页面背景用 `mix-blend-mode:screen`(黑底白字)。
+
+### tx-neon 霓虹
+```css
+.tx-neon { color:#fff; border:2px solid #fff; border-radius:8px; padding:.2em .5em;
+  text-shadow:0 0 7px #fff, 0 0 14px var(--c-accent), 0 0 34px var(--c-accent);
+  box-shadow:0 0 8px #fff, inset 0 0 8px #fff, 0 0 24px var(--c-accent), inset 0 0 24px var(--c-accent); }
+```
+灯管=描边+内外发光;暗底专属;flicker 动画导出时禁用定格。
+
+### tx-glitch 故障风
+```css
+.tx-glitch { position:relative; color:var(--c-ink); }
+.tx-glitch::before, .tx-glitch::after { content:attr(data-text); position:absolute; left:0; top:0; }
+.tx-glitch::before { color:var(--c-ink); text-shadow:-2px 0 #f0f;
+  clip-path:inset(0 0 55% 0); transform:translateX(-3px); }
+.tx-glitch::after  { color:var(--c-ink); text-shadow:2px 0 #0ff;
+  clip-path:inset(55% 0 0 0); transform:translateX(3px); }
+```
+【硬】**把"抖动瞬间"写死为默认态**(不写 clip-path:inset(0 0 0 0) 的普通态);RGB 偏移 ≤4px。
+
 ## 附:导出适配注意
 
 1. `backdrop-filter` 在无头 Chromium 可用,但玻璃层背后必须有实际色块,纯白底上等于隐身。

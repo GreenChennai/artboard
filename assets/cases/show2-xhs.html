@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>show2-xhs · 栗食记 早餐误区</title>
+<!-- 素材:materials/show2-breakfast(Pexels License)。规范:styles/xhs-cover.md dense 知识卡 -->
+<style>
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Regular.ttf') format('truetype'); font-weight:400; font-display:block; }
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Semibold.ttf') format('truetype'); font-weight:600; font-display:block; }
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Bold.ttf') format('truetype'); font-weight:700; font-display:block; }
+@font-face { font-family:'LxgwWenKai'; src:url('fonts/LXGWWenKai-Regular.ttf') format('truetype');
+  font-weight:normal; font-display:block; }
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { margin:0; background:#fff; }
+.poster { position:relative; width:1080px; height:1440px; overflow:hidden;
+  background:radial-gradient(130% 80% at 80% 0%, #f2f5e8 0%, #f0f2e4 45%, #e4e8d4 100%); }
+:root { --c-ink:#333a26; --c-olive:#6b7c3e; --c-accent:#d97b29; --c-muted:#8b9070; }
+
+.fx-noise { position:absolute; inset:0; opacity:.05; mix-blend-mode:multiply; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+.sticker { position:absolute; top:52px; left:60px; background:var(--c-accent); color:#fff;
+  font:700 26px/1 'MiSans'; letter-spacing:.14em; padding:14px 26px; border-radius:12px;
+  transform:rotate(-2.5deg); box-shadow:0 0 0 5px #fff, 0 8px 18px rgba(51,58,38,.2); }
+
+.hero { position:absolute; top:150px; left:60px; right:60px;
+  display:flex; gap:40px; align-items:center; }
+.hero .photo { width:400px; height:400px; border-radius:24px; overflow:hidden; flex:none;
+  box-shadow:0 18px 44px rgba(51,58,38,.25); transform:rotate(2deg); }
+.hero .photo img { width:100%; height:100%; object-fit:cover; }
+.hero .tt { flex:1; }
+.hero .kicker { font:600 24px/1 'MiSans'; color:var(--c-olive); letter-spacing:.34em; }
+.hero h1 { margin-top:20px; font:700 92px/1.18 'MiSans'; color:var(--c-ink); }
+.hero h1 .hl { background:linear-gradient(transparent 58%, #f0c14b 58%); padding:0 4px; }
+.hero .who { margin-top:22px; font:400 26px/1 'LxgwWenKai'; color:var(--c-muted); }
+
+.list { position:absolute; top:660px; left:60px; right:60px; bottom:170px;
+  display:flex; flex-direction:column; justify-content:space-between; }
+.item { display:flex; gap:26px; align-items:flex-start; background:#fff;
+  border-radius:20px; padding:30px 36px; box-shadow:0 6px 20px rgba(51,58,38,.08); }
+.item .no { font:700 44px/1 'MiSans'; color:var(--c-accent); min-width:64px; }
+.item h3 { font:600 32px/1.35 'MiSans'; color:var(--c-ink); }
+.item p { margin-top:8px; font:400 24px/1.6 'MiSans'; color:var(--c-muted); }
+.item .note { font:26px/1 'LxgwWenKai'; color:var(--c-accent); margin-left:12px; }
+
+.footer { position:absolute; bottom:60px; left:60px; right:60px;
+  display:flex; justify-content:space-between; align-items:center;
+  border-top:2px solid rgba(51,58,38,.16); padding-top:22px; }
+.footer .who { font:600 24px/1 'MiSans'; color:var(--c-ink); letter-spacing:.1em; }
+.footer .tip { font:400 21px/1 'MiSans'; color:var(--c-muted); }
+</style></head>
+<body><div class="poster">
+  <div class="fx-noise"></div>
+  <span class="sticker">营养师核核</span>
+
+  <div class="hero">
+    <div class="photo"><img src="img/breakfast.jpg" alt=""></div>
+    <div class="tt">
+      <div class="kicker">早餐误区</div>
+      <h1>这 <span class="hl">4 个</span><br>早餐习惯<br>赶紧改掉</h1>
+      <div class="who">—— 营养师门诊笔记 · 第 12 篇</div>
+    </div>
+  </div>
+
+  <div class="list">
+    <div class="item"><span class="no">1</span>
+      <div><h3>只喝黑咖啡当早餐<span class="note">空腹伤胃!</span></h3>
+        <p>空腹咖啡因刺激胃酸,先吃主食再喝。</p></div></div>
+    <div class="item"><span class="no">2</span>
+      <div><h3>饼干蛋糕凑合</h3>
+        <p>精制碳水升糖快,十点就饿还犯困。</p></div></div>
+    <div class="item"><span class="no">3</span>
+      <div><h3>豆浆油条天天见</h3>
+        <p>油炸 + 精制碳水的组合一周一次就好。</p></div></div>
+    <div class="item"><span class="no">4</span>
+      <div><h3>不吃主食只吃蛋</h3>
+        <p>大脑需要碳水,半个杂粮馒头更精神。</p></div></div>
+  </div>
+
+  <div class="footer">
+    <span class="who">@栗食记 · 注册营养师</span>
+    <span class="tip">收藏起来明早对照 · 转给总不吃早饭的 TA</span>
+  </div>
+</div></body></html>

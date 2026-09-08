@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>show2-a4p · 城市之声室内乐</title>
+<!-- 素材:materials/show2-music(Pexels License)。A4 300dpi,酒红+奶油,音乐会气质 -->
+<style>
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Regular.ttf') format('truetype'); font-weight:400; font-display:block; }
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Semibold.ttf') format('truetype'); font-weight:600; font-display:block; }
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Bold.ttf') format('truetype'); font-weight:700; font-display:block; }
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { margin:0; background:#fff; }
+.poster { position:relative; width:1240px; height:1754px; overflow:hidden; background:#2a1214; }
+:root { --c-cream:#f5e9d6; --c-gold:#d8b276; --c-wine:#6e2b2b; --c-muted:#c8ab9d; }
+.hero { position:absolute; top:0; left:0; right:0; height:900px; overflow:hidden; }
+.hero img { width:100%; height:100%; object-fit:cover; object-position:center 30%;
+  filter:brightness(.66) saturate(.9) sepia(.12); }
+.veil { position:absolute; inset:0;
+  background:linear-gradient(180deg, rgba(42,18,20,.42) 0%, rgba(42,18,20,.08) 34%, rgba(42,18,20,.9) 96%, #2a1214 100%); }
+.kicker { position:absolute; top:96px; left:0; right:0; text-align:center;
+  font:400 26px/1 'MiSans'; color:var(--c-gold); letter-spacing:.62em; text-indent:.62em; }
+.season { position:absolute; top:646px; left:0; right:0; text-align:center;
+  font:700 96px/1.15 'MiSans'; color:var(--c-cream); letter-spacing:.12em;
+  text-shadow:0 6px 28px rgba(0,0,0,.55); }
+.season .it { font-style:italic; color:var(--c-gold); }
+.sub { position:absolute; top:800px; left:0; right:0; text-align:center;
+  font:400 30px/1.7 'MiSans'; color:var(--c-muted); letter-spacing:.14em; }
+
+.prog { position:absolute; top:980px; left:150px; right:150px; }
+.piece { display:flex; align-items:baseline; gap:30px; padding:26px 0;
+  border-bottom:1px solid rgba(245,233,214,.16); }
+.piece .no { font:600 30px/1 'MiSans'; color:var(--c-gold); min-width:70px; }
+.piece h3 { font:600 36px/1.4 'MiSans'; color:var(--c-cream); }
+.piece .comp { margin-left:auto; font:400 27px/1 'MiSans'; color:var(--c-muted); }
+.note { margin-top:40px; text-align:center; font:400 27px/1.8 'MiSans'; color:var(--c-muted); }
+.note b { color:var(--c-gold); font-weight:600; }
+
+.meta { position:absolute; bottom:170px; left:150px; right:150px;
+  display:flex; gap:0; border-top:2px solid rgba(245,233,214,.3);
+  border-bottom:1px solid rgba(245,233,214,.14); }
+.meta .cell { flex:1; text-align:center; padding:30px 6px 28px; }
+.meta .cell + .cell { border-left:1px solid rgba(245,233,214,.14); }
+.meta .k { font:400 22px/1 'MiSans'; color:var(--c-muted); letter-spacing:.4em; text-indent:.4em; }
+.meta .v { margin-top:14px; font:700 33px/1.4 'MiSans'; color:var(--c-cream); }
+.meta .v small { font:400 23px/1.4 'MiSans'; color:var(--c-muted); }
+
+.cta { position:absolute; bottom:64px; left:0; right:0; text-align:center;
+  font:600 27px/1 'MiSans'; color:var(--c-gold); letter-spacing:.18em; }
+</style></head>
+<body><div class="poster">
+  <div class="hero">
+    <img src="img/music.jpg" alt="">
+    <div class="veil"></div>
+    <div class="kicker">城市之声 · 室内乐系列</div>
+    <div class="season">秋之夜 <span class="it">Chamber Night</span></div>
+  </div>
+  <div class="sub">弦乐四重奏 · 巴赫到皮亚佐拉的三个世纪</div>
+
+  <div class="prog">
+    <div class="piece"><span class="no">Ⅰ</span><h3>G 弦上的咏叹调</h3><span class="comp">巴赫</span></div>
+    <div class="piece"><span class="no">Ⅱ</span><h3>如歌的行板</h3><span class="comp">柴可夫斯基</span></div>
+    <div class="piece"><span class="no">Ⅲ</span><h3>自由的探戈</h3><span class="comp">皮亚佐拉</span></div>
+  </div>
+  <div class="note">中场休息 15 分钟 · 演出后设 <b>20 分钟开放彩蛋</b>:走近乐器,随意提问</div>
+
+  <div class="meta">
+    <div class="cell"><div class="k">时间</div><div class="v">11.08 <small>周六 19:30</small></div></div>
+    <div class="cell"><div class="k">地点</div><div class="v">运河艺术中心 <small>小剧场</small></div></div>
+    <div class="cell"><div class="k">票价</div><div class="v">180 / 280 <small>VIP 380</small></div></div>
+  </div>
+  <div class="cta">大麦网 / 城市之声小程序 同步开售 · 早鸟 8 折</div>
+</div></body></html>

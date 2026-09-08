@@ -52,19 +52,15 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 
 ## 尺寸预设
 
-| 用途 | CSS 画布 | 导出 |
+核心 6 款速览(完整 18 预设与 40+ 物料速查见 **references/sizes-common.md**,
+查无再翻 material-catalog.md 总表):
+
+| 预设 | CSS 画布 | scale |
 |---|---|---|
-| 小红书 3:4 | 1080×1440 | `--width 1080 --scale 2` |
-| 长图 | 2400×内容高 | `--width 2400 --scale 1` |
-| 横幅 | 1920×600 | `--width 1920 --scale 2` |
-| 主 KV | 1920×1080 | `--width 1920 --scale 2` |
-| 方图 / 竖屏 | 1080×1080 / 1080×1920 | `--scale 2` |
-| PPT 页 16:9 | 1280×720 | `--width 1280 --scale 2 --height 720`(多页 slide-01.html…) |
-| 名片 | 1063×638 | `--width 1063 --scale 1` |
-| A4 海报 | 1240×1754 | `--width 1240 --scale 2` |
-| 三折页单面 | 1754×1240 | `--width 1754 --scale 2`(正/背各一) |
-| 易拉宝 | 2362×5906 | `--width 2362 --scale 2`(=150dpi) |
-| 公众号封面 / YT 缩略图 / OG 卡 / IG / 视频号 / 电商主图 / A3 | 900×383 / 1280×720 / 1200×630 / 1080×1350 / 1080×1260 / 800×800 / 1754×2480 | 见 material-catalog.md |
+| xhs 小红书 3:4 | 1080×1440 | 2 |
+| kv 主视觉 16:9 | 1920×1080 | 2 |
+| a4p / trifold / card | 印刷三件 | 300/150dpi 直出 |
+| long 长图 | 2400×auto | 1 |
 
 ## 资源索引(按需读取,禁止批量预读)
 
@@ -83,6 +79,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 排版细则 | references/typography-rules.md | 自检发现断行/层级/留白问题时 |
 | 素材分册 | references/materials.md | 任务涉及图片素材时 |
 | 需求追问 | references/intake.md | 每次新任务开工前(一次) |
+| 常用物料速查 | references/sizes-common.md | 定尺寸时先查(默认入口) |
 | 动效分册 | references/animation.md | 仅动图任务(GIF/MP4) |
 | 导出手册 | references/export.md | 导出参数/故障不确定时 |
 | 品类规范 | references/formats/<品类>.md | 选中印刷/PPT 品类时,只读命中 1 份 |

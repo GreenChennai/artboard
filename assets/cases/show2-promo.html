@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>show2-promo · 铁象健身年卡</title>
+<!-- 素材:materials/show2-gym(Pexels License)。风格:ecommerce-promo,深底+荧光绿 -->
+<style>
+@font-face { font-family:'SmileySans'; src:url('fonts/SmileySans-Oblique.ttf') format('truetype');
+  font-weight:normal; font-display:block; }
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Regular.ttf') format('truetype'); font-weight:400; font-display:block; }
+@font-face { font-family:'MiSans'; src:url('fonts/MiSans-Bold.ttf') format('truetype'); font-weight:700; font-display:block; }
+* { margin:0; padding:0; box-sizing:border-box; }
+html,body { margin:0; background:#fff; }
+.poster { position:relative; width:1080px; height:1080px; overflow:hidden; background:#0d130f; }
+:root { --c-ink:#f2f7ef; --c-lime:#c8f542; --c-muted:#7d8a78; }
+
+.bg { position:absolute; inset:0; }
+.bg img { width:100%; height:100%; object-fit:cover; object-position:center 30%;
+  filter:brightness(.5) contrast(1.08) saturate(.9); }
+.veil { position:absolute; inset:0;
+  background:linear-gradient(180deg, rgba(13,19,15,.30) 0%, rgba(13,19,15,.55) 46%, rgba(13,19,15,.94) 88%, #0d130f 100%); }
+
+.brand { position:absolute; top:56px; left:0; right:0; text-align:center;
+  font:700 30px/1 'MiSans'; color:var(--c-lime); letter-spacing:.42em; text-indent:.42em; }
+
+.hero { position:absolute; top:200px; left:0; right:0; text-align:center; }
+.hero .pre { font:400 34px/1 'MiSans'; color:var(--c-muted); letter-spacing:.5em; text-indent:.5em; }
+.hero h1 { margin-top:26px; font:400 230px/1 'SmileySans'; color:var(--c-ink);
+  text-shadow:0 10px 34px rgba(0,0,0,.6); }
+.hero h1 .lime { color:var(--c-lime); }
+.hero .sub { margin-top:30px; font:400 36px/1 'MiSans'; color:var(--c-muted); letter-spacing:.2em; }
+
+.deal { position:absolute; top:712px; left:0; right:0; text-align:center; }
+.deal .price { font:400 170px/1 'SmileySans'; color:var(--c-lime); }
+.deal .price small { font:400 70px/1 'SmileySans'; color:var(--c-ink); }
+.deal .was { display:block; margin-top:16px; font:400 32px/1 'MiSans'; color:var(--c-muted); }
+
+.perks { position:absolute; top:1078px; left:120px; right:120px;
+  display:flex; gap:20px; }
+.perk { flex:1; text-align:center; background:rgba(242,247,239,.07);
+  border:1px solid rgba(200,245,66,.35); border-radius:14px; padding:26px 8px; }
+.perk h3 { font:700 34px/1 'MiSans'; color:var(--c-ink); }
+.perk p { margin-top:12px; font:400 22px/1.4 'MiSans'; color:var(--c-muted); }
+
+.cta { position:absolute; bottom:110px; left:120px; right:120px; text-align:center;
+  background:var(--c-lime); color:#0d130f; padding:36px 0; border-radius:16px;
+  font:700 40px/1 'MiSans'; letter-spacing:.14em;
+  box-shadow:0 14px 40px rgba(200,245,66,.28); }
+.terms { position:absolute; bottom:48px; left:0; right:0; text-align:center;
+  font:400 19px/1 'MiSans'; color:var(--c-muted); }
+</style></head>
+<body><div class="poster">
+  <div class="bg"><img src="img/gym.jpg" alt=""></div>
+  <div class="veil"></div>
+
+  <div class="brand">铁象健身 IRON ELEPHANT</div>
+
+  <div class="hero">
+    <div class="pre">年末冲刺</div>
+    <h1>练出<span class="lime">快慢肌</span></h1>
+    <div class="sub">年卡直降 · 私教课买十送二</div>
+  </div>
+
+  <div class="deal">
+    <div class="price">¥1999<small>/年</small></div>
+    <span class="was">原价 ¥3280 · 12.31 截止</span>
+  </div>
+
+  <div class="perks">
+    <div class="perk"><h3>全年不限次</h3><p>器械+操课全通</p></div>
+    <div class="perk"><h3>体测 4 次</h3><p>季度体成分报告</p></div>
+    <div class="perk"><h3>泳池开放</h3><p>时段不限预约</p></div>
+  </div>
+
+  <div class="cta">扫码锁定名额 · 仅剩 47 席</div>
+  <div class="terms">活动最终解释权归门店所有 · 图片仅供参考</div>
+</div></body></html>

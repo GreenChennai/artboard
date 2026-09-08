@@ -6,17 +6,34 @@
 
 **AI Agent Skill:让 AI 像设计师一样工作**——不调用 AI 生图,而是写 HTML/CSS、用真实摄影素材、按印刷规范排版,再经 Playwright 渲染成成品图。文字永远锐利,配色永远可控,结果永远可复现。
 
-## 成品样例
+## 成品样例(全品类展示墙)
 
-| 小红书封面 | 电商大促(GIF 可动) | 科技发布 KV |
+**社交媒体**
+
+| 小红书封面 · 轻食研究所 | 公众号封面 · 栗食记 | 电商主图 · 铁象健身 |
 |---|---|---|
-| ![小红书封面](docs/samples/xhs-cover.png) | ![电商大促](docs/samples/ecommerce-promo.png) | ![科技KV](docs/samples/tech-kv.png) |
-| **名片 · 正/背** | **三折页 · 正面** | **A4 海报** |
-| ![名片](docs/samples/card-front.png) ![名片背面](docs/samples/card-back.png) | ![三折页](docs/samples/trifold-front.png) | ![A4海报](docs/samples/a4-poster.png) |
-| **数据长图** | **易拉宝 80×200cm** | **三折页 · 背面** |
-| ![数据长图](docs/samples/data-longform.png) | ![易拉宝](docs/samples/rollup.png) | ![三折页背面](docs/samples/trifold-back.png) |
+| ![小红书封面](docs/samples/xhs-cover.png) | ![公众号封面](docs/samples/gzh-cover.png) | ![电商主图](docs/samples/promo-square.png) |
 
-> 全部由本技能生成:Pexels 授权摄影 + 开源字体 + 手写 CSS 特效,300dpi 印刷直出。
+**品牌与发布**
+
+| 科技发布 KV · 青梧智联 | PPT 封面页 · 青梧智联 | 易拉宝 · 青梧智联校招 |
+|---|---|---|
+| ![科技KV](docs/samples/tech-kv.png) | ![PPT封面](docs/samples/slide-cover.png) | ![易拉宝](docs/samples/rollup.png) |
+
+**印刷品**
+
+| 名片 · 闻山律所(正/背) | 三折页 · 半山云宿(正面) | 三折页 · 背面 |
+|---|---|---|
+| ![名片正面](docs/samples/card-front.png) ![名片背面](docs/samples/card-back.png) | ![三折页正面](docs/samples/trifold-front.png) | ![三折页背面](docs/samples/trifold-back.png) |
+
+**长图与展览**
+
+| 数据长图 · 城市咖啡图鉴 | A4 海报 · 城市之声室内乐 |
+|---|---|
+| ![数据长图](docs/samples/data-longform.png) | ![A4海报](docs/samples/a4-poster.png) |
+
+> 每张均为本技能端到端产出:Pexels 授权摄影 / 开源字体(MiSans、得意黑、文楷等)/
+> 手写 CSS 排版与特效,300dpi 印刷直出。6 个虚构品牌、10+ 主题,仅供参考学习。
 
 ## 它解决什么问题
 
@@ -41,7 +58,7 @@ AI 生图工具做海报的三座大山:**文字必糊、配色看运气、改�
 ## 快速开始
 
 把 `artboard/` 放进 Agent Skill 目录(如 `.agents/skills/`),复制 `config.example.json` → `config.json`,
-**推荐双击 `tools\config-editorrtboard-config-editor.exe` 图形化填写**(小白免手改 JSON);
+**推荐双击 `tools/config-editor/artboard-config-editor.exe` 图形化填写**(小白免手改 JSON);
 完整图解教程(环境一键部署 + Pexels/Pixabay Key 一步步申请)见 **[docs/setup.md](docs/setup.md)**。然后直接对话:
 
 ```text

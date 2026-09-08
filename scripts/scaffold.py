@@ -6,9 +6,9 @@
 
 - 复制所选字体的字体文件到 src/fonts/;复制 vendor JS 到 src/vendor/
 - 生成 src/index.html 骨架:固定画布 + 已选字体的 @font-face + design tokens 占位
-- 尺寸预设: xhs=1080x1440 long=2400xauto banner=1920x600 kv=1920x1080
-             square=1080x1080 vertical=1080x1920 card=1063x638(90x54mm)
-             a4p=1240x1754(A4) trifold=1754x1240(A4横,单面) rollup=2362x5906(80x200cm)
+- 尺寸预设: xhs/long/banner/kv/square/vertical/card/a4p/trifold/rollup
+             gzh=900x383 yt=1280x720 og=1200x630 ig=1080x1350 channel=1080x1260
+             taobao=800x800 a3p=1754x2480(全表见 references/material-catalog.md)
 """
 
 import argparse
@@ -38,6 +38,14 @@ SIZES = {
     "a4p":     {"w": 1240, "h": 1754},   # A4 竖版海报 210×297mm,scale 2 → 2480×3508
     "trifold": {"w": 1754, "h": 1240},   # 三折页单面 297×210mm,scale 2 → 3508×2480;正/背两个画布
     "rollup":  {"w": 2362, "h": 5906},   # 易拉宝 80×200cm,scale 2 → 4724×11811(150dpi)
+    # ---- 物料扩充(全表见 references/material-catalog.md)----
+    "gzh":     {"w": 900,  "h": 383},    # 公众号头条封面 2.35:1,关键信息居中
+    "yt":      {"w": 1280, "h": 720},    # YouTube 缩略图 16:9,文字 ≤3-5 词
+    "og":      {"w": 1200, "h": 630},    # OG 社交分享卡 1.91:1
+    "ig":      {"w": 1080, "h": 1350},   # Instagram Post 4:5
+    "channel": {"w": 1080, "h": 1260},   # 视频号封面 6:7(防 UI 遮挡)
+    "taobao":  {"w": 800,  "h": 800},    # 电商主图 1:1(禁文字牛皮癣)
+    "a3p":     {"w": 1754, "h": 2480},   # A3 海报,scale 2 → 3508×4961(300dpi)
     "slide":   {"w": 1280, "h": 720},    # PPT 页 16:9,scale 2 → 2560×1440;多页 = slide-01.html…
 }
 

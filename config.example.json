@@ -1,6 +1,7 @@
 {
   "_comment": "复制为 config.json 后填写。优先级:环境变量 > 本文件 > 脚本默认值。config.json 已被 .gitignore 排除,不会提交。",
   "wpi_path": "E:\\path\\to\\WPI",
+  "wpi_cli_exe": "",
   "studio_dir": "E:\\path\\to\\artboard-studio",
   "ffmpeg": "",
   "pexels_key": "",

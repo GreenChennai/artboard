@@ -1,5 +1,12 @@
 # artboard 导出手册
 
+## 引擎选择(三级)
+
+1. **WPI 源码版**(`wpi_path`,Python API):功能最全,默认;
+2. **WPI CLI 单文件**(`wpi_cli_exe`,约 63MB):`setup_wpi.py` 从 artboard 发行页部署;
+   源码版不可用时自动切换(同参数命令行,退出码 0 = 成功);
+3. **export_fallback.py**(独立 Playwright):仅 PNG 的最后兜底。
+
 ## 双路径
 
 | | 主路径 `export.py` | 兜底 `export_fallback.py` |

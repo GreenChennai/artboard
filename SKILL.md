@@ -64,6 +64,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | A4 海报 | 1240×1754 | `--width 1240 --scale 2` |
 | 三折页单面 | 1754×1240 | `--width 1754 --scale 2`(正/背各一) |
 | 易拉宝 | 2362×5906 | `--width 2362 --scale 2`(=150dpi) |
+| 公众号封面 / YT 缩略图 / OG 卡 / IG / 视频号 / 电商主图 / A3 | 900×383 / 1280×720 / 1200×630 / 1080×1350 / 1080×1260 / 800×800 / 1754×2480 | 见 material-catalog.md |
 
 ## 资源索引(按需读取,禁止批量预读)
 
@@ -78,6 +79,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 风格系统 | references/style-system.md | 需要布局原型/配色 tokens 时 |
 | 视觉特效 30 式 | references/effects.md | 需要特效配方时(通常写 HTML 时) |
 | 标题手法库 | references/title-fx.md | 标题需要描边/蒙版/错位等处理时 |
+| 物料尺寸总表 | references/material-catalog.md | 需要非常规物料尺寸/平台规范时(40+ 物料) |
 | 排版细则 | references/typography-rules.md | 自检发现断行/层级/留白问题时 |
 | 素材分册 | references/materials.md | 任务涉及图片素材时 |
 | 需求追问 | references/intake.md | 每次新任务开工前(一次) |

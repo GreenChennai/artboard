@@ -52,6 +52,10 @@ FIELDS = [
     ("proxy", "本地代理(可选)", "text",
      "访问 Pinterest 等境外源的代理,如 http://127.0.0.1:7890。\n"
      "留空 = 直连。"),
+    ("wpi_cli_exe", "WPI CLI 单文件(可选)", "file",
+     "WPI-noGUI-cli.exe 的完整路径(约 63MB 单文件引擎)。\n"
+     "跑 scripts\\setup_wpi.py 自动从 artboard 发行页下载部署;\n"
+     "手动更新:下载新 exe 覆盖即可。"),
     ("vision_mode", "视觉识别模式", "choice: auto,local",
      "auto = Agent 自带视觉优先(推荐);\nlocal = 强制用本地 VQA/OCR 模型。"),
     ("vqa_path", "本地 VQA 路径(可选)", "dir",

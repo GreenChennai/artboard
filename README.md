@@ -39,7 +39,9 @@ AI 生图工具做海报的三座大山:**文字必糊、配色看运气、改�
 
 ## 快速开始
 
-把 `artboard/` 放进 Agent Skill 目录(如 `.agents/skills/`),复制 `config.example.json` → `config.json` 填好路径,然后直接对话:
+把 `artboard/` 放进 Agent Skill 目录(如 `.agents/skills/`),复制 `config.example.json` → `config.json`,
+**推荐双击 `tools\config-editorrtboard-config-editor.exe` 图形化填写**(小白免手改 JSON);
+完整图解教程(环境一键部署 + Pexels/Pixabay Key 一步步申请)见 **[docs/setup.md](docs/setup.md)**。然后直接对话:
 
 ```text
 「给山雾茶町做一张 88 会员日的咖啡促销方图,产品图我有」
@@ -77,7 +79,7 @@ python scripts/export.py --source <项目>/src --output out.png \
 
 | 键 | 说明 |
 |---|---|
-| `wpi_path` | [WPI](https://github.com/GreenChennai/artboard) 渲染引擎路径(Playwright + 系统 Edge/Chrome) |
+| `wpi_path` | [WPI](https://github.com/GreenChennai/WPI) 渲染引擎路径(Playwright + 系统 Edge/Chrome);没有就跑 `python scripts/setup_wpi.py` 一键部署 |
 | `studio_dir` | 海报项目与素材库落盘目录 |
 | `pexels_key` / `pixabay_key` | 免费图库 API key([Pexels](https://www.pexels.com/api/) / [Pixabay](https://pixabay.com/api/docs/)) |
 | `huaban_cookie` / `iconfont_cookie` / `pinterest_cookie` | 素材站 Cookie,用 [tools/cookie-extension](tools/cookie-extension/)(MV3)一键抓取 |

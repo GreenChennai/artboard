@@ -131,14 +131,23 @@ def main() -> int:
         # (file:/// 绝对引用在 http 页面会被 Chromium 拦截,故必须用联接。)
         for link_name, target in (("fonts", FONTS_DIR), ("vendor", VENDOR_DIR)):
             link = os.path.join(proj, "src", link_name)
+            detail = ""
             if os.path.lexists(link) and not os.path.isdir(link):
                 os.remove(link)
             if not os.path.lexists(link):
-                r = subprocess.run(["cmd", "/c", "mklink", "/J", link, target],
-                                   capture_output=True)
-                if r.returncode != 0:
-                    print(f"△ 联接创建失败({link_name}): "
-                          f"{r.stderr.decode(errors='ignore')[:120]}", file=sys.stderr)
+                from junction import create_junction
+                try:
+                    create_junction(link, target)
+                except Exception as exc:
+                    detail = str(exc)[:140]
+            # 幂等:mklink 报"已存在"但联接穿透可用 → 视为成功
+            probe_ok = os.path.isdir(link) and bool(os.listdir(link))
+            if not probe_ok:
+                print(json.dumps({"ok": False, "error": "JUNCTION_FAILED",
+                                  "detail": f"{link_name}: {detail}",
+                                  "hint": "改用 --embed-fonts(字体拷贝进项目),"
+                                          "或手动 mklink /J 后重跑"}, ensure_ascii=False))
+                sys.exit(1)
 
     size = SIZES[args.size]
     css_size = (f"width: {size['w']}px;" if size["h"] else

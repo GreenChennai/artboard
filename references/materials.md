@@ -1,6 +1,5 @@
 # artboard 素材分册(找图 · 抠图 · 素材纪律)
 
-> 真实素材是一等公民:电商/食品/吉祥物类海报没有真实图片素材就不算完成(2026-09-06 用户反馈确立)。
 > 管线位置:**Step 4.5 素材处理**——选风格之后、写 HTML 之前。
 
 ---
@@ -16,10 +15,9 @@
 > Cookie 插件(MV3,Edge/Chrome 通用):`tools/cookie-extension/` → 浏览器「加载解压缩的扩展」→ 登录目标站 → 点插件复制片段 → 粘贴进 config.json。Cookie 只存本机。iconfont 是矢量/图标源(`--source iconfont`);huaban/pinterest/miankoutu 用 `--source` 显式指定,不进 auto 通道。
 > **miankoutu 通道**:`--source miankoutu` 直搜免抠 PNG(透明底,适合产品/吉祥物贴纸),搜索免 Cookie(内置签名),下载按源站自动带 Referer;聚合源无统一授权,保留风险前缀;版权禁词会静默返回空。
 
-> Openverse 已于 2026-09-06 经用户决定移除(实测本机网络直连超时)。
-> 两把图库 key 已配置为用户级环境变量,新会话自动生效。
+> 
 
-**风险机制(用户 2026-09-06 拍板:先做出来,随后再换):**
+**风险机制(先做出来,随后再换):**
 - 爬虫来源图片**默认视为版权不确定**,`fetch_asset.py` 自动加 `版权风险-` 文件名前缀 + CREDITS 标记。
 - 交付汇报必须列出所有 `版权风险-` 素材并提醒用户更换;**任何环节不得删除该前缀**。
 
@@ -41,6 +39,9 @@ python $S/fetch_asset.py --query "mascot cute" --source pixabay --image-type ill
 - 输出单行 JSON:`downloaded[]` 含 file/source/license/author/risk。
 - 落盘:`<studio>/materials/<theme>/`,同目录自动维护 `CREDITS.md`(文件|来源|作者|授权|来源页|日期)。
 - 选图流程:先 `--download` 拿候选 → **Read 看图挑 1–2 张** → 复制进项目 `src/img/`(重命名为语义名,保留 CREDITS 记录)。
+- **视觉识别优先级**:Agent 自身视觉是**首选**(config `vision_mode: auto` 默认);
+  仅当 ①Agent 无视觉能力 ②用户明说用本地模型 ③config 设 `vision_mode: local` 时,
+  才强制走本地 VQA/OCR。
 - **图片内容拿不准**(不知拍的是什么、有没有水印/商标/不合适元素)→ 用 VQA 解读:
   `python scripts/vqa.py <图片> --prompt "描述主体,有没有水印、logo 或不适元素?"`(本地 QORA 中文问答,离线 CPU;详见脚本头)。
 
@@ -61,7 +62,7 @@ python $S/cutout.py hero.jpg --quality high --dml
 - 模型缓存:`~/.rembg/models/<模型>/<模型>.onnx`;技能已预取 isnet-general-use 与 isnet-anime。
   **下载坑**:本机 Python requests/pooch 走 GitHub 会 SSL 证书验证失败——模型下载改用 curl 直拉
   `https://github.com/danielgatis/rembg/releases/download/v0.0.0/<模型>.onnx` 放进对应目录即可(pooch 校验 hash 通过不重下)。
-- **选图经验(2026-09-06 实测)**:主体与背景明度差越大抠图越稳;黑杯子配暗底抠出来也没法合成进深色海报
+- **选图经验(实测)**:主体与背景明度差越大抠图越稳;黑杯子配暗底抠出来也没法合成进深色海报
   (主体会融进背景)——深色海报优先选亮主体或玻璃/暖色主体,或干脆用实拍原图做底不抠图。
 - 中文文件名素材可直接进 `src/img/` 并在 CSS `url()` 引用(实测 WPI 静态服务无碍);`版权风险-` 前缀**不许因引用方便而改名**。
 

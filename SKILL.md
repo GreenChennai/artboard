@@ -65,28 +65,32 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 三折页单面 | 1754×1240 | `--width 1754 --scale 2`(正/背各一) |
 | 易拉宝 | 2362×5906 | `--width 2362 --scale 2`(=150dpi) |
 
-## 资源索引
+## 资源索引(按需读取,禁止批量预读)
 
-| 资源 | 路径 | 说明 |
+> **读取纪律(省 token)**:只读**当前任务需要**的文件;本表即路由表——
+> "何时读"列决定是否打开;风格分册一次只读命中的那一份;其余一律不读不解析。
+
+| 资源 | 路径 | 何时才读 |
 |---|---|---|
-| 设计护栏(硬规则) | references/guardrails.md | 每张图必读必守 |
-| 流水线细则 | references/pipeline.md | 三模式路由/动效规范 |
-| 风格系统 | references/style-system.md | 布局 6 原型 / 8 组配色 tokens |
-| 视觉特效 30 式 | references/effects.md | 噪点/riso/玻璃/霓虹/爆炸贴… |
-| 导出手册 | references/export.md | 命令/参数/故障处理 |
-| 素材分册 | references/materials.md | 找图(Pexels/Pixabay+爬虫)/抠图/版权风险机制/产品图红线 |
-| 需求追问 | references/intake.md | 开工前五问(用途/尺寸/风格/配色/素材),防盲做 |
-| 动效分册(M2) | references/animation.md | 十二法则/M3 缓动 token/循环规范/导出命令 |
-| 排版细则 | references/typography-rules.md | 断行孤字/层级/留白/对齐/数字 硬规则清单 |
-| 标题手法库 | references/title-fx.md | 多重描边/剪切蒙版/模糊/重组 错位 |
-| 新增风格指南 | references/style-guide.md | 30 分钟登记一个新风格 |
-| 风格气质总表 | references/styles-catalog.md | 145 方向速查,模糊需求匹配 + 原子混搭 |
-| 品类规范(名片/易拉宝/A4/三折页/PPT 页) | references/formats/*.md | 印刷尺寸/字号下限/折线/盲区/多页组织 |
-| 字体库 | fonts/README.md | 中英 21 款开源字体,两级筛查;英文点缀专类;缺字体跑 fetch_font.py |
-| 参考案例 | assets/cases/*.html | 4 风格各一个"及格线答卷" |
-| vendor | assets/vendor/ | echarts.min.js / gsap.min.js |
-| 图标 | assets/icons/ | Tabler SVG(内联使用) |
-| 插画包 | assets/illustrations/ | Open Peeps/Open Doodles/unDraw(CC0,SVG 换色) |
+| 设计护栏(硬规则) | references/guardrails.md | **每次出图必读**(一次) |
+| 流水线细则 | references/pipeline.md | 流程不确定时 |
+| 风格分册 | references/styles/<命中项>.md | 选定该风格时,只读命中的 1 份 |
+| 风格系统 | references/style-system.md | 需要布局原型/配色 tokens 时 |
+| 视觉特效 30 式 | references/effects.md | 需要特效配方时(通常写 HTML 时) |
+| 标题手法库 | references/title-fx.md | 标题需要描边/蒙版/错位等处理时 |
+| 排版细则 | references/typography-rules.md | 自检发现断行/层级/留白问题时 |
+| 素材分册 | references/materials.md | 任务涉及图片素材时 |
+| 需求追问 | references/intake.md | 每次新任务开工前(一次) |
+| 动效分册 | references/animation.md | 仅动图任务(GIF/MP4) |
+| 导出手册 | references/export.md | 导出参数/故障不确定时 |
+| 品类规范 | references/formats/<品类>.md | 选中印刷/PPT 品类时,只读命中 1 份 |
+| 风格气质总表 | references/styles-catalog.md | 用户需求模糊、需要匹配方向时 |
+| 新增风格指南 | references/style-guide.md | 仅当要新建风格分册 |
+| 字体库 | fonts/README.md | 选字体时(两级筛查) |
+| 参考案例 | assets/cases/*.html | 写 HTML 需要参照时,只读命中风格的 1 份 |
+| vendor/图标/插画包 | assets/… | 引用具体文件时,不预读 |
+| 模型下载 | scripts/fetch_model.py | 本地 VQA/OCR 缺失且需要时 |
+| 环境部署 | scripts/setup_wpi.py / setup_ffmpeg.py | 预检报缺失时 |
 
 ## 脚本
 

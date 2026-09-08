@@ -1,8 +1,6 @@
 # artboard 通用设计护栏(所有风格叠加遵守的硬规则)
 
 > 这里是底线,不是风格。每个风格分册在此基础上叠加自己的 tokens、字体栈与禁则。
-> 方法论来源(diagram-design / Robin Williams / esther-design-system / stylekit 等)
-> 统一标注于仓库 README「致谢」;本目录所有分册为思想提炼后的自写规则。
 
 ---
 

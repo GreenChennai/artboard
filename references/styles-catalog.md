@@ -2,7 +2,6 @@
 
 > 用途:用户用词模糊("想要 Y2K 感""赛博一点")时,在这里查方向 → 找最近似的已建分册,
 > 把本表气质要点作为「原子」叠加进去;没有可用分册时按 style-guide.md 新建。
-> 来源:风格名录与一句话气质提炼自 [AnxForever/stylekit](https://github.com/AnxForever/stylekit)(MIT),
 > 已按海报语境改写;分册本体仍以 references/styles/ 为准。
 
 ## 使用规则(原子化混搭)

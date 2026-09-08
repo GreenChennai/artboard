@@ -137,6 +137,12 @@ def main() -> int:
             "找图将仅有爬虫通道(素材自动带「版权风险-」前缀);"
             "在 config.json 填 pexels_key/pixabay_key 启用授权干净的图库源")
 
+    # 7.4 视觉模式(Agent 视觉优先 vs 本地模型强制)
+    vmode = cfg("vision_mode", "auto")
+    add("视觉模式", "PASS",
+        f"{vmode}" + ("(Agent 视觉优先,本地 VQA/OCR 为备选)" if vmode == "auto"
+                      else "(强制本地 VQA/OCR)") if vmode in ("auto", "local") else f"未知值 {vmode}(按 auto 处理)")
+
     # 7.5 VQA(看图理解)
     vqa = cfg("vqa_path", r"E:\平日资料\GitHub\VQA")
     if vqa and os.path.isdir(vqa):

@@ -8,3 +8,6 @@ Thumbs.db
 dist/
 docs/adr/
 
+
+# 展示样例工程文件只留本地,GitHub 仅保留成图
+assets/cases/show2-*.html

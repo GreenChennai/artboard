@@ -77,6 +77,8 @@ python scripts/qr.py generate --data "https://…" --out img/qr.png --logo logo.
 python scripts/qr.py decode poster.png                                        # 解析二维码内容
 python scripts/export.py --source <项目>/src --output out.png \
     --width 1080 --scale 2 --height 1440                                      # 2x 高清导出
+python scripts/make_bats.py <项目>                                            # 每个HTML生成双击导出bat
+python scripts/calc_size.py mm 210 297 --dpi 300                              # 印刷尺寸计算器
 ```
 
 ## 品类与尺寸

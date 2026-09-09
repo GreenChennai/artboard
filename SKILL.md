@@ -104,6 +104,13 @@ python $S/export_fallback.py --source <proj>/src/index.html \
     --output <proj>/export/o.png --width 1080 --scale 2   # 导出(兜底,仅 PNG)
 python $S/add_font.py <目录名> --name 显示名 --category 分类 --tags 关键词  # 登记新字体
 python $S/fetch_font.py <目录名>   # 按需下载缺失字体(清单 fonts/download.json)
+python $S/pack.py <项目>           # 收集影子项目的外部依赖打包成自包含 zip
+python $S/make_bats.py <项目>      # 给每个 HTML 生成"导出-*.bat"双击即出图
+python $S/calc_size.py mm 210 297  # px/mm/inch/DPI 换算计算器
+python $S/compare.py 参考图 复刻图  # 复刻模式并排比对图
+python $S/setup_wpi.py             # 一键部署 WPI 引擎(artboard 发行页)
+python $S/setup_ffmpeg.py          # 一键下载部署 FFmpeg
+python $S/fetch_model.py vqa|ocr   # 一键下载部署本地 VQA / OCR 模型
 
 python $S/fetch_asset.py --query "coffee cup" --theme <主题> --download --limit 6  # 搜图/下载
 python $S/cutout.py <图片...> [--sticker] [--shadow] [--model isnet-anime]      # 抠图+后处理
@@ -123,7 +130,7 @@ python $S/qr.py decode <图片>                                                 
 2. 离线渲染:HTML 零 CDN 引用;字体/vendor 一律复制进项目。
 3. 一图一个焦点、层级 ≤3 层、强调 ≤2 处、特效 ≤3 种、字体 ≤3 款。
 4. 文案逐字来自用户,不编造数据与条款。
-5. 交付前必须 Read 导出 PNG 自检,上限 2 轮。
+5. **自检只在两个时机触发**:①首版 HTML 完成时;②用户要求检查时。之后的用户改稿一律定点修改,不自动自检不派子代理(省时省 token)。
 6. 动图(M2 已启用):无缝循环 2–6s、总长 ≤15s、fps∈{10,20,25,50};只用 transform/opacity;
    循环时长能被帧间隔整除;**终态必须仍是合格静态海报**;规范见 references/animation.md。
 7. **电商/食品/吉祥物类海报必须有真实素材**——产品本体只能用户提供;爬虫图自动带 `版权风险-` 前缀,交付时列出并提醒更换;抠图默认模型链禁用 bria-rmbg(商用付费)。

@@ -118,11 +118,26 @@ python "<skill>/scripts/export_fallback.py" --source "<project>/src/index.html" 
   --output "<project>/export/<slug>.png" --width <画布宽> --scale 2
 ```
 
-## Step 6 自检循环(上限 2 轮)
+## Step 6 自检循环(仅两个触发时机)
 
+**触发条件(2026-09 用户确立,其余一律不自检不派子代理)**:
+① 首版 HTML 完成时自检一遍;② 用户明确要求检查时自检一遍。
+用户迭代改稿阶段 → 定点修改重导即可,不自动自检(省时省 token)。
+
+自检动作(触发时):
 1. **Read 导出的 PNG**(必须看图,不能只看代码)。
-2. 过 `guardrails.md` 第 7 节的 7 条自检清单 + 风格分册的禁则。
+2. 过 `guardrails.md` 排版自检清单 + 风格分册的禁则。
 3. 发现问题 → 改 HTML → 重导 → 再看。**2 轮后仍有小瑕疵:交付并明确列出已知瑕疵**;有 FATAL 级问题(文字溢出/字体没加载)→ 告知用户并给修复建议。
+
+## Step 6.5 生成一键导出批处理(每张 HTML 都要有)
+
+用户改稿后可自己双击导出,不必再叫 Agent。写完 HTML 后:
+```bash
+python scripts/make_bats.py <项目路径>
+```
+会给 src/ 下每个 .html 生成同名 `导出-<名字>.bat`(自识别、复制即用,
+含 PNG 高清 + PDF,检测到 @keyframes 动画追加 GIF/MP4)。
+打印件在 project.json 标 `"print": true`,导出时追加 `--cmyk`(CMYK PDF+TIFF)。
 
 ## Step 7 交付
 

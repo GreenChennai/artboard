@@ -46,6 +46,8 @@ def main() -> int:
     p.add_argument("--height", type=int, default=0, help=">0 时锁定高度,超出不导出")
     p.add_argument("--fps", type=int, default=25)
     p.add_argument("--transparent", action="store_true")
+    p.add_argument("--cmyk", action="store_true",
+                   help="打印交付:追加导出 CMYK PDF + TIFF(印刷流程见 print-cmyk.md)")
     p.add_argument("--max-wait", type=float, default=15.0, dest="max_wait")
     args = p.parse_args()
 
@@ -77,6 +79,18 @@ def main() -> int:
     except Exception as exc:  # noqa: BLE001
         emit({"ok": False, "error": type(exc).__name__, "detail": str(exc)})
         return 1
+
+    # CMYK 打印交付:PNG → CMYK PDF + TIFF(印刷流程,见 print-cmyk.md)
+    if getattr(args, "cmyk", False):
+        png_path = os.path.splitext(args.output)[0] + ".png"
+        if os.path.isfile(png_path):
+            from PIL import Image
+            im = Image.open(png_path).convert("CMYK")
+            base = os.path.splitext(args.output)[0]
+            im.save(base + "-cmyk.pdf", resolution=300)
+            im.save(base + "-cmyk.tif", compression="tiff_lzw")
+            print(json.dumps({"cmyk": [base + "-cmyk.pdf", base + "-cmyk.tif"]},
+                             ensure_ascii=False))
 
     emit({"ok": True, **{k: result.get(k) for k in FIELDS}})
     return 0

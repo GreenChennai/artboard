@@ -81,14 +81,35 @@ def fetch(d: str, entry: dict) -> str:
     if entry.get("zip_files"):
         tmp = os.path.join(FONTS_DIR, d, "_pack.zip")
         get(url, tmp)
+
+        def zip_names(z: zipfile.ZipFile) -> list[str]:
+            out = []
+            for info in z.infolist():
+                name = info.filename
+                if info.flag_bits & 0x800:  # UTF-8 标志位,名字已是正确的
+                    out.append(name)
+                    continue
+                try:  # 无标志时 zipfile 按 cp437 解码;原始字节可能是 UTF-8 或 GBK
+                    raw = name.encode("cp437")
+                    out.append(raw.decode("utf-8"))
+                except UnicodeDecodeError:
+                    try:
+                        out.append(raw.decode("gbk"))
+                    except (UnicodeEncodeError, UnicodeDecodeError):
+                        out.append(name)
+            return out
+
         with zipfile.ZipFile(tmp) as z:
+            names = zip_names(z)
             for spec in entry["zip_files"]:
                 dest_name, _, inner_suffix = spec.partition("=")
                 inner_suffix = inner_suffix or dest_name
-                for name in z.namelist():
+                # 字体统一平铺在 fonts/<目录>/ 下( local_state 按平铺校验)
+                leaf = os.path.basename(dest_name.replace("\\", "/"))
+                for i, name in enumerate(names):
                     if name.replace("\\", "/").endswith(inner_suffix):
-                        data = z.read(name)
-                        with open(os.path.join(FONTS_DIR, d, dest_name), "wb") as f:
+                        data = z.read(z.infolist()[i])
+                        with open(os.path.join(FONTS_DIR, d, leaf), "wb") as f:
                             f.write(data)
                         break
         os.remove(tmp)

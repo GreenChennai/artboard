@@ -2,8 +2,8 @@
 
 | 属性 | 值 |
 |---|---|
-| 字体文件 | HarmonyOS_Sans_SC.ttf |
-| 字重/变体 | 可变字体 Regular~Bold 单文件 |
+| 字体文件 | HarmonyOS_Sans_SC_Regular/Medium/Bold.ttf |
+| 字重/变体 | 静态三字重(Regular/Medium/Bold),官方包按字重拆分 |
 | 分类 | 正文可读·标题 |
 | 气质关键词 | 现代,鸿蒙,可变字体,数字優美 |
 | 协议/来源 | 免费商用(个人与企业,鸿蒙字体许可)· developer.huawei.com/font |

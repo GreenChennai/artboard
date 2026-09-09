@@ -88,10 +88,17 @@
   "harmonyos-sans": {
     "in_repo": false,
     "files": [
-      "HarmonyOS_Sans_SC.ttf"
+      "HarmonyOS_Sans_SC_Regular.ttf",
+      "HarmonyOS_Sans_SC_Medium.ttf",
+      "HarmonyOS_Sans_SC_Bold.ttf"
     ],
     "license": "鸿蒙字体许可,免费商用",
-    "manual": "https://developer.huawei.com/consumer/cn/design/resource/ (zip 内取 HarmonyOS_Sans_SC.ttf 可变字体;直链带签名会过期)"
+    "url": "https://developer.huawei.com/images/download/general/HarmonyOS-Sans.zip",
+    "zip_files": [
+      "HarmonyOS_Sans_SC_Regular.ttf=HarmonyOS Sans/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Regular.ttf",
+      "HarmonyOS_Sans_SC_Medium.ttf=HarmonyOS Sans/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Medium.ttf",
+      "HarmonyOS_Sans_SC_Bold.ttf=HarmonyOS Sans/HarmonyOS_Sans_SC/HarmonyOS_Sans_SC_Bold.ttf"
+    ]
   },
   "cheese-oolong-song": {
     "in_repo": false,

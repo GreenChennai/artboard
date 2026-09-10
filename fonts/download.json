@@ -88,9 +88,7 @@
   "harmonyos-sans": {
     "in_repo": false,
     "files": [
-      "HarmonyOS_Sans_SC_Regular.ttf",
-      "HarmonyOS_Sans_SC_Medium.ttf",
-      "HarmonyOS_Sans_SC_Bold.ttf"
+      "HarmonyOS_Sans_SC.ttf"
     ],
     "license": "鸿蒙字体许可,免费商用",
     "url": "https://developer.huawei.com/images/download/general/HarmonyOS-Sans.zip",

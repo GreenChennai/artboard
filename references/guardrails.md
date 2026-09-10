@@ -84,7 +84,7 @@
 - 用户图片放 `src/img/`,`object-fit: cover`;多图色调不统一时加统一滤镜(duotone/低饱和)。
 - 图表用 `src/vendor/echarts.min.js`(数据长图风格);图标内联 SVG(引用 `assets/icons/<name>.svg` 内容)。
 - **离线优先**:HTML 不引任何 CDN;需要第三方资源时复制进项目 `src/vendor/`。
-- 所有动画(M2 之前一律不做)规范见 `pipeline.md` 动效节。
+- 动图已启用(M2):规范见 `references/animation.md`;静态海报仍不依赖动画中间帧。
 
 ## 7. 文字溢出修复优先级(自检发现溢出时按序执行)
 

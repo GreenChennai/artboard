@@ -57,7 +57,7 @@ def main() -> int:
     if has_controller:
         add("WPI", "PASS", wpi)
     else:
-        add("WPI", "FATAL", f"未找到 {wpi}",
+        add("WPI", "WARN", f"未找到 {wpi}",
             "设环境变量 ARTBOARD_WPI 指向 WPI 根目录;或仅用 export_fallback.py 兜底(需 playwright)")
 
     # 2. 系统浏览器(主路径与兜底都依赖)
@@ -123,10 +123,10 @@ def main() -> int:
             "" if os.path.isfile(p) else "从 cdn 下载: echarts@5 / gsap@3 dist 单文件")
 
     # 7. 素材体系
-    try:
-        import rembg  # noqa: F401
+    import importlib.util
+    if importlib.util.find_spec("rembg"):
         add("rembg(抠图)", "PASS", "可导入")
-    except ImportError:
+    else:
         add("rembg(抠图)", "WARN", "未安装",
             "pip install \"rembg[cpu]\" —— 需要抠图/贴纸化的素材任务必装")
     keys = {"Pexels": cfg("pexels_key"), "Pixabay": cfg("pixabay_key")}

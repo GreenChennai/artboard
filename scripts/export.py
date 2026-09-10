@@ -84,13 +84,16 @@ def main() -> int:
     if getattr(args, "cmyk", False):
         png_path = os.path.splitext(args.output)[0] + ".png"
         if os.path.isfile(png_path):
-            from PIL import Image
-            im = Image.open(png_path).convert("CMYK")
-            base = os.path.splitext(args.output)[0]
-            im.save(base + "-cmyk.pdf", resolution=300)
-            im.save(base + "-cmyk.tif", compression="tiff_lzw")
-            print(json.dumps({"cmyk": [base + "-cmyk.pdf", base + "-cmyk.tif"]},
-                             ensure_ascii=False))
+            try:
+                from PIL import Image
+                im = Image.open(png_path).convert("CMYK")
+                base = os.path.splitext(args.output)[0]
+                im.save(base + "-cmyk.pdf", resolution=300)
+                im.save(base + "-cmyk.tif", compression="tiff_lzw")
+                print(json.dumps({"cmyk": [base + "-cmyk.pdf", base + "-cmyk.tif"]},
+                                 ensure_ascii=False))
+            except ImportError:
+                pass  # Pillow 未安装,跳过 CMYK
 
     emit({"ok": True, **{k: result.get(k) for k in FIELDS}})
     return 0

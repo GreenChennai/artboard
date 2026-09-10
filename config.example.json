@@ -10,5 +10,6 @@
   "iconfont_cookie": "",
   "pinterest_cookie": "",
   "proxy": "",
-  "vision_mode": "auto"
+  "vision_mode": "auto",
+  "ocr_path": ""
 }

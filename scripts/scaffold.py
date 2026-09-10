@@ -37,7 +37,7 @@ SIZES = {
     "card":    {"w": 1063, "h": 638},    # 名片 90×54mm 成品,导出 scale 1 即 300dpi
     "a4p":     {"w": 1240, "h": 1754},   # A4 竖版海报 210×297mm,scale 2 → 2480×3508
     "trifold": {"w": 1754, "h": 1240},   # 三折页单面 297×210mm,scale 2 → 3508×2480;正/背两个画布
-    "rollup":  {"w": 2362, "h": 5906},   # 易拉宝 80×200cm,scale 2 → 4724×11811(150dpi)
+    "rollup":  {"w": 2362, "h": 5906},   # 易拉宝 80×200cm,scale 2 → 4724×11812(150dpi)
     # ---- 物料扩充(全表见 references/material-catalog.md)----
     "gzh":     {"w": 900,  "h": 383},    # 公众号头条封面 2.35:1,关键信息居中
     "yt":      {"w": 1280, "h": 720},    # YouTube 缩略图 16:9,文字 ≤3-5 词
@@ -88,7 +88,7 @@ def main() -> int:
     p.add_argument("--fonts", default="source-han-sans", help="逗号分隔的 fonts/ 目录名")
     p.add_argument("--force", action="store_true", help="允许写入已存在项目")
     p.add_argument("--embed-fonts", action="store_true", dest="embed_fonts",
-                   help="字体拷贝进项目(自包含);默认绝对路径引用 Skill 字体库省空间")
+                   help="字体/vendor 拷贝进项目(自包含);默认目录联接指向 Skill 字体库(零拷贝)")
     args = p.parse_args()
 
     proj = os.path.join(STUDIO, args.slug)

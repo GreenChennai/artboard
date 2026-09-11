@@ -145,8 +145,8 @@ python scripts/ai_export.py <项目目录> --svg --eps --ai   # 追加 SVG / EPS
 
 | 产物 | 说明 |
 |---|---|
-| `*-ai.pdf` | **分层 AI 可编辑 PDF**:背景/图形/图片/蒙层/文字 自动分图层(OCG),Illustrator/PDF 阅读器可直接操作图层 |
-| `*.ai` | 真 .ai 源文件:驱动本机 Illustrator(COM)按对象类型建层后由 AI 亲手写入(含 PGF 私有数据) |
+| `*-ai.pdf` | **AI 可编辑 PDF**:背景/内容 双图层(OCG)+ 整句可编辑文字(逐字断层自动合并),PDF 阅读器可直接开关图层 |
+| `*.ai` | 真 .ai 源文件(原生构建):按 DOM 组件树在 Illustrator 内递归建**嵌套真组**(Ctrl+G 语义,非剪切蒙版),文字为整句 TextFrame,背景/内容双层 |
 | `*.svg` | 全矢量、文字转曲、图片内嵌,网页/Figma/AI 通吃 |
 | `*.eps` | 老印刷流程用(透明自动压平) |
 | `*-reference.png` + `*-diff-*.png` | SSIM 相似度验收:基准截图 + 逐格式差异热区 |

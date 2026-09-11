@@ -1,6 +1,29 @@
 # Changelog
 
-## v1.3.0 — 自写转换核心:WebHtml2VectorEdit / VectorEdit2WebHtml
+## v1.4.0 — 文字整句化 + 按组件嵌套的原生 .ai + 双层制
+
+### Fixed
+- **文字断层**(用户实测头号痛点):text_run_merger.py 把 Chromium 逐字 Td/Tj
+  合并为单条 TJ 数组(字距差值用内嵌字体 /W 度量表逐字保真),AI 中
+  "滚滚长江东逝水"式整句恢复为单个可编辑文字对象。实测 27/27 块合并、
+  渲染像素零差异、AI 27 个整句文字对象
+- ai.pdf/.ai 图层简化为 背景层+内容层 双层(原五层语义桶过细,用户反馈)
+
+### Added
+- **原生 AI 构建**(ai_build_native,.ai 的新实现):DOM 组件树 → ExtendScript
+  在 Illustrator 内递归构建——元素=真编组(Ctrl+G,非剪切蒙版),子元素嵌套
+  子组(组件层级即 DOM 层级),文字=TextFrame 整句,图片=内嵌。
+  实测 layers=2、嵌套 7 层真组、0 剪切蒙版、25 整句文字、照片内嵌(ADR 0011)
+- vectoredit2webhtml.py **多页 PDF 支持**(--pages 选页,逐页自包含 HTML);
+  作品集 73 页/806MB 实测 pdf→html→pdf→html 往返:渲染 SSIM 0.936–0.945 收敛、
+  最长文字串 100% 保留
+- 坐标标定:ExtendScript 纵轴为底部原点向上,topY=(H−y)×0.75(标定页实验确定);
+  修正背景矩形画到画布外、整版上下镜像两处错位
+
+### Changed
+- to_vector --ai 从"PDF 对象三桶分发"切换为"原生 DOM 组件树构建"(ADR 0011)
+
+## v1.3.0 — 自写转换核心:WebHtml2VectorEdit / VectorEdit2WebHtml — 自写转换核心:WebHtml2VectorEdit / VectorEdit2WebHtml
 
 ### Added
 - `scripts/webhtml2vectoredit.py`:自写正向转换核心(不再依赖 WPI)——

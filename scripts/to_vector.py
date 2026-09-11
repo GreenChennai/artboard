@@ -45,8 +45,8 @@ def main() -> int:
     p.add_argument("--eps-engine", default="poppler", choices=["poppler", "gs"],
                    help="poppler 只压平透明区;gs 转曲但遇透明整页栅格化")
     p.add_argument("--ai", action="store_true",
-                   help="驱动本机 Illustrator(COM)把 PDF 另存为真 .ai;"
-                        "需已安装 Illustrator,首次启动约 30-90s")
+                   help="按 DOM 组件树原生构建 .ai:嵌套真组(Ctrl+G 语义)+"
+                        "整句文字+背景/内容双层;需已安装 Illustrator,启动约 30-90s")
     p.add_argument("--threshold", type=float, default=0.95)
     p.add_argument("--no-check", action="store_true", help="跳过相似度自检")
     p.add_argument("--max-wait", type=float, default=15.0, dest="max_wait")
@@ -85,14 +85,14 @@ def main() -> int:
         return 1
 
     if args.ai:
-        src_pdf = report["outputs"].get("print-pdf") or report["outputs"].get("ai-pdf")
-        if src_pdf:
-            try:
-                report["ai_layers"] = core.ai_save(src_pdf, args.output + ".ai")
-                report["outputs"]["ai"] = args.output + ".ai"
-            except Exception as exc:  # noqa: BLE001
-                report.setdefault("warnings", []).append(
-                    f".ai 产出失败: {exc}(其余产物不受影响)")
+        try:
+            report["ai_layers"] = core.ai_build_native(
+                args.source, args.output + ".ai", width=args.width,
+                height=args.height, max_wait=args.max_wait)
+            report["outputs"]["ai"] = args.output + ".ai"
+        except Exception as exc:  # noqa: BLE001
+            report.setdefault("warnings", []).append(
+                f".ai 产出失败: {exc}(其余产物不受影响)")
 
     emit(report)
     return 0 if report.get("ok") else 4

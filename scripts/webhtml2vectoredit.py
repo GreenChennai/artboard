@@ -24,11 +24,11 @@ import threading
 SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 if SCRIPTS not in sys.path:
     sys.path.insert(0, SCRIPTS)
+from text_run_merger import merge_text_runs  # noqa: E402
 
 PX_PER_PT = 0.75          # CSS px → PDF pt
-LAYER_ORDER = ("bg", "graphic", "image", "overlay", "text")  # 合成自底向上
-LAYER_NAMES_ZH = {"bg": "背景", "graphic": "图形", "image": "图片",
-                  "overlay": "蒙层", "text": "文字"}
+LAYER_ORDER = ("bg", "content")  # 合成自底向上:仅 背景层/内容层(item 5)
+LAYER_NAMES_ZH = {"bg": "背景", "content": "内容"}
 
 EXE_CANDIDATES = {
     "msedge": (r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
@@ -218,12 +218,17 @@ def settle(page, max_wait: float) -> None:
 
 
 def print_pdf(page, path: str, width: int, height: int) -> None:
-    """屏媒体 + 精确 @page 尺寸单页打印(所见即所得,无分页)。"""
+    """屏媒体 + 精确 @page 尺寸单页打印(所见即所得,无分页)。
+    打印后立即合并逐字 Td/Tj 为整句 TJ(修 AI 文字断层,item 4)。"""
     page.emulate_media(media="screen")
     page.add_style_tag(
         content=f"@page {{ size: {width}px {height}px; margin: 0; }}")
     page.pdf(path=path, width=f"{width}px", height=f"{height}px",
              print_background=True, prefer_css_page_size=True, page_ranges="1")
+    try:
+        merge_text_runs(path)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[warn] 文字合并跳过: {exc}", file=sys.stderr)
 
 
 # ---- 分层合成(pikepdf OCG) ------------------------------------------
@@ -245,51 +250,6 @@ def strip_white_background(pdf_path: str) -> None:
             page.Contents.write(cleaned)
         pdf.save(pdf_path)
 
-
-def _inline_xobjects(out: "pikepdf.Pdf", src_pdf, page) -> tuple[bytes, pikepdf.Dictionary]:
-    """递归内联页面内容里的 Form XObject(Chromium 套 2 层壳),资源改名防撞。
-    返回 (摊平后的内容流字节, 合并后的资源字典)。"""
-    import pikepdf
-    from pikepdf import Dictionary, Name
-
-    merged: dict[str, dict] = {}
-    counter = {"n": 0}
-
-    def visit(content: bytes, res: pikepdf.Dictionary, depth: int) -> bytes:
-        if depth > 8:
-            return content
-        renames: dict[bytes, bytes] = {}
-        hoisted: dict[str, Dictionary] = {}
-        for cat in ("XObject", "ExtGState", "Font", "Pattern", "Shading",
-                    "ColorSpace", "Properties"):
-            if cat not in res:
-                continue
-            hoisted[cat] = Dictionary()
-            for k, v in res[cat].items():
-                new_name = f"{cat[0]}{counter['n']}{k.rawname[1:]}"
-                counter["n"] += 1
-                renames[k.rawname] = new_name.encode()
-                hoisted[cat][Name("/" + new_name)] = out.copy_foreign(v)
-        for cat, d in hoisted.items():
-            merged.setdefault(cat, {})
-            merged[cat].update(d)
-        for old, new in renames.items():
-            content = re.sub(rb"(" + re.escape(old) + rb")(?![A-Za-z0-9])",
-                             b"/" + new, content)
-        if "XObject" in res:
-            for k, v in res.XObject.items():
-                if "/Subtype" in v and v.Subtype == Name.Form:
-                    inner = visit(v.read_bytes(), v.Resources or Dictionary(),
-                                  depth + 1)
-                    content = content.replace(
-                        k.rawname + b" Do", b"q\n" + inner + b"\nQ")
-        return content
-
-    streams = [page.Contents] if not isinstance(page.Contents, pikepdf.Array) \
-        else page.Contents
-    data = b"".join(s.read_bytes() for s in streams)
-    flat = visit(data, page.Resources or Dictionary(), 0)
-    return flat, Dictionary({c: Dictionary(d) for c, d in merged.items()})
 
 
 def merge_layers(layer_pdfs: list[str], names: list[str],
@@ -507,14 +467,18 @@ class WebHtml2VectorEdit:
                 if self.layers and "ai-pdf" in self.formats:
                     means = page.evaluate(INJECT_JS)            # 每层平均文档序
                     self.log(f"[inject] {means}")
-                    # 固定语义层序:背景→图形→图片→蒙层(照片上的遮罩)→文字
-                    order = [k for k in LAYER_ORDER if k in means]
-                    self.layer_names = [LAYER_NAMES_ZH[k] for k in order]
+                    # 双层制(item 5):背景层=图形/装饰底;内容层=文字/图片/蒙层
+                    passes = [
+                        ("bg",
+                         '[data-w2v-layer="text"],[data-w2v-layer="image"],'
+                         '[data-w2v-layer="overlay"]{visibility:hidden}'),
+                        ("content",
+                         '[data-w2v-layer="graphic"]{visibility:hidden}'),
+                    ]
                     layer_files = []
-                    for k in order:
-                        style = page.add_style_tag(
-                            content=(f'[data-w2v-layer]{{visibility:hidden}}'
-                                     f'[data-w2v-layer="{k}"]{{visibility:visible}}'))
+                    self.layer_names = [LAYER_NAMES_ZH[k] for k, _ in passes]
+                    for k, css in passes:
+                        style = page.add_style_tag(content=css)
                         lp = os.path.join(wd, f"layer_{k}.pdf")
                         print_pdf(page, lp, self.width, self.height)
                         style.evaluate("el => el.remove()")
@@ -602,76 +566,275 @@ class WebHtml2VectorEdit:
         return report
 
 
-_AI_JS = '''app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;
-var doc = app.open(new File("__IN__"));
-var base = doc.layers[doc.layers.length - 1];   // 原内容层(在最后)
-var items = [];
-for (var i = 0; i < base.pageItems.length; i++) items.push(base.pageItems[i]);
-function classify(it) {
-    var t = it.typename;
-    if (t === "RasterItem" || t === "PlacedItem") return "image";
-    if (t === "TextFrame") return "text";
-    if (t === "GroupItem" || t === "CompoundPathItem") {
-        var children = (t === "CompoundPathItem") ? it.pathItems : it.pageItems;
-        var hasText = false, hasImage = false;
-        for (var j = 0; j < children.length; j++) {
-            var c = classify(children[j]);
-            if (c === "text") hasText = true;
-            if (c === "image") hasImage = true;
-        }
-        if (hasText) return "text";
-        if (hasImage) return "image";
+
+# ---- 原生 AI 构建:DOM 组件树 → ExtendScript 建嵌套真组(item 1/2/5) ----
+_DOM_EXTRACT_JS = r"""
+() => {
+  function parseColor(s) {
+    if (!s || s === 'transparent' || s === 'none') return null;
+    const m = s.match(/rgba?\(([^)]+)\)/);
+    if (m) {
+      const p = m[1].split(/[, ]+/).map(Number);
+      const a = p.length > 3 ? p[3] : 1;
+      if (a === 0) return null;               // 全透明黑不算填充
+      return {r: p[0], g: p[1], b: p[2], a: a};
     }
-    return "graphic";
-}
-// PDF 导入常把整页包成少数大组:拆一层组才是有意义的分发粒度
-if (items.length > 0 && items.length <= 3) {
-    var flat = [];
-    for (var i = 0; i < items.length; i++) {
-        if (items[i].typename === "GroupItem") {
-            for (var j = 0; j < items[i].pageItems.length; j++)
-                flat.push(items[i].pageItems[j]);
-        } else flat.push(items[i]);
+    return null;
+  }
+  const firstNum = s => { const m = String(s || '0').match(/[\d.]+/); return m ? parseFloat(m[0]) : 0; };
+  const cands = [...document.body.children].map(el => {
+    const r = el.getBoundingClientRect();
+    return {el, area: r.width * r.height};
+  });
+  cands.sort((a, b) => b.area - a.area);
+  const root = cands.length ? cands[0].el : document.body;
+  const rr0 = root.getBoundingClientRect();
+  const OX = rr0.left, OY = rr0.top;
+  const out = {w: rr0.width, h: rr0.height,
+               bodyBg: parseColor(getComputedStyle(document.body).backgroundColor),
+               root: null, images: []};
+
+  function nodeFor(el) {
+    const r = el.getBoundingClientRect();
+    const s = getComputedStyle(el);
+    const cls = (typeof el.className === 'string')
+      ? el.className.split(/\s+/).filter(Boolean).slice(0, 2).join('.') : '';
+    const n = {
+      name: el.tagName.toLowerCase() + (cls ? '.' + cls : ''),
+      rect: [r.left - OX, r.top - OY, r.width, r.height],
+      bg: parseColor(s.backgroundColor),
+      radius: firstNum(s.borderRadius),
+      border: null, image: null, texts: [], children: []
+    };
+    const bw = [s.borderTopWidth, s.borderRightWidth, s.borderBottomWidth,
+                s.borderLeftWidth].map(parseFloat);
+    const bc = parseColor(s.borderTopColor);
+    if (bc && bw.some(v => v > 0)) n.border = {w: Math.max.apply(null, bw), color: bc};
+    if (el.tagName === 'IMG') {
+      n.image = {url: el.src, file: null};
+      out.images.push(n.image);   // 同一引用:materialize 时 file 回填到节点
     }
-    items = flat;
+    el.childNodes.forEach(nd => {
+      if (nd.nodeType === 3 && nd.textContent.trim()) {
+        const rng = document.createRange();
+        rng.selectNodeContents(nd);
+        const rr = rng.getBoundingClientRect();
+        if (rr.width < 0.5 || rr.height < 0.5) return;
+        n.texts.push({
+          text: nd.textContent.trim().slice(0, 800),
+          x: rr.left - OX, y: rr.top - OY, w: rr.width, h: rr.height,
+          size: parseFloat(s.fontSize),
+          weight: parseInt(s.fontWeight) >= 600 ? 700 : 400,
+          color: parseColor(s.color),
+          family: s.fontFamily.split(',')[0].replace(/["']/g, ''),
+          tracking: (s.letterSpacing !== 'normal')
+                    ? parseFloat(s.letterSpacing) / parseFloat(s.fontSize) * 1000 : 0
+        });
+      }
+    });
+    return n;
+  }
+
+  function walk(el) {
+    const s = getComputedStyle(el);
+    if (s.display === 'none' || s.visibility === 'hidden') return null;
+    const n = nodeFor(el);
+    for (const child of el.children) {
+      if (child.tagName === 'SCRIPT' || child.tagName === 'STYLE' || child.tagName === 'LINK') continue;
+      const c = walk(child);
+      if (c) n.children.push(c);
+    }
+    return n;
+  }
+  out.root = walk(root);
+  return out;
 }
-var layGraphic = doc.layers.add(); layGraphic.name = "图形";
-var layImage   = doc.layers.add(); layImage.name = "图片";
-var layText    = doc.layers.add(); layText.name = "文字";
-var n = {graphic: 0, image: 0, text: 0};
-for (var i = 0; i < items.length; i++) {
-    var k = classify(items[i]);
-    items[i].move(k === "text" ? layText : (k === "image" ? layImage : layGraphic),
-                  ElementPlacement.PLACEATBEGINNING);
-    n[k]++;
+"""
+
+_AI_BUILD_JSX = r"""
+#target illustrator
+app.userInteractionLevel = UserInteractionLevel.DONTDISPLAYALERTS;
+var TREE = __TREE__;
+var doc = app.documents.add(DocumentColorSpace.RGB, TREE.w * 0.75, TREE.h * 0.75);
+doc.layers[0].name = "背景层";                 // 复用默认层,避免多余空层
+var layBg = doc.layers[0];
+var layContent = doc.layers.add(); layContent.name = "内容层";
+var fontCache = {};
+function findFont(fam) {
+    if (fontCache[fam] !== undefined) return fontCache[fam];
+    var found = null;
+    for (var i = 0; i < app.textFonts.length; i++) {
+        if (app.textFonts[i].family === fam) { found = app.textFonts[i]; break; }
+    }
+    fontCache[fam] = found;
+    return found;
 }
-base.remove();
-var opts = new IllustratorSaveOptions();
-opts.pdfCompatible = true;
-doc.saveAs(new File("__OUT__"), opts);
+function rgbCol(c) { var k = new RGBColor(); k.red = c.r; k.green = c.g; k.blue = c.b; return k; }
+function px(v) { return v * 0.75; }
+// 标定实测:rectangle/position 的纵参数 = 画布高 - DOM 顶边距(底部原点向上)
+function topY(y, h) { return (TREE.h - y) * 0.75; }
+function makeRect(container, n) {
+    var x = px(n.rect[0]), y = topY(n.rect[1], n.rect[3]), w = px(n.rect[2]), h = px(n.rect[3]);
+    var p = (n.radius > 0.5)
+        ? container.pathItems.roundedRectangle(y, x, w, h, px(Math.min(n.radius, h / 2)))
+        : container.pathItems.rectangle(y, x, w, h);
+    p.filled = true;
+    p.fillColor = rgbCol(n.bg);
+    if (n.bg.a < 1) p.opacity = n.bg.a * 100;
+    p.stroked = false;
+    return p;
+}
+function addImage(container, n) {
+    var f = new File(n.image.file);
+    if (!f.exists) return;
+    var pi = doc.layers[0].placedItems.add();   // placedItem 只能建在层上
+    pi.file = f;
+    pi.width = px(n.rect[2]);
+    pi.height = px(n.rect[3]);
+    pi.position = [px(n.rect[0]), topY(n.rect[1], n.rect[3])];
+    pi.embed();
+    pi.move(container, ElementPlacement.PLACEATEND);   // 移入目标组,垫底
+}
+function addTexts(container, node) {
+    for (var i = 0; i < node.texts.length; i++) {
+        var t = node.texts[i];
+        var tf = container.textFrames.add();
+        tf.contents = t.text;
+        tf.textRange.characterAttributes.size = px(t.size);
+        tf.textRange.characterAttributes.fillColor = rgbCol(t.color);
+        if (t.tracking) tf.textRange.characterAttributes.tracking = Math.round(t.tracking);
+        var f = findFont(t.family);
+        if (f) tf.textRange.characterAttributes.textFont = f;
+        tf.left = px(t.x);
+        tf.top = topY(t.y, t.h) - px(t.size) * 0.24;
+    }
+}
+function build(node, container) {
+    var grp = container.groupItems.add();
+    try { grp.name = node.name; } catch (eG) {}
+    if (node.bg) makeRect(grp, node);
+    if (node.border) {
+        var bp = grp.pathItems.rectangle(
+            topY(node.rect[1], node.rect[3]),
+            px(node.rect[0]), px(node.rect[2]), px(node.rect[3]));
+        bp.filled = false;
+        bp.stroked = true;
+        bp.strokeWidth = px(node.border.w);
+        bp.strokeColor = rgbCol(node.border.color);
+    }
+    if (node.image) addImage(grp, node);
+    addTexts(grp, node);
+    for (var i = 0; i < node.children.length; i++) build(node.children[i], grp);
+    return grp;
+}
+if (TREE.bodyBg) {
+    // 顶部边距底 = 画布高(底部原点坐标系)
+    var b = layBg.pathItems.rectangle(px(TREE.h), 0, px(TREE.w), px(TREE.h));
+    b.filled = true;
+    b.fillColor = rgbCol(TREE.bodyBg);
+    b.stroked = false;
+}
+if (TREE.root && TREE.root.bg) makeRect(layBg, TREE.root);
+if (TREE.root) {
+    var rootGrp = layContent.groupItems.add();
+    try { rootGrp.name = "内容"; } catch (eR) {}
+    for (var i = 0; i < TREE.root.children.length; i++) build(TREE.root.children[i], rootGrp);
+}
+doc.saveAs(new File("__OUT__"), new IllustratorSaveOptions());
 doc.close(SaveOptions.DONOTSAVECHANGES);
-"graphic=" + n.graphic + " image=" + n.image + " text=" + n.text;
-'''
+"native-done";
+"""
 
 
-def ai_save(pdf_path: str, ai_path: str, timeout: float = 300.0) -> str:
-    """真 .ai(带图层):驱动本机 Illustrator(COM)打开 PDF,建 图形/图片/文字
-    三层并按对象类型分发,再另存(ADR 0008)。AI 未运行则结束后代为退出。
-    返回分发明细字符串(graphic=N image=N text=N)。"""
+def ai_build_native(source: str, out_ai: str, width: int | None = None,
+                    height: int | None = None, max_wait: float = 15.0,
+                    timeout: float = 600.0) -> dict:
+    """从 HTML 的 DOM 组件树原生构建 .ai:嵌套真组(Ctrl+G 语义)+真文字,
+    背景/内容双层。不经 PDF——组件层级即 DOM 层级(item 1/2/5)。"""
+    import json as _json
+    import shutil as _sh
     import tempfile
+    import urllib.parse
+
+    is_dir = os.path.isdir(source)
+    if is_dir:
+        if not os.path.isfile(os.path.join(source, "index.html")):
+            raise FileNotFoundError("目录缺 index.html")
+        srv, base = serve(source)
+        root_dir = os.path.abspath(source)
+        url = base + "/index.html"
+    else:
+        srv = None
+        root_dir = os.path.dirname(os.path.abspath(source))
+        url = "file:///" + os.path.abspath(source).replace("\\", "/")
+
+    channel = pick_channel()
+    if not channel:
+        raise RuntimeError("未找到 Edge/Chrome")
+    wd = work_dir()
+
+    from playwright.sync_api import sync_playwright
+    try:
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(channel=channel, headless=True)
+            page = browser.new_page(
+                viewport={"width": width or 1080, "height": height or 1440},
+                device_scale_factor=1)
+            page.goto(url, timeout=max_wait * 1000)
+            settle(page, max_wait)
+            if not width or not height:
+                page.set_viewport_size({"width": page.evaluate(
+                    "document.documentElement.scrollWidth"), "height": 800})
+                page.wait_for_timeout(400)
+                page.set_viewport_size({
+                    "width": page.evaluate("document.documentElement.scrollWidth"),
+                    "height": page.evaluate("document.documentElement.scrollHeight")})
+                settle(page, max_wait)
+            tree = page.evaluate(_DOM_EXTRACT_JS)
+            browser.close()
+    finally:
+        if srv:
+            srv.shutdown()
+
+    # 图片落位:http URL → 源目录真实文件;拷进 ASCII 临时目录(AI File 不吃中文路径)
+    img_n = 0
+    for img in tree.get("images", []):
+        u = img["url"]
+        path = urllib.parse.unquote(urllib.parse.urlparse(u).path).lstrip("/")
+        real = None
+        for cand in (os.path.join(root_dir, path),):
+            if os.path.isfile(cand):
+                real = cand
+                break
+        if real:
+            img_n += 1
+            fp = os.path.join(wd, f"img{img_n}."
+                              + (os.path.splitext(real)[1].lstrip(".") or "jpg"))
+            _sh.copy(real, fp)
+            img["file"] = fp.replace("\\", "/")
+        else:
+            img["file"] = None
+
+    def clean(n):
+        if isinstance(n.get("image"), dict) and not n["image"].get("file"):
+            n["image"] = None
+        for c in n.get("children", []):
+            clean(c)
+
+    clean(tree["root"])
+
+    tree_json = _json.dumps(tree, ensure_ascii=False)
+    jsx = (_AI_BUILD_JSX
+           .replace("__TREE__", tree_json)
+           .replace("__OUT__", os.path.abspath(out_ai).replace("\\", "/")))
 
     tl = subprocess.run(["tasklist", "/FI", "IMAGENAME eq Illustrator.exe"],
                         capture_output=True, text=True,
                         encoding="utf-8", errors="replace")
     ai_was_running = "illustrator.exe" in (tl.stdout or "").lower()
-
-    jsx = (_AI_JS
-           .replace("__IN__", pdf_path.replace("\\", "/"))
-           .replace("__OUT__", ai_path.replace("\\", "/")))
-    fd, jsx_path = tempfile.mkstemp(prefix="w2v_ai_", suffix=".jsx")
+    fd, jsx_path = tempfile.mkstemp(prefix="w2v_build_", suffix=".jsx")
     with os.fdopen(fd, "w", encoding="utf-8-sig") as f:
         f.write(jsx)
-
     ps = ("$ErrorActionPreference='Stop';"
           "$app = New-Object -ComObject Illustrator.Application; "
           f"$out = $app.DoJavaScriptFile('{jsx_path.replace(chr(92), '/')}'); "
@@ -682,10 +845,11 @@ def ai_save(pdf_path: str, ai_path: str, timeout: float = 300.0) -> str:
             ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass",
              "-Command", ps], capture_output=True, text=True,
             encoding="utf-8", errors="replace", timeout=timeout)
-        if not os.path.isfile(ai_path):
-            detail = ((rc.stdout or "") + (rc.stderr or ""))[-300:]
-            raise RuntimeError(
-                "Illustrator 另存 .ai 失败(检查是否已安装/COM 可用): " + detail)
-        return (rc.stdout or "").strip()
+        if not os.path.isfile(out_ai):
+            raise RuntimeError("Illustrator 原生构建失败: "
+                               + ((rc.stdout or "") + (rc.stderr or ""))[-400:])
     finally:
         os.remove(jsx_path)
+    return {"ok": True, "output": os.path.abspath(out_ai),
+            "layers": ["背景", "内容"], "mode": "native-dom",
+            "images": len(tree.get("images", []))}

@@ -131,6 +131,39 @@ python scripts\preflight.py
 
 优先级:环境变量 > config.json > 默认值。改完即生效。
 
+## 🧩 矢量交付与工程文件(WebHtml2VectorEdit)
+
+默认流水线产出 PNG/JPG 等成品图;当用户需要**设计软件可编辑的工程文件**时,
+自写核心 **WebHtml2VectorEdit** 把 HTML 转成矢量产物(与 WPI 无关,
+相似度以 SSIM 验收,三样张实测 0.97–0.99):
+
+```bash
+python scripts/setup_vector.py                       # 一次性部署 poppler + Ghostscript
+python scripts/ai_export.py <项目目录>                # 一键:分层 AI 可编辑 PDF
+python scripts/ai_export.py <项目目录> --svg --eps --ai   # 追加 SVG / EPS / 真 .ai
+```
+
+| 产物 | 说明 |
+|---|---|
+| `*-ai.pdf` | **分层 AI 可编辑 PDF**:背景/图形/图片/蒙层/文字 自动分图层(OCG),Illustrator/PDF 阅读器可直接操作图层 |
+| `*.ai` | 真 .ai 源文件:驱动本机 Illustrator(COM)按对象类型建层后由 AI 亲手写入(含 PGF 私有数据) |
+| `*.svg` | 全矢量、文字转曲、图片内嵌,网页/Figma/AI 通吃 |
+| `*.eps` | 老印刷流程用(透明自动压平) |
+| `*-reference.png` + `*-diff-*.png` | SSIM 相似度验收:基准截图 + 逐格式差异热区 |
+
+**逆向重维护**:`VectorEdit2WebHtml` 把 PDF/EPS/SVG/.ai 变回可维护 HTML——
+
+```bash
+python scripts/vectoredit2webhtml.py poster-ai.pdf rebuild.html               # 视觉完整(底景+可选文字)
+python scripts/vectoredit2webhtml.py poster-print.pdf rebuild.html --mode editable  # 纯文字+照片,改完可重导
+```
+
+写 HTML 时请遵守 **矢量安全清单**(vector-export.md §5,五条禁令:
+禁硬切透明渐变/blend-mode/渐变字/conic-gradient/alpha 渐变压圆角),
+否则转换会脏色、丢字或出伪影。注意:工程文件导出**不在默认流水线**,
+仅按需运行;文字/图形分层细则与验收协议见
+[references/vector-export.md](references/vector-export.md)。
+
 ## 📦 脚本一览
 
 ```bash

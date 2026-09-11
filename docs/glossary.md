@@ -20,3 +20,15 @@
 | 孤字 | 段落末行仅 1 个汉字——排版硬禁(typography-rules.md) |
 | tabular-nums | 等宽数字;数据列必须使用以垂直对齐 |
 | 反 AI 味自检 | 12 条交付前清单(guardrails.md §5) |
+| 矢量枢纽 | HTML 先打印成 Chromium 单页矢量 PDF,再衍生 SVG/EPS/转曲 PDF(ADR 0006) |
+| 转曲(outline) | 文字变字形轮廓路径;矢量交付产物一律转曲,防换机换字体走样(ADR 0007) |
+| -print.pdf | Chromium 原生打印 PDF:文字内嵌可编辑,AI 打开可改字(需装同款字体) |
+| -outline.pdf | ghostscript 转曲 PDF:任何机器视觉一致,文字不可选 |
+| AI 兼容 PDF | Illustrator 可直接打开编辑的 PDF;真 .ai = 在 AI 里打开它另存一次(ADR 0008) |
+| SSIM 验收 | 转换产物栅格化后与基准截图算结构相似度,≥0.95 合格 ≥0.99 优秀(vector-export.md) |
+| 矢量安全清单 | 16 种 CSS 原语转换实测表;硬切透明渐变/blend-mode/渐变字三条禁令 |
+| WebHtml2VectorEdit | 自写正向转换核心:HTML→分层 AI 可编辑 PDF/SVG/EPS,不依赖 WPI |
+| VectorEdit2WebHtml | 自写逆向核心:PDF/EPS/SVG/.ai → 可维护 HTML(visual/editable 双模式) |
+| OCG | PDF 可选内容组;ai.pdf 的图层载体,Acrobat/浏览器可开关 |
+| 蒙层 | 图片之后的同级渐变遮罩,单独成层保证盖在照片上 |
+| 面板底色克隆 | 分层手术:有底色又含内容的元素,底色剥离进图形层,本体转结构 |

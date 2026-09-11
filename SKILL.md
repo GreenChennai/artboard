@@ -6,7 +6,9 @@ description: 用 HTML/CSS 绘制平面设计级图片并导出成品的海报工
 # artboard · HTML 海报工作室
 
 **定位**:把文案/图片变成"平面设计成品图"。AI 不画像素、不用 AI 生图——而是像设计师一样
-写 HTML/CSS(有护栏、有风格库、有字体库),再用 WPI 渲染导出 PNG/GIF/MP4/PDF。
+写 HTML/CSS(有护栏、有风格库、有字体库),再用 WPI 渲染导出 PNG/GIF/MP4/PDF,
+用户要工程文件/矢量件时,经自写核心 WebHtml2VectorEdit 转 SVG/EPS/Illustrator
+分层可编辑 PDF/真 .ai(相似度 ≥95%,见 vector-export.md;**正常流水线无此步**)。
 
 ## 流水线(7 步,细则见 references/pipeline.md)
 
@@ -82,6 +84,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 常用物料速查 | references/sizes-common.md | 定尺寸时先查(默认入口) |
 | 动效分册 | references/animation.md | 仅动图任务(GIF/MP4) |
 | 导出手册 | references/export.md | 导出参数/故障不确定时 |
+| 矢量交付手册 | references/vector-export.md | 用户要 SVG/EPS/AI 可编辑 PDF/.ai/可编辑矢量时(必读) |
 | 品类规范 | references/formats/<品类>.md | 选中印刷/PPT 品类时,只读命中 1 份 |
 | 风格气质总表 | references/styles-catalog.md | 用户需求模糊、需要匹配方向时 |
 | 新增风格指南 | references/style-guide.md | 仅当要新建风格分册 |
@@ -100,6 +103,11 @@ python $S/preflight.py                                   # 预检(每次开工�
 python $S/scaffold.py <slug> --size xhs --fonts 思源黑体,霞鹜文楷   # 建项目
 python $S/export.py --source <proj>/src --output <proj>/export/o.png \
     --width 1080 --scale 2 --height 1440                  # 导出(主;固定尺寸带 --height)
+python $S/ai_export.py <项目目录>       # 一键矢量/工程文件:分层AI可编辑PDF(--svg/--eps/--ai 追加)
+python $S/to_vector.py --source <proj>/src --output <proj>/export/poster \
+    --width 1080 --height 1440                            # 矢量交付底层 CLI(同上,可精控格式)
+python $S/vectoredit2webhtml.py poster-ai.pdf rebuild.html  # 逆向:PDF/EPS/SVG/.ai → HTML
+python $S/setup_vector.py             # 一键部署矢量工具链(poppler+gs,需7-Zip)
 python $S/export_fallback.py --source <proj>/src/index.html \
     --output <proj>/export/o.png --width 1080 --scale 2   # 导出(兜底,仅 PNG)
 python $S/add_font.py <目录名> --name 显示名 --category 分类 --tags 关键词  # 登记新字体
@@ -136,6 +144,7 @@ python $S/qr.py decode <图片>                                                 
 7. **电商/食品/吉祥物类海报必须有真实素材**——产品本体只能用户提供;爬虫图自动带 `版权风险-` 前缀,交付时列出并提醒更换;抠图默认模型链禁用 bria-rmbg(商用付费)。
 8. **开工前先过 intake 五问**(用途/尺寸/风格/配色/素材),用户明说「直接做/全按推荐」才可跳过;跳过也必须在开工前复述全部假设。
 9. 二维码占位在**终稿前**用 `scripts/qr.py generate` 换成真码;成品码宽 ≥ 版面宽 8%、四周留白 ≥1 模块、纠错用 H 级(内嵌 logo 时)。
+10. **矢量/工程文件导出不在默认流水线**:仅当用户明确要 SVG/EPS/AI 可编辑 PDF/.ai/工程文件时才跑 `ai_export.py`(vector-export.md);主动出工程文件=过度交付。
 
 ## 环境配置
 

@@ -15,6 +15,13 @@
 | 格式 | PNG / GIF / MP4 / PDF | 仅 PNG |
 | 何时用 | 默认 | export.py 报 `WPI_NOT_FOUND` / `WPI_IMPORT_FAILED` |
 
+## 矢量交付(SVG / EPS / AI 可编辑 PDF)
+
+用户要 SVG、EPS、AI 可编辑 PDF、.ai 或"可编辑矢量"时,不走本手册——
+走 **vector-export.md**(PDF 枢纽管线 + SSIM 相似度自检 + 矢量安全清单):
+`python scripts/to_vector.py --source <proj>/src --output <proj>/export/poster --width 1080 --height 1440`
+(工具未部署先跑 `scripts/setup_vector.py`;WPI 的 PDF 导出是分页版,不能当矢量枢纽用。)
+
 ## 尺寸与倍率预设
 
 | 用途 | --size | 画布(CSS px) | 导出命令参数 | 成品(px) |

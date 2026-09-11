@@ -24,6 +24,8 @@ ENV_MAP = {
     "pinterest_cookie": "ARTBOARD_PINTEREST_COOKIE",
     "proxy": "ARTBOARD_PROXY",
     "vqa_path": "ARTBOARD_VQA",
+    "poppler_dir": "ARTBOARD_POPPLER",
+    "gs_path": "ARTBOARD_GS",
 }
 
 _cache: dict | None = None

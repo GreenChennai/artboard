@@ -1,14 +1,11 @@
 # artboard 矢量交付手册(SVG / EPS / AI 可编辑 PDF / .ai / 逆向 HTML)
 
 > 把 HTML 海报转成设计软件可编辑的矢量产物,转换相似度 ≥95%(合格)/ ≥99%(优秀)。
-> 自写转换核心:**WebHtml2VectorEdit**(正向)/**VectorEdit2WebHtml**(逆向),
-> 均为 Python(性能瓶颈在 Playwright/poppler/gs 子进程,胶水层无 Rust 化收益,ADR 0010)。
-> v1.4.0:文字整句合并(修 AI 逐字断层,ADR 0011)、图层简化为背景/内容双层、
-> 原生 AI 构建(按 DOM 组件树嵌套真组,--ai)。
+> 转换核心:**WebHtml2VectorEdit**(正向)/**VectorEdit2WebHtml**(逆向),
+> 文字整句合并、图层简化为背景/内容双层、
+> 原生 AI 构建(按 DOM 组件树嵌套真组,--ai)
 > **触发规则:正常 artboard 流水线没有这一步——仅当用户明确要"工程文件/矢量文件/
 > SVG/EPS/AI 可编辑/.ai"时才运行**(一键入口 scripts/ai_export.py)。
-> 所有 SSIM 为 2026-09-12 实测(s2-xhs / s2-kv / s2-a4p 样张 + 16 原语测试床),
-> 三样张 judge 三轮裁决通过;换引擎版本需复测。
 
 ## 0. 快速上手
 
@@ -41,23 +38,19 @@ python scripts/ai_export.py <项目目录> --svg --eps --outline --ai
 ## 1. 架构:PDF 枢纽 + 双核心
 
 ```
-                         ┌─ WebHtml2VectorEdit(正向)──────────────────────
-HTML ─Playwright settle─▶ 截图基准 + 平面枢纽 PDF(单页精确尺寸 ≈100%)
-                         │    ├─ DOM 分层手术(背景/图形/图片/蒙层/文字)
-                         │    │    └─ 每层单独打印 → pikepdf OCG 合成 → ai.pdf
-                         │    ├─ pdftocairo -svg -r300 → SVG
-                         │    ├─ pdftocairo -pdf → 免字体依赖 PDF
-                         │    └─ pdftops -level3 / gs eps2write → EPS
-                         │    └─ SSIM 自检(skimage)+ 差异热区
-                         └─ VectorEdit2WebHtml(逆向)────────────────────
-PDF/ai/eps ─pdftohtml xml + pdftocairo svg─▶ 可维护 HTML(visual/editable)
+                          ┌─ WebHtml2VectorEdit(正向)──────────────────────截图基准 + 平面枢纽 PDF(单页精确尺寸 ≈100%)
+HTML ─Playwright settle─▶│    ├─ DOM 分层手术(背景/图形/图片/蒙层/文字)
+                          │    │    └─ 每层单独打印 → pikepdf OCG 合成 → ai.pdf
+                          │    ├─ pdftocairo -svg -r300 → SVG
+                          │    ├─ pdftocairo -pdf → 免字体依赖 PDF
+                          │    └─ pdftops -level3 / gs eps2write → EPS
+                          │    └─ SSIM 自检(skimage)+ 差异热区
+                          └─ VectorEdit2WebHtml(逆向)──────────────────── PDF/ai/eps ─pdftohtml xml + pdftocairo svg─▶ 可维护 HTML(visual/editable)
 ```
 
-- HTML 直转 SVG 的开源方案(satori/dom-to-svg/html2svg)只支持 CSS 子集,
-  海报级 CSS 达不到 95%,弃(ADR 0006)。
 - Chromium 打印的 PDF 是"矢量快照":文字=CIDFont+ToUnicode、渐变=Shading、
   圆角=路径;**图片按原始分辨率直嵌**(实测 breakfast.jpg 867×1300 原样进入,
-  JPEG 直通不重压——质量优先策略,ADR 0006)。
+  JPEG 直通不重压——质量优先策略。
 - 矢量管线自行打印**精确尺寸单页** PDF(WPI 的 PDF 分页兼容不适用于矢量交付;
   本核心不依赖 WPI)。
 - poppler/gs 打不开非 ASCII 路径:核心内部全部在 ASCII 临时目录转换再搬运。
@@ -91,7 +84,7 @@ HTML DOM 组件树(几何/底色/圆角/边框/文字样式/图片)
 v1 边界:渐变/阴影/滤镜不写入 .ai(留空),**极限保真以 ai.pdf/print.pdf 为准**,
 .ai 定位为"可维护组件源";文字定位为近似(字体需本机安装)。
 
-### 文字断层修复(item 4,ADR 0011)
+### 文字断层修复
 
 Chromium 的 BT 块内本是整句,只是逐字 `Td<Tj>` 定位——AI 把每对拆成独立文字对象。
 枢纽与每层打印后,`text_run_merger.py` 自动把同字体+同字号+同基线的连续 Tj
@@ -129,7 +122,7 @@ Illustrator 的可编辑私有数据(PGF)只有它自己能写——`--ai` 用 P
 | s2-kv 玻璃拟态 KV | 0.9742 | 0.9742 | 0.9578 | — |
 | s2-a4p 印刷海报 | 0.9715 | 0.9875 | 0.9776 | — |
 
-## 5. 矢量安全清单(写 HTML 时遵守;16 原语实测)
+## 5. 矢量安全清单(转换前复制一份Html(不动原Html),修改兼容之后再导出为矢量格式)
 
 | # | CSS 原语 | 判定 | 说明/替代 |
 |---|---|---|---|

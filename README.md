@@ -158,7 +158,7 @@ python scripts/vectoredit2webhtml.py poster-ai.pdf rebuild.html               # 
 python scripts/vectoredit2webhtml.py poster-print.pdf rebuild.html --mode editable  # 纯文字+照片,改完可重导
 ```
 
-写 HTML 时请遵守 **矢量安全清单**(vector-export.md §5,五条禁令:
+转换前,复制一份 HTML 后改写时请遵守 **矢量安全清单**(vector-export.md §5,五条禁令:
 禁硬切透明渐变/blend-mode/渐变字/conic-gradient/alpha 渐变压圆角),
 否则转换会脏色、丢字或出伪影。注意:工程文件导出**不在默认流水线**,
 仅按需运行;文字/图形分层细则与验收协议见

@@ -80,6 +80,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 物料尺寸总表 | references/material-catalog.md | 需要非常规物料尺寸/平台规范时(40+ 物料) |
 | 排版细则 | references/typography-rules.md | 自检发现断行/层级/留白问题时 |
 | 素材分册 | references/materials.md | 任务涉及图片素材时 |
+| 图片复刻协议 | references/replicate.md | 复刻/换风格任务(B/C 模式)开工时必读(一次) |
 | 需求追问 | references/intake.md | 每次新任务开工前(一次) |
 | 常用物料速查 | references/sizes-common.md | 定尺寸时先查(默认入口) |
 | 动效分册 | references/animation.md | 仅动图任务(GIF/MP4) |
@@ -115,7 +116,11 @@ python $S/fetch_font.py <目录名>   # 按需下载缺失字体(清单 fonts/do
 python $S/pack.py <项目>           # 收集影子项目的外部依赖打包成自包含 zip
 python $S/make_bats.py <项目>      # 给每个 HTML 生成"导出-*.bat"双击即出图
 python $S/calc_size.py mm 210 297  # px/mm/inch/DPI 换算计算器
-python $S/compare.py 参考图 复刻图  # 复刻模式并排比对图
+python $S/compare.py 参考图 复刻图  # 复刻模式并排比对图(--region 0,0,1,0.25 局部放大+ΔRGB 数字)
+python $S/inspect_ref.py grid ref/reference.png -o ref/grid.png   # 复刻测量:带标注网格
+python $S/inspect_ref.py census ref/reference.png --box x0,y0,x1,y1  #   分区普查取色(flat/all/ink)
+python $S/inspect_ref.py bbox ref/reference.png --box x0,y0,x1,y1    #   内容外接框(测边距/发丝线)
+python $S/inspect_ref.py crop ref/reference.png --box x0,y0,x1,y1 -o img/photo.png  #   从参考图裁素材
 python $S/setup_wpi.py             # 一键部署 WPI 引擎(artboard 发行页)
 python $S/setup_ffmpeg.py          # 一键下载部署 FFmpeg
 python $S/fetch_model.py vqa|ocr   # 一键下载部署本地 VQA / OCR 模型

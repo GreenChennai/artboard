@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.5.0 — 复刻证据链重写 + ACL-1.0 开源协议
+
+### Added
+- **复刻证据链协议**(replicate.md 重写,方法论致谢 super-prototyping):
+  网格先行(先命名分区再测量)→ 分区普查取色(tokens 必须带采样证据,
+  裸眼估 hex 禁入 CSS)→ 字体无把握不点名 → **照片直接从参考图按测得 bbox 裁切**
+  (img/crops.json 登记,真 1:1,替代"素材库找同主题"的默认路径)→
+  tokens 契约先行 → 分区数字比对(差异争议回测量,不对 CSS 瞎补)
+- `scripts/inspect_ref.py`:参考图像素普查工具四命令——
+  `grid`(带标注网格)/ `census`(flat fills=真填充 / all pixels=小块 / ink core=文字墨色)/
+  `bbox`(内容外接框,测边距与发丝线)/ `crop`(按测得框裁素材)
+- compare.py `--region x0,y0,x1,y1`(比例坐标):局部放大比对 + ΔRGB 均值数字,
+  两轮比对的数字变化即修复进度证据
+- SKILL.md 路由表补 replicate.md 一行(此前 B/C 模式无路由入口)
+
+### Fixed
+- inspect_ref.py grid/crop 落盘前自动创建父目录(协议默认往 img/ 裁图,新项目无该目录会崩)
+
+### Changed
+- **LICENSE:MIT → ACL-1.0(Artboard 社区开源协议)**:强传染(复制/衍生/网络服务
+  须同协议开源)、禁止转售软件本体、**产出物归使用者可自由商用**、第三方素材各随其授权
+- pipeline.md 模式 B 改为指向 replicate.md 的速记版(去重复维护)
+
 ## v1.4.0 — 文字整句化 + 按组件嵌套的原生 .ai + 双层制
 
 ### Fixed

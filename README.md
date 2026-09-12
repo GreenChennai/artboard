@@ -176,7 +176,10 @@ python scripts/export.py --source src --output out.png \
     --width 1080 --scale 2 --height 1440                       # 导出
 python scripts/make_bats.py <项目>                              # 生成双击导出 bat
 python scripts/calc_size.py mm 210 297 --dpi 300               # 印刷尺寸计算器
-python scripts/compare.py 参考图 复刻图                          # 复刻并排比对
+python scripts/compare.py 参考图 复刻图                          # 复刻并排比对(--region 局部+ΔRGB)
+python scripts/inspect_ref.py grid 参考图 -o grid.png            # 复刻:带标注网格
+python scripts/inspect_ref.py census 参考图 --box x0,y0,x1,y1    # 复刻:分区普查取色(证据链)
+python scripts/inspect_ref.py crop 参考图 --box x0,y0,x1,y1 -o img/p.png  # 复刻:从参考图裁素材
 python scripts/vqa.py image.jpg --prompt "描述这张图"           # VQA 看图问答
 ```
 
@@ -244,6 +247,7 @@ artboard/
 | [esther-design-system](https://github.com/esthersjw/esther-design-system) | CC BY-NC-SA | 暖底/去 AI 味思想(重写) |
 | [Art](https://github.com/zhuxice-ctrl/Art) | 无(仅特效原理) | 视觉特效实验室 |
 | [guizang-ppt/social-card](https://github.com/op7418) | AGPL | 踩坑规则思想(重写) |
+| [super-prototyping](https://github.com/ReScienceLab/super-prototyping) | Apache-2.0 | 复刻证据链方法论:网格先行/测量优先/普查取色(replicate.md) |
 | [rembg](https://github.com/danielgatis/rembg) | MIT | 本地抠图引擎 |
 
 字体:思源黑体/宋体(Noto CJK)· 得意黑(Smiley Sans)· 霞鹜文楷(LXGW WenKai)· 站酷快乐体(ZCOOL KuaiLe)· MiSans(小米)· 阿里巴巴普惠体 3.0 · HarmonyOS Sans(华为)。
@@ -252,4 +256,9 @@ artboard/
 
 ## 📄 License
 
-MIT
+**ACL-1.0(Artboard 社区开源协议)** — 传染性开源,详见 [LICENSE](LICENSE):
+
+- ✅ 免费使用 / 学习 / 修改 / 分发;**产出物(海报、图、PDF 等)归使用者,可自由商用、闭源、售卖**
+- 🔁 传染:复制或衍生(含打包进其他项目、包装成在线服务)必须整体按 ACL-1.0 开源
+- 🚫 禁止转售软件本体;部署/定制/咨询等服务费与产出物收入不受限
+- 📦 捆绑的字体/图标/vendor 库各随其原始授权

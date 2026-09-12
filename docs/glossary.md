@@ -9,7 +9,9 @@
 | 五问 | 开工前追问协议:用途/尺寸/风格/配色/素材(intake.md) |
 | 设计简报 | 五问汇总的"生图式提示词",先给用户看再动工(design-prompt.txt) |
 | 三模式 | 文案直出(A)/ 图片复刻(B)/ 换风格改配色(C)(replicate.md 为 B 的协议) |
-| 复刻比对 | compare.py 生成原图 vs 复刻图并排图,逐项核对(replicate.md Step R4) |
+| 证据链 | 复刻纪律:每个颜色/度量追溯到测量;token 必须带采样证据,裸眼估的不进 CSS(replicate.md) |
+| 分区普查 | inspect_ref.py census 按区采样:flat fills=真填充/all pixels=小块/ink core=文字墨色(R1b) |
+| 复刻比对 | compare.py 生成原图 vs 复刻图并排图(--region 局部放大+ΔRGB 数字),逐分区核对(replicate.md Step R4) |
 | 风格分册 | 某视觉风格的规则集:色彩角色表+字体栈+字号阶+组件+禁则+案例(styles/) |
 | 品类规范 | 某输出介质的规范:尺寸/字号下限/折线/盲区(formats/) |
 | 原子混搭 | 分册章节按单关注点组织,可跨风格借用单个原子(如"瑞士版式+Y2K 配色") |

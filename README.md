@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./docs/readme/hero.svg" width="100%" alt="artboard · HTML 海报工作室:把文案与照片画成印刷级设计图,导出 PNG/GIF/MP4/PDF">
+  <img src="./docs/readme/hero.svg" width="100%" alt="artboard · HTML 海报工作室:字落生根,版上开花——把文案与照片养成印刷级设计图,导出 PNG/GIF/MP4/PDF">
 </p>
 
 <h1 align="center">artboard · HTML 海报工作室</h1>

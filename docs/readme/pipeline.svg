@@ -1,58 +1,77 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="240" viewBox="0 0 1200 240" role="img" aria-labelledby="t d">
   <title id="t">artboard 工作流水线</title>
   <desc id="d">五问追问 → 选风格字体 → 素材抠图搜图 → 按护栏写 HTML → Playwright 导出 → 看图自检,最多两轮。</desc>
-  <rect width="1200" height="240" rx="18" fill="#181109"/>
+
+  <defs>
+    <linearGradient id="pbg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f8fcf0"/><stop offset="1" stop-color="#e9f4d6"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="240" rx="18" fill="url(#pbg)"/>
+
+  <!-- 裁切标记 + 飘落的叶 -->
+  <g stroke="#93bd58" stroke-width="2" opacity=".9" fill="none">
+    <path d="M26 8v20M8 26h18"/><path d="M1174 8v20M1192 26h-18"/>
+    <path d="M26 232v-20M8 214h18"/><path d="M1174 232v-20M1192 214h-18"/>
+  </g>
+  <g fill="#b9dc83">
+    <circle cx="1124" cy="26" r="2.5"/><circle cx="1144" cy="40" r="2"/>
+  </g>
+  <g transform="translate(1152 214) rotate(118)">
+    <path d="M0 0C-2 -12 5 -21 16 -25C19 -13 12 -3 0 0Z" fill="#c6e390"/>
+  </g>
 
   <g font-family="'Segoe UI','Microsoft YaHei','PingFang SC','Noto Sans SC',sans-serif" text-anchor="middle">
     <!-- 六步 -->
     <g>
-      <rect x="34" y="52" width="160" height="104" rx="12" fill="#241a10" stroke="#b98a2e" stroke-width="1.5"/>
-      <text x="114" y="86" font-size="17" fill="#d9a648" font-family="ui-monospace,Menlo,monospace">01 追问</text>
-      <text x="114" y="118" font-size="21" fill="#f2e6cf">五问澄清</text>
-      <text x="114" y="142" font-size="15" fill="#8a7a62">用途·尺寸·风格</text>
+      <rect x="34" y="52" width="160" height="104" rx="12" fill="#fdfff6" stroke="#abd077" stroke-width="1.5"/>
+      <text x="114" y="86" font-size="17" fill="#55891f" font-family="ui-monospace,'Cascadia Mono',Consolas,'Microsoft YaHei','PingFang SC','Noto Sans SC',monospace">01 追问</text>
+      <text x="114" y="118" font-size="21" fill="#2b4a12">五问澄清</text>
+      <text x="114" y="142" font-size="15" fill="#6f8452">用途·尺寸·风格</text>
     </g>
-    <path d="M200 104h38" stroke="#b98a2e" stroke-width="2" marker-end="none"/>
-    <path d="M230 96l12 8-12 8" stroke="#b98a2e" stroke-width="2" fill="none"/>
+    <path d="M200 104h38" stroke="#7fae44" stroke-width="2"/>
+    <path d="M230 96l12 8-12 8" stroke="#7fae44" stroke-width="2" fill="none"/>
     <g>
-      <rect x="248" y="52" width="160" height="104" rx="12" fill="#241a10" stroke="#b98a2e" stroke-width="1.5"/>
-      <text x="328" y="86" font-size="17" fill="#d9a648" font-family="ui-monospace,Menlo,monospace">02 风格</text>
-      <text x="328" y="118" font-size="21" fill="#f2e6cf">分册+字体</text>
-      <text x="328" y="142" font-size="15" fill="#8a7a62">145 方向气质表</text>
+      <rect x="248" y="52" width="160" height="104" rx="12" fill="#fdfff6" stroke="#abd077" stroke-width="1.5"/>
+      <text x="328" y="86" font-size="17" fill="#55891f" font-family="ui-monospace,'Cascadia Mono',Consolas,'Microsoft YaHei','PingFang SC','Noto Sans SC',monospace">02 风格</text>
+      <text x="328" y="118" font-size="21" fill="#2b4a12">分册+字体</text>
+      <text x="328" y="142" font-size="15" fill="#6f8452">145 方向气质表</text>
     </g>
-    <path d="M414 104h38" stroke="#b98a2e" stroke-width="2"/>
-    <path d="M444 96l12 8-12 8" stroke="#b98a2e" stroke-width="2" fill="none"/>
+    <path d="M414 104h38" stroke="#7fae44" stroke-width="2"/>
+    <path d="M444 96l12 8-12 8" stroke="#7fae44" stroke-width="2" fill="none"/>
     <g>
-      <rect x="462" y="52" width="160" height="104" rx="12" fill="#241a10" stroke="#b98a2e" stroke-width="1.5"/>
-      <text x="542" y="86" font-size="17" fill="#d9a648" font-family="ui-monospace,Menlo,monospace">03 素材</text>
-      <text x="542" y="118" font-size="21" fill="#f2e6cf">抠图·搜图·VQA</text>
-      <text x="542" y="142" font-size="15" fill="#8a7a62">图库/爬虫/自备</text>
+      <rect x="462" y="52" width="160" height="104" rx="12" fill="#fdfff6" stroke="#abd077" stroke-width="1.5"/>
+      <text x="542" y="86" font-size="17" fill="#55891f" font-family="ui-monospace,'Cascadia Mono',Consolas,'Microsoft YaHei','PingFang SC','Noto Sans SC',monospace">03 素材</text>
+      <text x="542" y="118" font-size="21" fill="#2b4a12">抠图·搜图·VQA</text>
+      <text x="542" y="142" font-size="15" fill="#6f8452">图库/爬虫/自备</text>
     </g>
-    <path d="M628 104h38" stroke="#b98a2e" stroke-width="2"/>
-    <path d="M658 96l12 8-12 8" stroke="#b98a2e" stroke-width="2" fill="none"/>
+    <path d="M628 104h38" stroke="#7fae44" stroke-width="2"/>
+    <path d="M658 96l12 8-12 8" stroke="#7fae44" stroke-width="2" fill="none"/>
     <g>
-      <rect x="676" y="52" width="160" height="104" rx="12" fill="#241a10" stroke="#b98a2e" stroke-width="1.5"/>
-      <text x="756" y="86" font-size="17" fill="#d9a648" font-family="ui-monospace,Menlo,monospace">04 绘制</text>
-      <text x="756" y="118" font-size="21" fill="#f2e6cf">护栏下写 HTML</text>
-      <text x="756" y="142" font-size="15" fill="#8a7a62">tokens+特效库</text>
+      <rect x="676" y="52" width="160" height="104" rx="12" fill="#fdfff6" stroke="#abd077" stroke-width="1.5"/>
+      <text x="756" y="86" font-size="17" fill="#55891f" font-family="ui-monospace,'Cascadia Mono',Consolas,'Microsoft YaHei','PingFang SC','Noto Sans SC',monospace">04 绘制</text>
+      <text x="756" y="118" font-size="21" fill="#2b4a12">护栏下写 HTML</text>
+      <text x="756" y="142" font-size="15" fill="#6f8452">tokens+特效库</text>
     </g>
-    <path d="M842 104h38" stroke="#b98a2e" stroke-width="2"/>
-    <path d="M872 96l12 8-12 8" stroke="#b98a2e" stroke-width="2" fill="none"/>
+    <path d="M842 104h38" stroke="#7fae44" stroke-width="2"/>
+    <path d="M872 96l12 8-12 8" stroke="#7fae44" stroke-width="2" fill="none"/>
     <g>
-      <rect x="890" y="52" width="130" height="104" rx="12" fill="#241a10" stroke="#b98a2e" stroke-width="1.5"/>
-      <text x="955" y="86" font-size="17" fill="#d9a648" font-family="ui-monospace,Menlo,monospace">05 导出</text>
-      <text x="955" y="118" font-size="21" fill="#f2e6cf">Playwright</text>
-      <text x="955" y="142" font-size="15" fill="#8a7a62">PNG/GIF/PDF</text>
+      <rect x="890" y="52" width="130" height="104" rx="12" fill="#fdfff6" stroke="#abd077" stroke-width="1.5"/>
+      <text x="955" y="86" font-size="17" fill="#55891f" font-family="ui-monospace,'Cascadia Mono',Consolas,'Microsoft YaHei','PingFang SC','Noto Sans SC',monospace">05 导出</text>
+      <text x="955" y="118" font-size="21" fill="#2b4a12">Playwright</text>
+      <text x="955" y="142" font-size="15" fill="#6f8452">PNG/GIF/PDF</text>
     </g>
-    <path d="M1026 104h38" stroke="#b98a2e" stroke-width="2"/>
-    <path d="M1056 96l12 8-12 8" stroke="#b98a2e" stroke-width="2" fill="none"/>
+    <path d="M1026 104h38" stroke="#7fae44" stroke-width="2"/>
+    <path d="M1056 96l12 8-12 8" stroke="#7fae44" stroke-width="2" fill="none"/>
     <g>
-      <rect x="1074" y="52" width="96" height="104" rx="12" fill="#b98a2e"/>
-      <text x="1122" y="86" font-size="17" fill="#241a10" font-family="ui-monospace,Menlo,monospace">06 自检</text>
-      <text x="1122" y="116" font-size="19" fill="#241a10" font-weight="700">看图</text>
-      <text x="1122" y="140" font-size="15" fill="#3a2a1d">≤2 轮</text>
+      <rect x="1074" y="52" width="96" height="104" rx="12" fill="#2b4a12"/>
+      <text x="1122" y="86" font-size="17" fill="#ffd84d" font-family="ui-monospace,'Cascadia Mono',Consolas,'Microsoft YaHei','PingFang SC','Noto Sans SC',monospace">06 自检</text>
+      <text x="1122" y="116" font-size="19" fill="#fdfff6" font-weight="700">看图</text>
+      <text x="1122" y="140" font-size="15" fill="#aecb84">≤2 轮</text>
     </g>
   </g>
 
   <text x="600" y="206" text-anchor="middle" font-family="'Segoe UI','Microsoft YaHei','PingFang SC','Noto Sans SC',sans-serif"
-        font-size="18" fill="#8a7a62">动图:CSS 动画 → GIF/MP4(无缝循环,帧差校验) · 静图:整页截图 + 分块拼接 · 印刷:300dpi 直出</text>
+        font-size="18" fill="#6f8452">动图:CSS 动画 → GIF/MP4(无缝循环,帧差校验) · 静图:整页截图 + 分块拼接 · 印刷:300dpi 直出</text>
 </svg>

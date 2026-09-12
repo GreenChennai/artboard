@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="440" viewBox="0 0 1200 440" role="img" aria-labelledby="t d">
   <title id="t">artboard · HTML 海报工作室</title>
-  <desc id="d">字落生根,版上开花:用 HTML/CSS 把文案与照片养成印刷级设计图,导出 PNG/GIF/MP4/PDF。</desc>
+  <desc id="d">字落生根,版上开花:用 HTML/CSS 把文案与照片养成印刷级设计图,导出 PNG/GIF/MP4/PDF,并可逆转换矢量工程文件。</desc>
 
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
@@ -27,30 +27,38 @@
 
   <!-- 左栏:标题区 -->
   <g font-family="'Segoe UI','Microsoft YaHei','PingFang SC','Noto Sans SC',sans-serif">
-    <text x="64" y="76" font-family="ui-monospace,'Cascadia Mono',Consolas,monospace" font-size="17" letter-spacing="4.5" fill="#55891f">AGENT SKILL · HTML 海报工作室</text>
+    <text x="64" y="76" font-family="ui-monospace,'Cascadia Mono',Consolas,'Microsoft YaHei','PingFang SC','Noto Sans SC',monospace" font-size="17" letter-spacing="4.5" fill="#55891f">AGENT SKILL · HTML 海报工作室</text>
 
-    <rect x="64" y="168" width="372" height="18" rx="9" fill="#ffe36e" opacity=".7" transform="rotate(-.5 250 177)"/>
-    <text x="62" y="172" font-size="86" font-weight="800" letter-spacing="-.5" fill="#22380f">artboard</text>
-
-    <text x="64" y="246" font-family="KaiTi,'Kaiti SC','STKaiti','BiauKai',serif" font-size="36" fill="#2b4a13">「字落生根,版上开花。」</text>
-    <text x="64" y="290" font-size="19" fill="#57703c">把每一句文案、每一张照片,养成印刷级的设计图。</text>
-
-    <g font-size="17" fill="#6f8452">
-      <text x="64" y="330">小红书封面 · 电商主图 · 主 KV · 数据长图</text>
-      <text x="64" y="359">名片 · 三折页 · 易拉宝 · PPT 页 · GIF 动图</text>
+    <rect x="64" y="168" width="368" height="18" rx="9" fill="#ffe36e" opacity=".7" transform="rotate(-.5 248 177)"/>
+    <g transform="translate(64 172) scale(0.086 -0.086)" fill="#22380f" stroke="none">
+      <path transform="translate(0 0)" d="M34 137Q34 197 66.0 243.0Q98 289 158.0 314.0Q218 339 300 339H379V361Q379 405 349.0 432.0Q319 459 269 459Q198 459 155 397L62 462Q138 572 279 572Q348 572 400.5 546.0Q453 520 482.5 471.5Q512 423 512 359V-10H379V61H373Q353 21 310.5 -1.5Q268 -24 216 -24Q137 -24 85.5 19.5Q34 63 34 137ZM379 192V227H327Q170 227 170 146Q170 119 192.0 103.5Q214 88 253 88Q302 88 340.5 115.0Q379 142 379 192Z"/>
+      <path transform="translate(573 0)" d="M62 -10V558H195V453H200Q232 510 284.5 541.0Q337 572 410 572H416V439H407Q301 439 248.0 398.5Q195 358 195 287V-10Z"/>
+      <path transform="translate(1005 0)" d="M388 418H235V181Q235 144 255.0 124.0Q275 104 313 104Q345 104 376 114V-10Q334 -24 282 -24Q195 -24 148.5 24.0Q102 72 102 163V418H14V538H102V705H235V538H388Z"/>
+      <path transform="translate(1413 0)" d="M63 -10V755H196V486H201Q230 526 272.5 549.0Q315 572 363 572Q431 572 483.5 536.0Q536 500 565.0 434.0Q594 368 594 282Q594 191 565.0 121.5Q536 52 483.5 14.0Q431 -24 362 -24Q312 -24 270.5 -1.0Q229 22 201 63H196V-10ZM322 101Q383 101 420.5 149.0Q458 197 458 274Q458 351 421.5 399.0Q385 447 326 447Q266 447 229.0 399.0Q192 351 192 274Q192 197 228.0 149.0Q264 101 322 101Z"/>
+      <path transform="translate(2045 0)" d="M37 274Q37 365 70.0 432.0Q103 499 163.5 535.5Q224 572 306 572Q388 572 448.5 535.5Q509 499 542.0 432.0Q575 365 575 274Q575 183 542.0 116.0Q509 49 448.5 12.5Q388 -24 306 -24Q224 -24 163.5 12.5Q103 49 70.0 116.0Q37 183 37 274ZM439 274Q439 354 403.5 400.5Q368 447 306 447Q244 447 208.5 400.5Q173 354 173 274Q173 194 209.0 147.5Q245 101 306 101Q367 101 403.0 147.5Q439 194 439 274Z"/>
+      <path transform="translate(2657 0)" d="M34 137Q34 197 66.0 243.0Q98 289 158.0 314.0Q218 339 300 339H379V361Q379 405 349.0 432.0Q319 459 269 459Q198 459 155 397L62 462Q138 572 279 572Q348 572 400.5 546.0Q453 520 482.5 471.5Q512 423 512 359V-10H379V61H373Q353 21 310.5 -1.5Q268 -24 216 -24Q137 -24 85.5 19.5Q34 63 34 137ZM379 192V227H327Q170 227 170 146Q170 119 192.0 103.5Q214 88 253 88Q302 88 340.5 115.0Q379 142 379 192Z"/>
+      <path transform="translate(3230 0)" d="M62 -10V558H195V453H200Q232 510 284.5 541.0Q337 572 410 572H416V439H407Q301 439 248.0 398.5Q195 358 195 287V-10Z"/>
+      <path transform="translate(3662 0)" d="M569 -10H436V63H430Q405 21 365.5 -1.5Q326 -24 277 -24Q206 -24 151.5 14.0Q97 52 67.0 121.0Q37 190 37 280Q37 367 66.5 433.0Q96 499 149.5 535.5Q203 572 272 572Q321 572 361.5 549.0Q402 526 430 485H436V755H569ZM306 446Q247 446 210.0 398.5Q173 351 173 274Q173 197 211.0 149.5Q249 102 310 102Q368 102 404.0 149.5Q440 197 440 274Q440 351 403.0 398.5Q366 446 306 446Z"/>
     </g>
 
-    <g font-family="ui-monospace,'Cascadia Mono',Consolas,monospace" font-size="16.5" fill="#47711f" text-anchor="middle">
-      <rect x="64" y="384" width="206" height="40" rx="20" fill="#fdfff5" fill-opacity=".55" stroke="#7fae44" stroke-width="1.6"/>
-      <text x="167" y="410">PNG·GIF·MP4·PDF</text>
-      <rect x="286" y="384" width="154" height="40" rx="20" fill="#fdfff5" fill-opacity=".55" stroke="#7fae44" stroke-width="1.6"/>
-      <text x="363" y="410">145 风格方向</text>
-      <rect x="456" y="384" width="146" height="40" rx="20" fill="#fdfff5" fill-opacity=".55" stroke="#7fae44" stroke-width="1.6"/>
-      <text x="529" y="410">10 画布预设</text>
+    <text x="64" y="246" font-family="KaiTi,'Kaiti SC','STKaiti','BiauKai',serif" font-size="36" fill="#2b4a13">「字落生根,版上开花。」</text>
+    <text x="64" y="292" font-size="19" fill="#57703c">把每一句文案、每一张照片,养成印刷级的设计图。</text>
+
+    <text x="64" y="336" font-size="16" fill="#6f8452">小红书封面 · 电商主图 · 主 KV · 数据长图 · 名片 · 三折页 · 易拉宝 · PPT 页 · GIF 动图</text>
+
+    <g font-family="ui-monospace,'Cascadia Mono',Consolas,'Microsoft YaHei','PingFang SC','Noto Sans SC',monospace" font-size="15.5" fill="#47711f" text-anchor="middle">
+      <rect x="64" y="374" width="180" height="40" rx="20" fill="#fdfff5" fill-opacity=".55" stroke="#7fae44" stroke-width="1.6"/>
+      <text x="154" y="399">PNG·GIF·MP4·PDF</text>
+      <rect x="256" y="374" width="209" height="40" rx="20" fill="#fdfff5" fill-opacity=".55" stroke="#7fae44" stroke-width="1.6"/>
+      <text x="360.5" y="399">转换矢量 html -> .ai</text>
+      <rect x="477" y="374" width="135" height="40" rx="20" fill="#fdfff5" fill-opacity=".55" stroke="#7fae44" stroke-width="1.6"/>
+      <text x="544.5" y="399">145 风格方向</text>
+      <rect x="624" y="374" width="125" height="40" rx="20" fill="#fdfff5" fill-opacity=".55" stroke="#7fae44" stroke-width="1.6"/>
+      <text x="686.5" y="399">10 画布预设</text>
     </g>
   </g>
 
-  <!-- 右侧:画布上长出嫩芽(字落生根的视觉呼应) -->
+  <!-- 右侧:海报画布(抽象排版) -->
   <g font-family="'Segoe UI','Microsoft YaHei',sans-serif">
     <g stroke="#96c05c" stroke-width="1.6" fill="none">
       <path d="M778 64h16M786 56v16"/><path d="M1112 64h16M1120 56v16"/>
@@ -69,13 +77,6 @@
     <rect x="832" y="198" width="256" height="12" rx="6" fill="#aecb84"/>
     <rect x="832" y="224" width="210" height="12" rx="6" fill="#aecb84"/>
     <rect x="832" y="250" width="236" height="12" rx="6" fill="#aecb84"/>
-
-    <!-- 文字行末长出的新芽 -->
-    <path d="M1042 230C1042 210 1048 202 1062 195" stroke="#4c8418" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-    <g transform="translate(1062 195)">
-      <path d="M0 0C-2 -12 4 -20 15 -24C18 -12 12 -3 0 0Z" fill="#7cbf2e"/>
-      <path d="M2 1C12 -5 21 -5 28 0C21 7 11 7 2 1Z" fill="#a8da52"/>
-    </g>
 
     <rect x="832" y="292" width="136" height="38" rx="19" fill="#2b4a12"/>
     <rect x="852" y="307" width="70" height="9" rx="4.5" fill="#d9edb4"/>

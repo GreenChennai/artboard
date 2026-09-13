@@ -82,6 +82,15 @@ AI 生图工具做海报的三座大山:**文字必糊、配色看运气、改�
 双击 `tools\config-editor\artboard-config-editor.exe`(纯 tkinter 零依赖,已编译 exe),
 逐项填写后点保存——即改即生效,不用重启。
 
+> 界面顶部会显示**实际写入路径**,保存后也会回显一次。请确认它是
+> `<技能根>\config.json`(不是 `scripts\config.json`)。
+> 路径不对或想排障:命令行跑
+> `artboard-config-editor.exe --locate`,会打印定位结果。
+>
+> exe 从**自身位置向上搜索**技能根(识别 `config.example.json`),所以放在
+> `tools\config-editor\` 下、或临时拷到别处都能正确工作;窗口内可滚动,
+> 另有「打开所在目录」按钮直接定位到 config.json。
+
 **第 4 步 · 一键部署运行环境**(`artboard\scripts\` 下)
 
 ```bat

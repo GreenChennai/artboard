@@ -63,9 +63,14 @@ C:\Users\你\.agents\skills\artboard\
 | 本地代理 | 访问 Pinterest 等境外源时填,如 `http://127.0.0.1:7890` | 可选 |
 | 视觉识别模式 | 保持 `auto`(Agent 自带视觉优先) | 保持默认 |
 | 本地 VQA / OCR 路径 | 跑 `scripts\fetch_model.py vqa`(或 `ocr`)自动下载部署 | 可选 |
+| Poppler 目录 / Ghostscript 路径 | 跑 `scripts\setup_vector.py` 一键部署;仅矢量交付需要 | 可选 |
 
-点**保存**。配置即改即生效,不用重启。保存后程序会打印实际写入路径,
-请确认是 `<技能根>\config.json`(不是 `scripts\config.json`)。
+点**保存**。配置即改即生效,不用重启。
+
+**界面顶部会显示实际写入路径**——请确认它是 `<技能根>\config.json`。
+若显示的是 `scripts\config.json` 或临时目录,说明定位有误,点标题栏外的
+「打开所在目录」核对,或用命令行跑 `artboard-config-editor.exe --locate`
+看定位诊断。窗口内容可滚动,末尾几个字段需向下滚。
 
 > **命令行方式**(不想用 GUI):直接用记事本编辑 `config.json`,
 > 每行格式是 `"键名": "值",`——逗号、引号一个都不能少。

@@ -1,5 +1,36 @@
 # Changelog
 
+## v1.7.3 — 图形配置编辑器随配置契约同步重制
+
+### Fixed
+- **`tools/config-editor/artboard-config-editor.exe` 严重过期**:上次打包于 2026-09-09,
+  而 `config_gui.py` 与 `config.example.json` 之后已多次变更,exe 里仍是旧逻辑。
+  更关键的是:**PyInstaller onefile 下 `__file__` 指向解包临时目录(`_MEIPASS`)**,
+  旧代码用 `dirname(dirname(abspath(__file__)))` 定位技能根 →
+  实际会写到 `%TEMP%\...\config.json`,**保存后配置完全不生效**。
+  上一版按源码态修好的路径(两层 dirname)对 exe **同样不成立**——
+  这是本轮才发现的底层问题。
+- **`config_gui.py` 定位重写 `locate_skill_dir()`**:`sys.frozen` 判定分派
+  (frozen 用 `sys.executable`,源码用 `__file__`),自起点**向上最多 6 级**
+  搜索技能根标志文件(`config.example.json` / `config.json`)。
+  实测三场景全对:源码态、exe 在 `tools/config-editor/`、exe 被拷到桌面
+  (第三种回落并如实报告"未定位到技能根")。
+- 界面顶部新增**实际写入路径**与定位说明(未定位到时红字告警);
+  保存前若判定路径可疑,弹确认;保存改为**原子写**(`.tmp` + `os.replace`)
+  并与 `config.json` 已有键合并;新增「打开所在目录」按钮
+- **内容可滚动**:字段从 13 增到 15 后,窗口高度装不下(旧版末尾几项被裁掉看不见)
+
+### Added
+- `config_gui.py --locate`:打印 frozen 状态与定位结果后退出,便于排障;
+  源码态与 exe 都可用
+- `config_gui.py` 头部补充打包命令与 frozen 注意事项(防下次再踩)
+- `.gitignore` 排除 PyInstaller 构建残留(`.build/` / `.pkgtest/` / `*.spec`)
+
+### Changed
+- `README`「第 3 步 · 填配置」与 `docs/setup.md` 第 4 步:补充写入路径核对方法、
+  `--locate` 排障、可滚动提示;配置项表补 Poppler / Ghostscript 两行
+- exe 重新打包(11.99MB,`--onefile --windowed`,pyinstaller 6.22.2)
+
 ## v1.7.2 — 恢复 make_bats · 仓库只收实用文档 · 提示词瘦身
 
 ### Fixed · v1.7.1 复核补漏(逐项 72 项断言核对 + 25 项端到端测试发现)

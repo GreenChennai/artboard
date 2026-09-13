@@ -1,10 +1,16 @@
 r"""artboard 配置编辑器(纯 tkinter,零第三方依赖,可 PyInstaller 打包成单文件 exe)。
 
-功能:可视化编辑 config.json 的全部键,保存时自动校验 JSON 合法性,
-小白不再需要手工处理逗号/引号。
+功能:可视化编辑 config.json 的全部键;界面顶部显示实际写入路径;
+保存时自动校验 JSON 合法性,小白不再需要手工处理逗号/引号。
 
-打包 exe:
-  pyinstaller --onefile --windowed --name artboard-config-editor config_gui.py
+打包 exe(在技能根目录执行):
+  python -m PyInstaller --onefile --windowed --name artboard-config-editor ^
+      --distpath tools/config-editor --workpath .build --specpath .build ^
+      scripts/config_gui.py
+
+⚠️ frozen(PyInstaller)状态下 `__file__` 指向解包临时目录(_MEIPASS),
+   不能用来定位技能根 —— 必须以 `sys.executable` 为起点向上搜索技能根标志
+   文件 `config.example.json`。见 locate_skill_dir()。
 """
 
 import json
@@ -13,8 +19,34 @@ import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
-# 技能根目录:scripts/ 的上一级(与 _config.py / export.py / preflight.py 保持一致)
-SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SKILL_MARKERS = ("config.example.json", "config.json")
+
+
+def locate_skill_dir() -> tuple[str, str]:
+    """定位技能根(含 config.example.json / config.json 的目录)。
+
+    返回 (技能根, 诊断说明)。搜索起点:
+      - frozen(exe):`sys.executable` 所在目录 —— exe 在 tools/config-editor/ 下,
+        向上 3 级即技能根;被拷贝到别处也能靠标志文件找到;
+      - 源码态:`__file__` 所在 scripts/,向上 1 级即技能根。
+    最多向上 6 级;都找不到则回落到「起点」并如实报告,由界面提示用户。
+    """
+    frozen = bool(getattr(sys, "frozen", False))
+    start = os.path.dirname(os.path.abspath(
+        sys.executable if frozen else __file__))
+    d = start
+    for _ in range(6):
+        if any(os.path.isfile(os.path.join(d, m)) for m in SKILL_MARKERS):
+            verb = "exe" if frozen else "源码"
+            return d, f"已定位技能根({verb}态,自 {start} 上溯)"
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    return start, f"[!] 未找到 config.example.json(自 {start} 上溯 6 级),请手动确认路径"
+
+
+SKILL_DIR, LOCATE_NOTE = locate_skill_dir()
 CONFIG_PATH = os.path.join(SKILL_DIR, "config.json")
 EXAMPLE = os.path.join(SKILL_DIR, "config.example.json")
 
@@ -83,17 +115,43 @@ def load_config() -> dict:
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("artboard 配置编辑器")
-        self.geometry("780x640")
-        self.minsize(700, 560)
+        self.title("artboard 配置编辑器 v1.7.3")
+        self.geometry("900x680")
+        self.minsize(720, 520)
         cfg = load_config()
 
-        head = tk.Label(self, text="artboard 配置(保存写入 config.json,即改即生效)",
+        head = tk.Label(self, text="artboard 配置(保存即生效,无需重启)",
                         font=("Microsoft YaHei UI", 12, "bold"), anchor="w")
-        head.pack(fill="x", padx=14, pady=(12, 6))
+        head.pack(fill="x", padx=14, pady=(12, 2))
 
-        body = tk.Frame(self)
-        body.pack(fill="both", expand=True, padx=14)
+        # 关键诊断:把"实际会写到哪"显示出来(旧版写错目录却毫无提示)
+        warn = "[!] 未定位到技能根" in LOCATE_NOTE
+        path_lbl = tk.Label(
+            self, text=f"写入目标:{CONFIG_PATH}", anchor="w", justify="left",
+            fg="#c0392b" if warn else "#5a5a5a",
+            font=("Consolas", 8), wraplength=740)
+        path_lbl.pack(fill="x", padx=14)
+        tk.Label(self, text=LOCATE_NOTE, anchor="w",
+                 fg="#c0392b" if warn else "#8a8a8a",
+                 font=("Microsoft YaHei UI", 8)).pack(fill="x", padx=14, pady=(0, 6))
+
+        # 可滚动区:15 个字段 + 指引行远超窗口高度,不加滚动会看不到末尾几项
+        wrap = tk.Frame(self)
+        wrap.pack(fill="both", expand=True, padx=(14, 4))
+        canvas = tk.Canvas(wrap, highlightthickness=0, borderwidth=0)
+        vsb = tk.Scrollbar(wrap, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=vsb.set)
+        vsb.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+
+        body = tk.Frame(canvas)
+        win_id = canvas.create_window((0, 0), window=body, anchor="nw")
+        body.bind("<Configure>",
+                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.bind("<Configure>",
+                    lambda e: canvas.itemconfigure(win_id, width=e.width))
+        self.bind_all("<MouseWheel>",
+                      lambda e: canvas.yview_scroll(int(-e.delta / 120), "units"))
 
         self.widgets = {}
         for i, (key, label, kind, guide) in enumerate(FIELDS):
@@ -136,6 +194,8 @@ class App(tk.Tk):
                   command=self.save).pack(side="left")
         tk.Button(btns, text="另存为…", width=10,
                   command=lambda: self.save(ask=True)).pack(side="left", padx=8)
+        tk.Button(btns, text="打开所在目录", width=12,
+                  command=self._open_dir).pack(side="left", padx=8)
         self.status = tk.Label(btns, text="", fg="#0a7d4b",
                                font=("Microsoft YaHei UI", 10))
         self.status.pack(side="left", padx=10)
@@ -150,10 +210,27 @@ class App(tk.Tk):
         if f:
             var.set(os.path.normpath(f))
 
+    def _open_dir(self):
+        d = os.path.dirname(CONFIG_PATH)
+        if os.path.isdir(d):
+            os.startfile(d)                      # noqa: S606 — Windows 资源管理器
+        else:
+            messagebox.showwarning("目录不存在", d)
+
     def save(self, ask=False):
         data = load_config()
         for key, (kind, var, _g) in self.widgets.items():
             data[key] = var.get().strip()
+        # 与 config.json 的其它键合并(不丢手工写过的内容)
+        if os.path.isfile(CONFIG_PATH):
+            try:
+                with open(CONFIG_PATH, encoding="utf-8") as f:
+                    old = json.load(f)
+                if isinstance(old, dict):
+                    old.update(data)
+                    data = old
+            except (OSError, ValueError):
+                pass
         path = CONFIG_PATH
         if ask:
             path = filedialog.asksaveasfilename(
@@ -161,14 +238,38 @@ class App(tk.Tk):
                 filetypes=[("JSON", "*.json")])
             if not path:
                 return
+        elif "[!] 未定位到技能根" in LOCATE_NOTE:
+            if not messagebox.askyesno(
+                    "路径可疑",
+                    f"未能自动定位技能根,当前将写入:\n{path}\n\n"
+                    f"若这不是 <技能根>\\config.json,脚本读不到,配置不会生效。\n"
+                    f"确定继续?"):
+                return
         try:
-            with open(path, "w", encoding="utf-8") as f:
+            # 原子写:先 .tmp 再 replace,避免写一半崩溃留下截断的 config.json
+            tmp = path + ".tmp"
+            with open(tmp, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
-            self.status.config(text=f"✓ 已保存 {path}")
+            os.replace(tmp, path)
+            self.status.config(text=f"✓ 已写入 {path}")
             print(f"[config] 已写入: {path}")
         except Exception as e:
             messagebox.showerror("保存失败", str(e))
 
 
 if __name__ == "__main__":
+    # 排障/自检:打印定位结果后退出(不弹窗)。
+    #   python scripts/config_gui.py --locate
+    #   tools\config-editor\artboard-config-editor.exe --locate
+    if "--locate" in sys.argv:
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+        print(f"frozen      = {bool(getattr(sys, 'frozen', False))}")
+        print(f"skill_dir   = {SKILL_DIR}")
+        print(f"config.json = {CONFIG_PATH}")
+        print(f"example     = {EXAMPLE}")
+        print(f"note        = {LOCATE_NOTE}")
+        raise SystemExit(0)
     App().mainloop()

@@ -7,6 +7,11 @@ __pycache__/
 Thumbs.db
 dist/
 
+# PyInstaller 构建残留(打包 config-editor 时产生)
+.build/
+.pkgtest/
+*.spec
+
 # 展示样例工程文件只留本地,GitHub 仅保留成图
 assets/cases/show2-*.html
 

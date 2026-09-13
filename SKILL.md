@@ -1,6 +1,6 @@
 ---
 name: artboard
-description: 用 HTML/CSS 绘制平面设计级图片并导出成品的海报工作室。输入文案直出、给图复刻(OCR/VQA)、或换风格改配色,产出海报/banner/小红书封面/主KV/信息长图(PNG/GIF/MP4/PDF)。风格像 Illustrator/Photoshop 做的设计图,不是网页交互风。当用户想要:做海报、出图、画封面、小红书配图、banner、KV 主视觉、信息长图、数据图、动态海报、GIF、把文案变成图片、复刻一张设计图、换风格重做时使用。Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
+description: 用 HTML/CSS 绘制平面设计级图片并导出成品的海报工作室。输入文案直出、给图复刻(OCR/VQA)、或换风格改配色,产出海报/banner/小红书封面/主KV/信息长图(PNG/GIF/MP4/PDF),并为视频制作场景卡(口播信息卡/图解动画卡/片头尾,支持出入场动画)。风格像 Illustrator/Photoshop 做的设计图,不是网页交互风。当用户想要:做海报、出图、画封面、小红书配图、banner、KV 主视觉、信息长图、数据图、动态海报、GIF、视频信息卡、科普动画卡、把文案变成图片、复刻一张设计图、换风格重做时使用。Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
 ---
 
 # artboard · HTML 海报工作室
@@ -83,7 +83,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 图片复刻协议 | references/replicate.md | 复刻/换风格任务(B/C 模式)开工时必读(一次) |
 | 需求追问 | references/intake.md | 每次新任务开工前(一次) |
 | 常用物料速查 | references/sizes-common.md | 定尺寸时先查(默认入口) |
-| 动效分册 | references/animation.md | 仅动图任务(GIF/MP4) |
+| 动效分册 | references/animation.md | 动图任务(GIF/MP4)或**视频桥场景卡**(口播信息卡/图解卡)时 |
 | 导出手册 | references/export.md | 导出参数/故障不确定时 |
 | 矢量交付手册 | references/vector-export.md | 用户要 SVG/EPS/AI 可编辑 PDF/.ai/可编辑矢量时(必读) |
 | 品类规范 | references/formats/<品类>.md | 选中印刷/PPT 品类时,只读命中 1 份 |
@@ -144,8 +144,12 @@ python $S/qr.py decode <图片>                                                 
 3. 一图一个焦点、层级 ≤3 层、强调 ≤2 处、特效 ≤3 种、字体 ≤3 款。
 4. 文案逐字来自用户,不编造数据与条款。
 5. **自检只在两个时机触发**:①首版 HTML 完成时;②用户要求检查时。之后的用户改稿一律定点修改,不自动自检不派子代理(省时省 token)。
-6. 动图(M2 已启用):无缝循环 2–6s、总长 ≤15s、fps∈{10,20,25,50};只用 transform/opacity;
-   循环时长能被帧间隔整除;**终态必须仍是合格静态海报**;规范见 references/animation.md。
+6. 动图(M2 已启用)**分两模式**(判定与细则见 references/animation.md §〇):
+   **模式 P 海报循环**:无缝循环 2–6s、总长 ≤15s、fps∈{10,20,25,50};只用 transform/opacity;
+   循环时长能被帧间隔整除;**终态必须仍是合格静态海报**;
+   **模式 S 视频场景卡**(口播桥/cutflow 的信息卡、图解卡):五段式时间轴
+   (前置静置 ≥2.0s→入场→持住→出场→收尾),**全 finite 禁 infinite、必须有出场、
+   入场+出场同一条 animation 列表**,导出 MP4;终态允许空卡。
 7. **电商/食品/吉祥物类海报必须有真实素材**——产品本体只能用户提供;爬虫图自动带 `版权风险-` 前缀,交付时列出并提醒更换;抠图默认模型链禁用 bria-rmbg(商用付费)。
 8. **开工前先过 intake 五问**(用途/尺寸/风格/配色/素材),用户明说「直接做/全按推荐」才可跳过;跳过也必须在开工前复述全部假设。
 9. 二维码占位在**终稿前**用 `scripts/qr.py generate` 换成真码;成品码宽 ≥ 版面宽 8%、四周留白 ≥1 模块、纠错用 H 级(内嵌 logo 时)。

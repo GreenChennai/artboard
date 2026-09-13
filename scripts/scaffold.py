@@ -209,6 +209,13 @@ html, body {{ margin: 0; background: #ffffff; }}
 {font_vars}
 }}
 
+/* ===== 标题断行工具(typography-rules.md §一「标题语义断行」) =====
+   中文标题断点必须手动给(浏览器对中文逐字可断,会把词劈开):
+   两行标题 = 两个 <span class="tl">;换行断点用 <wbr>(配合 .t-keep);
+   text-wrap:balance 只做匀称,不认语义,不得单用。 */
+.tl     {{ display: block; }}          /* 一行一块:断行=换色=动画 stagger 三合一 */
+.t-keep {{ word-break: keep-all; text-wrap: balance; }}
+
 /* ===== 内容从这里开始 ===== */
 </style>
 </head>

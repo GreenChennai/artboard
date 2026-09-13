@@ -1,7 +1,7 @@
 ---
 name: artboard
 description: 用 HTML/CSS 绘制平面设计级图片并导出成品的海报工作室。输入文案直出、给图复刻、或换风格改配色,产出海报/banner/小红书封面/主KV/信息长图(PNG/GIF/MP4/PDF),并为视频制作场景卡(口播信息卡/图解动画卡/片头尾,支持出入场动画)。风格像 Illustrator/Photoshop 做的设计图,不是网页交互风。当用户想要:做海报、出图、画封面、小红书配图、banner、KV 主视觉、信息长图、数据图、动态海报、GIF、视频信息卡、科普动画卡、把文案变成图片、复刻一张设计图、换风格重做时使用。Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.7.2
+version: 1.7.4
 ---
 
 # artboard · HTML 海报工作室

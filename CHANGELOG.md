@@ -1,5 +1,39 @@
 # Changelog
 
+## v1.7.4 — 仓库自检 `selfcheck.py`(把审查发现变成可执行门禁)
+
+### Added
+- **`scripts/selfcheck.py`**:7 项只读检查,把 `docs/review/01` 附录里的规格落地为
+  可执行门禁。每一项都对应一次**真实发生过的缺陷**:
+
+  | 检查 | 对应缺陷 |
+  |---|---|
+  | `refs` 悬空引用 | `make_bats.py` 已删却 4 处仍引用 |
+  | `nums` 数字一致性 | rollup 11811/11812、字体 21/28、特效 30/43、风格 145/123、矢量禁令三条/五条 |
+  | `cfg` 配置契约 | `ocr_path` 死配置;`vqa_path`/`poppler_dir`/`gs_path` 未声明 |
+  | `route` 路由完备性 | `print-cmyk.md` 孤儿分册 |
+  | **`build` 构建产物同步** | **配置编辑器 exe 比源码旧 5 天,用户拿到的是坏版本** |
+  | `smoke` 脚本冒烟 | 硬编码路径导致 import 期崩溃 |
+  | `jsonfail` 失败路径 JSON | `vectoredit2webhtml.py` 异常分支缺 `import json` |
+
+- 用法:`python scripts/selfcheck.py [--only build] [--json] [--list]`;退出码
+  0=全过 / 1=有 FAIL,可直接作 CI 门禁;`--json` 输出单行 JSON
+- `build` 项在报 FAIL 时**直接打印重新打包命令**,照抄即可
+
+### 设计取舍
+- **不接进 `preflight.py`**:preflight 面向"这台机器能不能出图",selfcheck 面向
+  "仓库是否自洽"。塞进去会让每张图都多花时间,且两者受众不同(使用者 vs 维护者)。
+  仅登记在 README「脚本一览 · 维护」分组
+- **不接进 SKILL.md 路由表**:它是维护者工具,不进 Agent 的出图上下文(省 token)
+- 过程性文档(`docs/adr` / `docs/review` / `docs/ITERATION.md`)纳入豁免:
+  里面记的是提案与历史,不是现存引用,纳入核验只会产生假阳性
+
+### Verified
+- 当前仓库:`FAIL 0 · WARN 1 · PASS 7`(WARN = `huaban_cookie` / `ocr_path` 两个
+  死配置,保留待决)
+- `build` 项有效性实测:故意把 exe 时间戳改旧 5 天 → 报 FAIL 并给出打包命令、
+  退出码 1;复原后恢复 PASS、退出码 0
+
 ## v1.7.3 — 图形配置编辑器随配置契约同步重制
 
 ### Fixed

@@ -224,6 +224,28 @@ python scripts/inspect_ref.py bbox 参考图 --box x0,y0,x1,y1      # 内容外�
 python scripts/inspect_ref.py crop 参考图 --box x0,y0,x1,y1 -o img/p.png  # 裁素材
 ```
 
+**维护(仓库自检,开发/改文档后跑)**
+
+```bash
+python scripts/selfcheck.py                 # 全部 7 项,人类可读
+python scripts/selfcheck.py --only build    # 只跑一项
+python scripts/selfcheck.py --json          # 单行 JSON,给 CI
+```
+
+| 检查 | 拦的是什么 |
+|---|---|
+| `refs` | Markdown 里引用的 `scripts/*.py` / `references/*.md` 是否真存在 |
+| `nums` | 同一事实多处不一致(字体数 / 特效数 / 风格方向数 / 尺寸 / 字号下限 / 禁令条数) |
+| `cfg` | `cfg("k")` 读的键 vs 声明处;双向 diff(未声明 / 死配置) |
+| `route` | `references/` 下有无"从未被 SKILL.md 路由表引用"的孤儿分册 |
+| `build` | **被跟踪的 exe 是否比源码旧**(源与产物同仓的维护陷阱) |
+| `smoke` | 每个脚本能 import、CLI 能装配 |
+| `jsonfail` | 关键脚本喂必失败输入,最后一行 stdout 必须是合法 JSON |
+
+> 这 7 项各自对应一次真实发生过的缺陷:`make_bats` 断链、rollup 11811/11812 打架、
+> `ocr_path` 死配置、`print-cmyk.md` 孤儿、配置编辑器 exe 过期、
+> `vectoredit2webhtml.py` 异常分支缺 `import json`。
+
 **字体 / 二维码 / 打包 / 换算 / 环境**
 
 ```bash

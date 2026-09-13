@@ -53,7 +53,8 @@
   退出码 0 且产出文件才算成功。三级引擎至此真正闭环
 - **P0-6** `export_fallback.py` 无 HTML 时截图 404 却报 `ok:true` → 提前返回
   `NO_INDEX_HTML`(带 hint);再补 `EMPTY_SCREENSHOT`(<1KB)与输出目录 `makedirs`
-- **P0-7** `.gitignore` 删除 `docs/adr/` 排除行(12 份 ADR 恢复入库)
+- ~~**P0-7** `.gitignore` 删除 `docs/adr/` 排除行~~ —— **该判定为误判**:作者既已确立
+  「`docs/adr` 仅本地」的约定(提交 `5d24e59`),此处不是缺陷。v1.7.2 已恢复排除
 
 ### Fixed · 能力断链
 - **P0-1/P0-2** `scaffold.py` 建项目时**自动投放** `scripts/export_local.py` 为

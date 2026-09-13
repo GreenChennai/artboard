@@ -1,8 +1,8 @@
 {
-  "_comment": "复制为 config.json 后填写。优先级:环境变量 > 本文件 > 脚本默认值。config.json 已被 .gitignore 排除,不会提交。",
-  "wpi_path": "E:\\path\\to\\WPI",
+  "_comment": "复制为 config.json 后填写。优先级:环境变量 > 本文件 > 脚本默认值。config.json 已被 .gitignore 排除,不会提交。环境变量名见 scripts/_config.py 的 ENV_MAP。",
+  "wpi_path": "",
   "wpi_cli_exe": "",
-  "studio_dir": "E:\\path\\to\\artboard-studio",
+  "studio_dir": "",
   "ffmpeg": "",
   "pexels_key": "",
   "pixabay_key": "",
@@ -11,5 +11,8 @@
   "pinterest_cookie": "",
   "proxy": "",
   "vision_mode": "auto",
-  "ocr_path": ""
+  "vqa_path": "",
+  "ocr_path": "",
+  "poppler_dir": "",
+  "gs_path": ""
 }

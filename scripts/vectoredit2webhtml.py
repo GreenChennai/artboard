@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import base64
 import html
+import json
 import os
 import re
 import sys
@@ -286,9 +287,9 @@ def main() -> int:
         job = VectorEdit2WebHtml(a.source, a.output, mode=a.mode, pages=a.pages)
         report = job.run()
     except Exception as exc:  # noqa: BLE001
-        print('{"ok": false, "error": %r}' % str(exc))
+        # 单行 JSON 契约:必须用 json.dumps(%r 会产出单引号的非法 JSON)
+        print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False))
         return 1
-    import json
     print(json.dumps(report, ensure_ascii=False))
     return 0
 

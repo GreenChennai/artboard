@@ -29,10 +29,10 @@ import sys
 import urllib.parse
 import urllib.request
 
-from _config import cfg
+from _config import cfg, near_workspace
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-STUDIO = cfg("studio_dir", r"E:\平日资料\GitHub\artboard-studio")
+DEFAULT_STUDIO = near_workspace("artboard-studio")
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
       "Accept": "*/*", "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8"}
@@ -228,11 +228,15 @@ def search_pinterest(q: str, limit: int) -> list[dict]:
 
 def search_huaban(q: str, limit: int) -> list[dict]:
     """花瓣:WAF 拦截一切程序化访问(urllib/requests/curl/无头浏览器实测全 403/405),
-    走插件通道:tools/cookie-extension 在花瓣搜索页「导出本页素材 JSON」→ --source clipboard。"""
-    return [{"source": "huaban", "url": "", "page_url": "", "author": "",
-             "license": "花瓣 WAF 拦截程序化访问:请在浏览器装 tools/cookie-extension 插件,"
-                        "打开花瓣搜索页点「导出本页素材 JSON」,然后 --source clipboard 入库",
-             "risk": True}]
+    走插件通道:tools/cookie-extension 在花瓣搜索页「导出本页素材 JSON」→ --source clipboard。
+
+    返回空列表(而不是一条空 url 的伪候选)——否则上层会以为"搜到了 1 条"
+    却在下载阶段静默跳过,用户看不到任何提示。
+    """
+    print("△ 花瓣 WAF 拦截程序化访问。请改用插件通道:浏览器装 tools/cookie-extension,"
+          "打开花瓣搜索页点「导出本页素材 JSON」,再跑 --source clipboard 入库。",
+          file=sys.stderr)
+    return []
 
 
 MK_SIGN_KEY = "d9fd3ec394"
@@ -355,21 +359,25 @@ def download_one(c: dict, theme_dir: str, base: str) -> tuple[str, str]:
         name = finalize(f"{base}-{hint}.svg", c["content"].encode("utf-8"))
         return name, ""
 
+    last_err = ""
     for url in (c.get("url"), c.get("fallback_url")):
         if not url:
             continue
         try:
             data = http_get(url, timeout=30, headers=c.get("dl_headers") or None)
-            if len(data) < 3000:
+            # 3000B 是"图"的经验下限,但小图标/占位图本就合法:
+            # 只在**完全空**或明显是错误页时判失败,太小交给 curl 兜底重试一次。
+            if len(data) < 512:
                 raise RuntimeError(f"过小 {len(data)}B")
             return finalize(f"{base}{sniff_ext(data)}", data), ""
-        except Exception:  # noqa: BLE001 — python TLS 被掐时 curl 兜底
+        except Exception as exc:  # noqa: BLE001 — python TLS 被掐时 curl 兜底
+            last_err = str(exc)
             for curl_proxy in (None, cfg("proxy") or None):  # 直连优先,代理其次
                 tmp = os.path.join(theme_dir, base + ".bin")
                 try:
                     code = curl_get(url, out_path=tmp, proxy=curl_proxy, timeout=45,
                                     headers=c.get("dl_headers") or None)
-                    if (os.path.isfile(tmp) and os.path.getsize(tmp) > 3000
+                    if (os.path.isfile(tmp) and os.path.getsize(tmp) > 512
                             and code.decode(errors="ignore").startswith(("2", "3"))):
                         data = open(tmp, "rb").read()
                         name = finalize(f"{base}{sniff_ext(data)}", data)
@@ -377,10 +385,11 @@ def download_one(c: dict, theme_dir: str, base: str) -> tuple[str, str]:
                         return name, ""
                     if os.path.isfile(tmp):
                         os.remove(tmp)
-                except Exception:  # noqa: BLE001
+                except Exception as curl_exc:  # noqa: BLE001
+                    last_err = f"{last_err} | curl: {curl_exc}"
                     if os.path.isfile(tmp):
                         os.remove(tmp)
-    return "", "所有下载方式均失败"
+    return "", f"所有下载方式均失败({last_err[:200]})"
 
 
 def main() -> int:
@@ -421,7 +430,9 @@ def main() -> int:
 
     results = []
     if args.download:
-        theme_dir = os.path.join(STUDIO, "materials", args.theme)
+        # 每次都重新读配置:环境变量/ config.json 的后续变更要能生效
+        studio = cfg("studio_dir", DEFAULT_STUDIO)
+        theme_dir = os.path.join(studio, "materials", args.theme)
         os.makedirs(theme_dir, exist_ok=True)
         credits = os.path.join(theme_dir, "CREDITS.md")
         if not os.path.isfile(credits):

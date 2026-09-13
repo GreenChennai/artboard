@@ -85,11 +85,12 @@ AI 生图工具做海报的三座大山:**文字必糊、配色看运气、改�
 **第 4 步 · 一键部署运行环境**(`artboard\scripts\` 下)
 
 ```bat
+pip install -r ..\requirements.txt   :: 核心依赖(Pillow + playwright)
 python setup_wpi.py          :: WPI 渲染引擎(GitHub 自动下载+装依赖)
 python setup_ffmpeg.py       :: FFmpeg(可选:MP4 + 高质量 GIF)
 python fetch_model.py vqa    :: 本地 VQA 模型(可选:离线看图问答)
-python fetch_model.py ocr    :: 本地 OCR 模型(可选:离线文字识别)
 ```
+> 要出 SVG / EPS / AI 可编辑 PDF:再装 `pip install -r ..\requirements-vector.txt`
 
 **第 5 步 · 体检**
 
@@ -128,7 +129,7 @@ python scripts\preflight.py
 | `proxy` | 本地代理(访问境外源用) |
 | `ffmpeg` | 可选,启用 MP4 与高质量 GIF |
 | `vision_mode` | `auto`(Agent 视觉优先)/ `local`(强制本地 VQA/OCR) |
-| `vqa_path` / `ocr_path` | 本地 VQA / OCR 模块路径(`fetch_model.py` 自动部署) |
+| `vqa_path` | 本地 VQA 模块路径(`fetch_model.py vqa` 自动部署) |
 
 优先级:环境变量 > config.json > 默认值。改完即生效。
 
@@ -167,21 +168,66 @@ python scripts/vectoredit2webhtml.py poster-print.pdf rebuild.html --mode editab
 
 ## 📦 脚本一览
 
+> SKILL.md 只留主线 6 条命令(省 token),完整清单在此。
+
+**主线**:预检 → 建项目 → 写 HTML → 导出
+
 ```bash
 python scripts/preflight.py                                    # 环境自检报告
+python scripts/scaffold.py <slug> --size xhs --fonts 思源黑体,霞鹜文楷
+python scripts/export.py --source src --output out.png \
+    --width 1080 --scale 2 --height 1440                       # 导出(主路径)
+python scripts/export_fallback.py --source src/index.html \
+    --output out.png --width 1080 --scale 2                    # 导出(兜底,仅 PNG)
+```
+
+**双击即出图**(用户改稿后自给自足)
+
+```bash
+python scripts/make_bats.py <项目> --embed   # 每个 HTML 生成"导出-<名字>.bat"
+python scripts/export_local.py               # 批量导出器本体(须先投放到 <项目>/src/)
+```
+
+**矢量 / 工程文件**(仅当用户明确要 SVG/EPS/AI 可编辑 PDF/.ai)
+
+```bash
+python scripts/setup_vector.py                                  # 一次性部署 poppler + gs
+python scripts/ai_export.py <项目目录> [--svg --eps --ai]        # 一键矢量
+python scripts/to_vector.py --source src --output export/poster --width 1080 --height 1440
+python scripts/vectoredit2webhtml.py poster-ai.pdf rebuild.html  # 逆向:PDF/EPS/SVG/.ai → HTML
+```
+
+**素材**
+
+```bash
 python scripts/fetch_asset.py --query "…" --theme t --download # 搜图/下载
 python scripts/cutout.py product.jpg --sticker --shadow        # 抠图+投影
-python scripts/qr.py generate --data "…" --out img/qr.png      # 品牌二维码
-python scripts/qr.py decode poster.png                         # 解析二维码内容
-python scripts/export.py --source src --output out.png \
-    --width 1080 --scale 2 --height 1440                       # 导出
-python scripts/make_bats.py <项目>                              # 生成双击导出 bat
-python scripts/calc_size.py mm 210 297 --dpi 300               # 印刷尺寸计算器
-python scripts/compare.py 参考图 复刻图                          # 复刻并排比对(--region 局部+ΔRGB)
-python scripts/inspect_ref.py grid 参考图 -o grid.png            # 复刻:带标注网格
-python scripts/inspect_ref.py census 参考图 --box x0,y0,x1,y1    # 复刻:分区普查取色(证据链)
-python scripts/inspect_ref.py crop 参考图 --box x0,y0,x1,y1 -o img/p.png  # 复刻:从参考图裁素材
 python scripts/vqa.py image.jpg --prompt "描述这张图"           # VQA 看图问答
+```
+
+**复刻测量**
+
+```bash
+python scripts/compare.py 参考图 复刻图                          # 并排比对(--region 局部+ΔRGB)
+python scripts/inspect_ref.py grid 参考图 -o grid.png            # 带标注网格
+python scripts/inspect_ref.py census 参考图 --box x0,y0,x1,y1    # 分区普查取色(证据链)
+python scripts/inspect_ref.py bbox 参考图 --box x0,y0,x1,y1      # 内容外接框(测边距)
+python scripts/inspect_ref.py crop 参考图 --box x0,y0,x1,y1 -o img/p.png  # 裁素材
+```
+
+**字体 / 二维码 / 打包 / 换算 / 环境**
+
+```bash
+python scripts/fetch_font.py <目录名>                            # 按需下载缺失字体
+python scripts/add_font.py <目录名> --name 显示名 --category 分类 --tags 关键词
+python scripts/qr.py generate --data "…" --out img/qr.png --logo logo.png
+python scripts/qr.py decode poster.png
+python scripts/pack.py <项目> [--include-fonts] [--include-vendor]   # 自包含 zip
+python scripts/slim_project.py <项目> --dry-run                  # 老项目改瘦身影子
+python scripts/calc_size.py mm 210 297 --dpi 300 --scale 2       # 印刷尺寸计算器
+python scripts/setup_wpi.py [--source-install]                   # 部署 WPI
+python scripts/setup_ffmpeg.py                                   # 部署 FFmpeg
+python scripts/fetch_model.py vqa                                # 部署本地 VQA
 ```
 
 ## 📁 目录结构
@@ -195,21 +241,30 @@ artboard/
 │   ├── guardrails.md        #   设计护栏 + 反 AI 味自检 12 条
 │   ├── pipeline.md          #   流水线细则 + 动效规范
 │   ├── style-system.md      #   布局原型 + 配色系统
-│   ├── effects.md           #   视觉特效 30+ 配方
+│   ├── effects.md           #   视觉特效 43 式(fx- 34 + tx- 9)
 │   ├── title-fx.md          #   标题手法(描边/蒙版/模糊/重组)
+│   ├── composition.md       #   构图与版式骨架(动线/三分/黄金/视觉重量/基线网格)
 │   ├── typography-rules.md  #   排版硬规则(断行/层级/留白/数字)
+│   ├── cjk-typography-css.md#   中文排版 CSS 落地(标点挤压/中西文间距/断行)
+│   ├── numeric-typography.md#   数字·单位·日期排版
+│   ├── dataviz.md           #   数据可视化规范(选型/坐标轴/系列色/大数字卡)
+│   ├── color-contrast.md    #   对比度与色彩工程(WCAG/ΔL 速判/压图遮罩/色盲)
+│   ├── responsive-reflow.md #   一稿多尺寸重排规则
+│   ├── brand-system.md      #   品牌一致性(logo 净空/品牌色阶/跨物料)
+│   ├── design-review-rubric.md # 设计评审打分表(五维度加权 + 及格线)
 │   ├── materials.md         #   素材管线(找图/抠图/版权)
 │   ├── print-cmyk.md        #   打印 CMYK 流程 + 安全色谱
+│   ├── print-production.md  #   印前与后工艺(陷印/专色/裁切线/LPI/后加工)
 │   ├── replicate.md         #   图片复刻协议
 │   ├── export.md            #   导出手册
 │   ├── style-guide.md       #   新增风格指南
-│   ├── styles-catalog.md    #   145 风格方向速查
+│   ├── styles-catalog.md    #   123 风格方向速查
 │   ├── styles/              #   4 个视觉风格分册(+参考案例)
 │   └── formats/             #   名片/A4/三折页/易拉宝/PPT 品类规范
 ├── scripts/                 # preflight/scaffold/export/cutout/fetch_asset
 │   │                        #   vqa/qr/add_font/setup_wpi/setup_ffmpeg
-│   │                        #   fetch_font/make_bats/export_local
-├── fonts/                   # 21 款开源中英文字体(内置 6 款代表)
+│   │                        #   fetch_font/export_local/junction/slim_project
+├── fonts/                   # 28 款开源中英文字体族(按需下载,见 fonts/README.md)
 ├── assets/
 │   ├── vendor/              # ECharts / GSAP
 │   ├── icons/               # Tabler SVG 精选
@@ -220,9 +275,14 @@ artboard/
 │   └── config-editor/       # 图形配置编辑器(exe)
 └── docs/
     ├── setup.md             # 新手部署教程
+    ├── glossary.md          # 词汇表 + 术语消歧
     ├── samples/             # 成品展示图
     └── references/          # 风格参考图
 ```
+
+> 仓库只收"实际性工作内容 + 必备指导文档"。以下为**本地留档,不进仓库**
+> (已在 `.gitignore` 排除):`docs/adr/`(架构决策)、`docs/ITERATION.md`(迭代台账)、
+> `docs/review/`(审查报告)。
 
 ## 🔑 素材与版权政策
 

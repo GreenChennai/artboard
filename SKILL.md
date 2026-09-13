@@ -1,24 +1,24 @@
 ---
 name: artboard
-description: 用 HTML/CSS 绘制平面设计级图片并导出成品的海报工作室。输入文案直出、给图复刻(OCR/VQA)、或换风格改配色,产出海报/banner/小红书封面/主KV/信息长图(PNG/GIF/MP4/PDF),并为视频制作场景卡(口播信息卡/图解动画卡/片头尾,支持出入场动画)。风格像 Illustrator/Photoshop 做的设计图,不是网页交互风。当用户想要:做海报、出图、画封面、小红书配图、banner、KV 主视觉、信息长图、数据图、动态海报、GIF、视频信息卡、科普动画卡、把文案变成图片、复刻一张设计图、换风格重做时使用。Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
+description: 用 HTML/CSS 绘制平面设计级图片并导出成品的海报工作室。输入文案直出、给图复刻、或换风格改配色,产出海报/banner/小红书封面/主KV/信息长图(PNG/GIF/MP4/PDF),并为视频制作场景卡(口播信息卡/图解动画卡/片头尾,支持出入场动画)。风格像 Illustrator/Photoshop 做的设计图,不是网页交互风。当用户想要:做海报、出图、画封面、小红书配图、banner、KV 主视觉、信息长图、数据图、动态海报、GIF、视频信息卡、科普动画卡、把文案变成图片、复刻一张设计图、换风格重做时使用。Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
+version: 1.7.2
 ---
 
 # artboard · HTML 海报工作室
 
-**定位**:把文案/图片变成"平面设计成品图"。AI 不画像素、不用 AI 生图——而是像设计师一样
-写 HTML/CSS(有护栏、有风格库、有字体库),再用 WPI 渲染导出 PNG/GIF/MP4/PDF,
-用户要工程文件/矢量件时,经自写核心 WebHtml2VectorEdit 转 SVG/EPS/Illustrator
-分层可编辑 PDF/真 .ai(相似度 ≥95%,见 vector-export.md;**正常流水线无此步**)。
+**定位**:把文案/图片变成"平面设计成品图"。不调用 AI 生图,而是写 HTML/CSS
+(有护栏、风格库、字体库),经 WPI 渲染导出 PNG/GIF/MP4/PDF;
+用户要矢量/工程文件时才走 WebHtml2VectorEdit(**正常流水线无此步**)。
 
-## 流水线(7 步,细则见 references/pipeline.md)
+## 流水线(Step 0–7,含 1.5/4.5 两个子步,细则见 references/pipeline.md)
 
 ```
-Step 0 预检     scripts/preflight.py   — FATAL 停;ffmpeg 缺失且要动图 → 先问用户
+Step 0 预检     scripts/preflight.py   — 有 FATAL 才停(WPI 缺失已降级 WARN,可走兜底);
+                                          ffmpeg 缺失且要动图 → 先问用户
 Step 1 追问+路由 references/intake.md   — 五问(用途/尺寸/风格/配色/素材)打包问完带推荐;
                                           B/C 模式只问用途+尺寸;用户明说「直接做」才可跳过
-Step 1.5 设计简报  输出「生图式提示词」(一句话画面 + 风格/配色/字体/素材清单)
-                                          — 与 AI 生图习惯一致:先看到"要画什么"再动工
-                                          — 用户确认或说「直接做」即出图;此后改稿不重跑,见 Step 6
+Step 1.5 设计简报  输出「生图式提示词」(画面 + 风格/配色/字体/素材);
+                                          用户确认或说「直接做」即出图;此后改稿不重跑,见 Step 6
 Step 2 选风格   下表 → references/styles/<slug>.md
 Step 3 选字体   fonts/README.md 两级筛查 → ≤3 款
 Step 4 写图     scripts/scaffold.py 建项目;电商/食品/吉祥物类先走 Step 4.5
@@ -52,17 +52,8 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 > 视觉风格与品类是正交的:任何品类可配任何风格(如「名片 × 科技 KV 风」「易拉宝 × 电商大促风」)。
 > 没有匹配风格:找最近似 + 告知偏差;或按 references/style-guide.md 新建(先给用户报价)。
 
-## 尺寸预设
-
-核心 6 款速览(完整 18 预设与 40+ 物料速查见 **references/sizes-common.md**,
-查无再翻 material-catalog.md 总表):
-
-| 预设 | CSS 画布 | scale |
-|---|---|---|
-| xhs 小红书 3:4 | 1080×1440 | 2 |
-| kv 主视觉 16:9 | 1920×1080 | 2 |
-| a4p / trifold / card | 印刷三件 | 300/150dpi 直出 |
-| long 长图 | 2400×auto | 1 |
+> 尺寸:先查 `references/sizes-common.md`(默认入口),查无再翻 `material-catalog.md`(40+ 物料);
+> 18 个画布预设的真实定义在 `scripts/scaffold.py` 的 `SIZES`。
 
 ## 资源索引(按需读取,禁止批量预读)
 
@@ -75,10 +66,17 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 流水线细则 | references/pipeline.md | 流程不确定时 |
 | 风格分册 | references/styles/<命中项>.md | 选定该风格时,只读命中的 1 份 |
 | 风格系统 | references/style-system.md | 需要布局原型/配色 tokens 时 |
-| 视觉特效 30 式 | references/effects.md | 需要特效配方时(通常写 HTML 时) |
+| **构图与版式骨架** | references/composition.md | 选完风格之后、写 HTML 之前;或画面"看着散/没重点"时 |
+| 视觉特效 43 式 | references/effects.md | 需要特效配方时(通常写 HTML 时) |
 | 标题手法库 | references/title-fx.md | 标题需要描边/蒙版/错位等处理时 |
 | 物料尺寸总表 | references/material-catalog.md | 需要非常规物料尺寸/平台规范时(40+ 物料) |
 | 排版细则 | references/typography-rules.md | 自检发现断行/层级/留白问题时 |
+| 中文排版 CSS 落地 | references/cjk-typography-css.md | 写中文正文/标题时(标点挤压/中西文间距/断行的实现) |
+| 数字·单位·日期 | references/numeric-typography.md | 版面出现价格/百分比/统计/日期/序号时 |
+| 数据可视化规范 | references/dataviz.md | 版面出现图表/数据卡/排行榜时 |
+| **对比度与色彩工程** | references/color-contrast.md | 定配色 tokens、文字压图、自检"看不清"时(WCAG 定义 + 遮罩数值 + 色盲) |
+| 一稿多尺寸重排 | references/responsive-reflow.md | 同一设计要出多个画布比例时 |
+| 品牌一致性 | references/brand-system.md | 用户给了品牌色/logo/VI,或一次做多张同品牌物料 |
 | 素材分册 | references/materials.md | 任务涉及图片素材时 |
 | 图片复刻协议 | references/replicate.md | 复刻/换风格任务(B/C 模式)开工时必读(一次) |
 | 需求追问 | references/intake.md | 每次新任务开工前(一次) |
@@ -86,56 +84,42 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 动效分册 | references/animation.md | 动图任务(GIF/MP4)或**视频桥场景卡**(口播信息卡/图解卡)时 |
 | 导出手册 | references/export.md | 导出参数/故障不确定时 |
 | 矢量交付手册 | references/vector-export.md | 用户要 SVG/EPS/AI 可编辑 PDF/.ai/可编辑矢量时(必读) |
-| 品类规范 | references/formats/<品类>.md | 选中印刷/PPT 品类时,只读命中 1 份 |
+| 品类规范 | references/formats/<品类>.md | 选中印刷/PPT 品类时,只读命中 1 份(注意 slug `slide` 的文件是 `ppt.md`) |
+| 印刷 CMYK 流程 | references/print-cmyk.md | 印刷任务定色时(TAC/单色黑/安全色谱) |
+| 印前与后工艺 | references/print-production.md | 用户提"印刷/打样/烫金/UV/模切/专色/裁切线"时 |
 | 风格气质总表 | references/styles-catalog.md | 用户需求模糊、需要匹配方向时 |
 | 新增风格指南 | references/style-guide.md | 仅当要新建风格分册 |
+| **设计评审打分表** | references/design-review-rubric.md | Step 6 自检的两个时机(首版完成 / 用户要求) |
 | 字体库 | fonts/README.md | 选字体时(两级筛查) |
 | 参考案例 | assets/cases/*.html | 写 HTML 需要参照时,只读命中风格的 1 份 |
 | vendor/图标/插画包 | assets/… | 引用具体文件时,不预读 |
-| 模型下载 | scripts/fetch_model.py | 本地 VQA/OCR 缺失且需要时 |
+| 模型下载 | scripts/fetch_model.py | 本地 VQA 模型缺失且需要时 |
 | 环境部署 | scripts/setup_wpi.py / setup_ffmpeg.py | 预检报缺失时 |
+| 词汇表·术语消歧 | docs/glossary.md | 术语含义或取值口径有疑问时 |
 
-## 脚本
+## 脚本(主线;完整清单见 README)
 
 ```bash
-S="<skill 目录>/scripts"   # 本目录 scripts/
+S="<skill 目录>/scripts"
 
-python $S/preflight.py                                   # 预检(每次开工先跑)
-python $S/scaffold.py <slug> --size xhs --fonts 思源黑体,霞鹜文楷   # 建项目
+python $S/preflight.py                        # 预检(每次开工先跑)
+python $S/scaffold.py <slug> --size xhs --fonts 思源黑体,霞鹜文楷
 python $S/export.py --source <proj>/src --output <proj>/export/o.png \
-    --width 1080 --scale 2 --height 1440                  # 导出(主;固定尺寸带 --height)
-python $S/ai_export.py <项目目录>       # 一键矢量/工程文件:分层AI可编辑PDF(--svg/--eps/--ai 追加)
-python $S/to_vector.py --source <proj>/src --output <proj>/export/poster \
-    --width 1080 --height 1440                            # 矢量交付底层 CLI(同上,可精控格式)
-python $S/vectoredit2webhtml.py poster-ai.pdf rebuild.html  # 逆向:PDF/EPS/SVG/.ai → HTML
-python $S/setup_vector.py             # 一键部署矢量工具链(poppler+gs,需7-Zip)
+    --width 1080 --scale 2 --height 1440      # 导出主路径(固定尺寸必带 --height)
 python $S/export_fallback.py --source <proj>/src/index.html \
-    --output <proj>/export/o.png --width 1080 --scale 2   # 导出(兜底,仅 PNG)
-python $S/add_font.py <目录名> --name 显示名 --category 分类 --tags 关键词  # 登记新字体
-python $S/fetch_font.py <目录名>   # 按需下载缺失字体(清单 fonts/download.json)
-python $S/pack.py <项目>           # 收集影子项目的外部依赖打包成自包含 zip
-python $S/make_bats.py <项目>      # 给每个 HTML 生成"导出-*.bat"双击即出图
-python $S/calc_size.py mm 210 297  # px/mm/inch/DPI 换算计算器
-python $S/compare.py 参考图 复刻图  # 复刻模式并排比对图(--region 0,0,1,0.25 局部放大+ΔRGB 数字)
-python $S/inspect_ref.py grid ref/reference.png -o ref/grid.png   # 复刻测量:带标注网格
-python $S/inspect_ref.py census ref/reference.png --box x0,y0,x1,y1  #   分区普查取色(flat/all/ink)
-python $S/inspect_ref.py bbox ref/reference.png --box x0,y0,x1,y1    #   内容外接框(测边距/发丝线)
-python $S/inspect_ref.py crop ref/reference.png --box x0,y0,x1,y1 -o img/photo.png  #   从参考图裁素材
-python $S/setup_wpi.py             # 一键部署 WPI 引擎(artboard 发行页)
-python $S/setup_ffmpeg.py          # 一键下载部署 FFmpeg
-python $S/fetch_model.py vqa|ocr   # 一键下载部署本地 VQA / OCR 模型
-
-python $S/fetch_asset.py --query "coffee cup" --theme <主题> --download --limit 6  # 搜图/下载
-python $S/cutout.py <图片...> [--sticker] [--shadow] [--model isnet-anime]      # 抠图+后处理
-python $S/vqa.py <图片...> [--prompt "问题"]                                    # VQA 解读图片内容
-python $S/qr.py generate --data "https://…" --out img/qr.png --logo logo.png    # 二维码(品牌色/内嵌logo)
-python $S/qr.py decode <图片>                                                   # 解析二维码(本地 zxing)
+    --output <proj>/export/o.png --width 1080 --scale 2   # 兜底(仅 PNG)
+python $S/make_bats.py <项目> --embed         # 给每个 HTML 生成"导出-<名字>.bat"双击即出图
+python $S/ai_export.py <项目目录> [--svg --eps --ai]      # 矢量/工程文件(用户明确要才跑)
 ```
 
-- 项目落盘:`E:\平日资料\GitHub\artboard-studio\<slug>\`(src/ + export/)。
-- **瘦身影子(默认)**:src/fonts 与 src/vendor 是指向 Skill 资产库的目录联接,HTML 用相对引用,批量制作零拷贝;交付迁移用 `pack.py` 穿透收集打包(自包含 zip,HTML 引用自动改写);`--embed-fonts` 则真拷贝(体积大,仅单件交付用)。
-- 环境变量:`ARTBOARD_WPI`(WPI 根目录)、`ARTBOARD_FFMPEG`(ffmpeg.exe)、
-  `ARTBOARD_STUDIO`(工作室目录)——均有默认值,见各脚本头注释。
+> 素材(`fetch_asset/cutout/vqa`)、复刻(`inspect_ref/compare`)、字体(`fetch_font/add_font`)、
+> 环境部署(`setup_*`)、二维码/打包/换算 的完整参数在 **README「脚本一览」** 与各自分册
+> (`materials.md` / `replicate.md` / `export.md`),用到时再查,不预记。
+
+- 项目落盘:`config.json` 的 `studio_dir` 下 `<slug>/`(src/ + export/)。
+- **瘦身影子(默认)**:src/fonts、src/vendor 是指向 Skill 资产库的目录联接,零拷贝;
+  交付迁移用 `pack.py` 打包自包含 zip;`--embed-fonts` 则真拷贝(体积大,单件交付用)。
+- 环境变量 `ARTBOARD_WPI` / `ARTBOARD_FFMPEG` / `ARTBOARD_STUDIO` 可临时覆盖 config.json。
 
 ## 铁律(违反任何一条 = 重做)
 
@@ -144,12 +128,10 @@ python $S/qr.py decode <图片>                                                 
 3. 一图一个焦点、层级 ≤3 层、强调 ≤2 处、特效 ≤3 种、字体 ≤3 款。
 4. 文案逐字来自用户,不编造数据与条款。
 5. **自检只在两个时机触发**:①首版 HTML 完成时;②用户要求检查时。之后的用户改稿一律定点修改,不自动自检不派子代理(省时省 token)。
-6. 动图(M2 已启用)**分两模式**(判定与细则见 references/animation.md §〇):
-   **模式 P 海报循环**:无缝循环 2–6s、总长 ≤15s、fps∈{10,20,25,50};只用 transform/opacity;
-   循环时长能被帧间隔整除;**终态必须仍是合格静态海报**;
-   **模式 S 视频场景卡**(口播桥/cutflow 的信息卡、图解卡):五段式时间轴
-   (前置静置 ≥2.0s→入场→持住→出场→收尾),**全 finite 禁 infinite、必须有出场、
-   入场+出场同一条 animation 列表**,导出 MP4;终态允许空卡。
+6. 动图**分两模式**(数值细则见 references/animation.md §〇):
+   **模式 P 海报循环**——无缝循环,终态必须仍是合格静态海报;
+   **模式 S 视频场景卡**(口播桥/图解卡)——五段式一次性时间轴,全 finite 禁 infinite、
+   必须有出场,导出 MP4。
 7. **电商/食品/吉祥物类海报必须有真实素材**——产品本体只能用户提供;爬虫图自动带 `版权风险-` 前缀,交付时列出并提醒更换;抠图默认模型链禁用 bria-rmbg(商用付费)。
 8. **开工前先过 intake 五问**(用途/尺寸/风格/配色/素材),用户明说「直接做/全按推荐」才可跳过;跳过也必须在开工前复述全部假设。
 9. 二维码占位在**终稿前**用 `scripts/qr.py generate` 换成真码;成品码宽 ≥ 版面宽 8%、四周留白 ≥1 模块、纠错用 H 级(内嵌 logo 时)。
@@ -157,4 +139,6 @@ python $S/qr.py decode <图片>                                                 
 
 ## 环境配置
 
-所有路径与 key 统一放在技能根目录 **`config.json`**(wpi_path / studio_dir / ffmpeg / pexels_key / pixabay_key / huaban_cookie / vqa_path);环境变量(`ARTBOARD_WPI` 等)可临时覆盖。脚本经 `scripts/_config.py` 读取,改 config.json 即时生效。
+路径与 key 统一在技能根目录 **`config.json`**(`config.example.json` 是全键模板);
+脚本经 `scripts/_config.py` 读取,改完即时生效。
+依赖:`pip install -r requirements.txt`,矢量交付再加 `requirements-vector.txt`。

@@ -73,6 +73,12 @@ def main() -> int:
     prefix = os.path.join(out_dir, args.name)
     w, h = resolve_canvas(source)
 
+    if not args.no_check and not core.poppler_exe("pdftocairo.exe"):
+        emit({"ok": False, "error": "TOOL_MISSING", "detail": "pdftocairo(自检需要)",
+              "hint": "跑 python scripts/setup_vector.py 一键部署,"
+                      "或 config.json 填 poppler_dir;也可以加 --no-check 跳过自检"})
+        return 2
+
     fmts = ["ai-pdf"]
     if args.svg:
         fmts.append("svg")
@@ -97,7 +103,8 @@ def main() -> int:
         src_pdf = report["outputs"].get("print-pdf") or report["outputs"].get("ai-pdf")
         if src_pdf:
             try:
-                report["ai_layers"] = core.ai_save(src_pdf, prefix + ".ai")
+                report["ai_layers"] = core.ai_build_native(
+                    source, prefix + ".ai", width=w, height=h, max_wait=15)
                 report["outputs"]["ai"] = prefix + ".ai"
             except Exception as exc:  # noqa: BLE001
                 report.setdefault("warnings", []).append(

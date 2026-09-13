@@ -5,19 +5,19 @@ r"""artboard 模型分发:VQA / OCR 模块打包与下载部署。
   python fetch_model.py ocr        # 同上,OCR 模块
   python fetch_model.py            # 查看本地部署状态
 
-模块来源:artboard 仓库的 GitHub Releases(见 RELEASE_URL)。
+模块来源:artboard 仓库的 GitHub Releases(见 RELEASE_BASE)。
 部署位置:config.json 的 vqa_path / ocr_path(缺省会写到 artboard-tools 下)。
 """
 
 import json
 import os
 import sys
-import urllib.request
 import zipfile
 
 SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPTS)
-from _config import cfg, CONFIG_PATH  # noqa: E402
+from _config import cfg, write_config  # noqa: E402
+from _download import download  # noqa: E402
 
 RELEASE_BASE = ("https://github.com/GreenChennai/artboard/releases/download/"
                 "vqa-ocr-modules-v1")
@@ -47,23 +47,8 @@ def deployed(d: str, probe: str) -> bool:
     return os.path.isfile(os.path.join(d, probe))
 
 
-def download(url: str, dest: str) -> None:
-    def report(blocks, bs, total):
-        done = blocks * bs
-        if total > 0 and blocks % 200 == 0:
-            print(f"\r  {done // 1024 // 1024}/{total // 1024 // 1024} MB",
-                  end="", flush=True)
-    urllib.request.urlretrieve(url, dest, reporthook=report)
-    print()
-
-
-def set_config(key: str, path: str) -> None:
-    data = {}
-    if os.path.isfile(CONFIG_PATH):
-        data = json.load(open(CONFIG_PATH, encoding="utf-8"))
-    data[key] = path
-    json.dump(data, open(CONFIG_PATH, "w", encoding="utf-8"),
-              ensure_ascii=False, indent=2)
+def set_config(key: str, path: str) -> str:
+    return write_config({key: path})
 
 
 def main() -> int:
@@ -95,11 +80,19 @@ def main() -> int:
             print(f"[{name}] 下载模块({m['size']})…")
             os.makedirs(d, exist_ok=True)
             tmp = os.path.join(d, "_module.zip")
-            download(m["zip"], tmp)
-            print(f"[{name}] 解压…")
-            with zipfile.ZipFile(tmp) as z:
-                z.extractall(d)
-            os.remove(tmp)
+            try:
+                download(m["zip"], tmp, label=f"{name} 模块")
+                print(f"[{name}] 解压…")
+                try:
+                    with zipfile.ZipFile(tmp) as z:
+                        z.extractall(d)
+                finally:
+                    if os.path.isfile(tmp):
+                        os.remove(tmp)
+            except (RuntimeError, zipfile.BadZipFile, OSError) as exc:
+                if os.path.isfile(tmp):
+                    os.remove(tmp)
+                raise RuntimeError(f"{exc}") from exc
             if not deployed(d, m["probe"]):
                 # zip 可能带一层目录,下探一层
                 for sub in os.listdir(d):
@@ -112,8 +105,8 @@ def main() -> int:
                         break
             if not deployed(d, m["probe"]):
                 raise RuntimeError(f"解压后未找到 {m['probe']}")
-            set_config(m["path_key"], d)
-            print(f"[{name}] 部署完成: {d}(已写入 config.json)")
+            path = set_config(m["path_key"], d)
+            print(f"[{name}] 部署完成: {d}(已写入 {path})")
         except Exception as exc:  # noqa: BLE001
             failures += 1
             emit({"ok": False, "module": name,

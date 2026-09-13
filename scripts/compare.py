@@ -7,11 +7,18 @@
 import argparse
 import sys
 
-from PIL import Image, ImageDraw, ImageChops, ImageStat
+try:
+    from PIL import Image, ImageDraw, ImageChops, ImageStat
+except ImportError:
+    print('{"ok": false, "error": "NO_PILLOW",'
+          ' "hint": "pip install Pillow"}')
+    sys.exit(3)
 
 
 def _prep(path: str, region, H: int):
     im = Image.open(path).convert("RGB")
+    if not im.width or not im.height:
+        sys.exit(f"图片尺寸为 0: {path}")
     if region:
         x0, y0, x1, y1 = region
         im = im.crop((round(im.width * x0), round(im.height * y0),
@@ -32,7 +39,15 @@ def main() -> int:
                    help="局部放大: x0,y0,x1,y1 各图自身的比例坐标 0–1,如 0,0,1,0.25")
     args = p.parse_args()
 
-    region = tuple(float(v) for v in args.region.split(",")) if args.region else None
+    region = None
+    if args.region:
+        parts = [v.strip() for v in args.region.split(",") if v.strip()]
+        if len(parts) != 4:
+            sys.exit(f"--region 需要 4 个比例值 x0,y0,x1,y1,收到 {len(parts)} 个: {args.region}")
+        try:
+            region = tuple(float(v) for v in parts)
+        except ValueError:
+            sys.exit(f"--region 只能填数字: {args.region}")
     a = _prep(args.reference, region, 1400)
     b = _prep(args.render, region, 1400)
 

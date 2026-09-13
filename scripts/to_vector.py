@@ -71,6 +71,14 @@ def main() -> int:
         emit({"ok": False, "error": "TOOL_MISSING", "detail": "gs",
               "hint": "跑 python scripts/setup_vector.py"})
         return 2
+    # 相似度自检默认要用到 pdftocairo(ai-pdf/print-pdf/outline-pdf 都要栅格化);
+    # 缺它时此前的表现是第 4 步抛 TypeError 被吞成无 hint 的失败。
+    if not args.no_check and any(f in fmts for f in ("ai-pdf", "print-pdf", "outline-pdf")):
+        if not core.poppler_exe("pdftocairo.exe"):
+            emit({"ok": False, "error": "TOOL_MISSING", "detail": "pdftocairo(自检需要)",
+                  "hint": "跑 python scripts/setup_vector.py 一键部署,"
+                          "或 config.json 填 poppler_dir;也可以加 --no-check 跳过自检"})
+            return 2
 
     try:
         job = core.WebHtml2VectorEdit(

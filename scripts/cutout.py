@@ -136,8 +136,14 @@ def main() -> int:
               "hint": f"允许的模型:{', '.join(sorted(ALLOWED_MODELS))}"})
         return 2
 
-    from PIL import Image
-    from rembg import remove
+    try:
+        from PIL import Image
+        from rembg import remove
+    except ImportError as exc:
+        emit({"ok": False, "error": "NO_REMBG" if "rembg" in str(exc) else "NO_PILLOW",
+              "detail": str(exc),
+              "hint": 'pip install "rembg[cpu]" Pillow —— 抠图/贴纸化的素材任务必装'})
+        return 3
 
     session, engine = get_session(model, args.dml)
     results = []

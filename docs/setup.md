@@ -64,27 +64,38 @@ C:\Users\你\.agents\skills\artboard\
 | 视觉识别模式 | 保持 `auto`(Agent 自带视觉优先) | 保持默认 |
 | 本地 VQA / OCR 路径 | 跑 `scripts\fetch_model.py vqa`(或 `ocr`)自动下载部署 | 可选 |
 
-点**保存**。配置即改即生效,不用重启。
+点**保存**。配置即改即生效,不用重启。保存后程序会打印实际写入路径,
+请确认是 `<技能根>\config.json`(不是 `scripts\config.json`)。
 
 > **命令行方式**(不想用 GUI):直接用记事本编辑 `config.json`,
-> 每行格式是 `"键名": "值",`——逗号、引号一个都不能少,改完可跑
-> `python -c "import json;json.load(open('config.json',encoding='utf-8'))"` 验证。
+> 每行格式是 `"键名": "值",`——逗号、引号一个都不能少。
+> 写错了不用怕:`config.json` 解析失败时 `preflight.py` 会直接报
+> 「config.json 解析失败(第 X 行第 Y 列)」并标为阻断项,不会静默走默认值。
 
 ## 第 5 步 · 一键部署运行环境(在 `artboard\scripts\` 下打开命令行)
 
 ```bat
-:: WPI 渲染引擎(GitHub 自动下载 + 装依赖)
+:: 0. Python 依赖(核心:Pillow + playwright)
+pip install -r ..\requirements.txt
+
+:: 1. WPI 渲染引擎(GitHub 自动下载 + 装依赖)
 python setup_wpi.py
 
-:: FFmpeg(可选:GIF 高质量 + MP4 视频)
+:: 2. FFmpeg(可选:GIF 高质量 + MP4 视频)
 python setup_ffmpeg.py
 
-:: 本地 VQA 模型(可选:离线看图问答,约 600MB)
+:: 3. 本地 VQA 模型(可选:离线看图问答,约 600MB)
 python fetch_model.py vqa
 
-:: 本地 OCR 模型(可选:离线文字识别,约 110MB)
-python fetch_model.py ocr
 ```
+
+> 要出 SVG / EPS / AI 可编辑 PDF 等矢量产物时,再装按需依赖:
+> `pip install -r ..\requirements-vector.txt`
+> (缺 pikepdf / scikit-image 时 `to_vector.py` 会给出明确提示,不会只抛
+> `ModuleNotFoundError`。)
+>
+> 所有下载都带 300s 超时、失败自动重试 2 次、临时文件必清理;
+> 跨境网络卡住时可在 `config.json` 填 `proxy` 后重跑。
 
 ## 第 6 步 · 体检
 

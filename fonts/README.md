@@ -1,7 +1,8 @@
 # artboard 字体库总目录
 
 > **按需下载**:GitHub 仓库只随附每类一款代表字体;其余字体本地缺失时,
-> 跑 `python ../../scripts/fetch_font.py <目录名>` 自动取回(清单见 fonts/download.json;
+> 从**技能根目录**跑 `python scripts/fetch_font.py <目录名>` 自动取回
+> (在 fonts/ 下跑则写 `../scripts/fetch_font.py`;清单见 fonts/download.json;
 > 网盘字体需按 manual 链接手动下载后 add_font 登记)。
 
 > 两级筛查法:先按「分类」选定大类 → 点进对应 `<目录>/INTRO.md` 细读气质与适用场景 → 定稿 ≤3 款(标题/正文/数字各司其职)。

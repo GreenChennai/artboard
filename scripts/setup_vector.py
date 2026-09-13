@@ -12,39 +12,23 @@
 
 import argparse
 import glob
-import json
 import os
 import shutil
 import subprocess
 import sys
-import urllib.request
 import zipfile
 
 SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPTS)
-from _config import cfg, CONFIG_PATH  # noqa: E402
+from _config import cfg, write_config  # noqa: E402
+from _download import download  # noqa: E402
 
 POPPLER_URL = ("https://github.com/oschwartz10612/poppler-windows/releases/"
                "download/v26.07.0-0/Release-26.07.0-0.zip")
 GS_URL = ("https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/"
           "download/gs10080/gs10080w64.exe")
-SEVENZIP_CANDIDATES = (
-    r"C:\Program Files\7-Zip\7z.exe",
-    r"C:\Program Files (x86)\7-Zip\7z.exe",
-)
-
-
 def log(msg: str) -> None:
     print(msg, file=sys.stderr)
-
-
-def write_config(**kv: str) -> None:
-    data = {}
-    if os.path.isfile(CONFIG_PATH):
-        data = json.load(open(CONFIG_PATH, encoding="utf-8"))
-    data.update(kv)
-    json.dump(data, open(CONFIG_PATH, "w", encoding="utf-8"),
-              ensure_ascii=False, indent=2)
 
 
 def poppler_exe(d: str, name: str = "pdftocairo.exe") -> str | None:
@@ -60,12 +44,9 @@ def gs_ok(p: str) -> str | None:
     return p if p and os.path.isfile(p) else None
 
 
-def find_7z() -> str | None:
-    for p in SEVENZIP_CANDIDATES:
-        if os.path.isfile(p):
-            return p
-    hit = shutil.which("7z")
-    return hit
+def find_7z() -> str:
+    from _paths import find_7z as _find
+    return _find()
 
 
 def deploy_poppler(root: str) -> str:
@@ -73,17 +54,30 @@ def deploy_poppler(root: str) -> str:
     target = os.path.join(root, "poppler")
     os.makedirs(root, exist_ok=True)
     tmp = os.path.join(root, "_poppler.zip")
-    urllib.request.urlretrieve(POPPLER_URL, tmp)
-    print("[poppler] 解压…", file=sys.stderr)
     tmpd = os.path.join(root, "_poppler_tmp")
-    with zipfile.ZipFile(tmp) as z:
-        z.extractall(tmpd)
-    os.remove(tmp)
-    inner = glob.glob(os.path.join(tmpd, "poppler-*"))
-    if os.path.isdir(target):
-        shutil.rmtree(target)
-    shutil.move(inner[0], target)
-    shutil.rmtree(tmpd, ignore_errors=True)
+    try:
+        try:
+            download(POPPLER_URL, tmp, label="poppler")
+        except RuntimeError as exc:
+            raise RuntimeError(str(exc)) from exc
+        print("[poppler] 解压…", file=sys.stderr)
+        try:
+            with zipfile.ZipFile(tmp) as z:
+                z.extractall(tmpd)
+        finally:
+            if os.path.isfile(tmp):
+                os.remove(tmp)
+        inner = glob.glob(os.path.join(tmpd, "poppler-*"))
+        if not inner:
+            raise RuntimeError(
+                f"解压后未找到 poppler-* 目录(发行包结构可能变化): {tmpd}")
+        if os.path.isdir(target):
+            shutil.rmtree(target)
+        shutil.move(inner[0], target)
+    finally:
+        shutil.rmtree(tmpd, ignore_errors=True)
+        if os.path.isfile(tmp):
+            os.remove(tmp)
     bindir = os.path.join(target, "Library", "bin")
     print(f"[poppler] 就绪: {bindir}", file=sys.stderr)
     return bindir
@@ -100,11 +94,17 @@ def deploy_gs(root: str) -> str:
     os.makedirs(dl, exist_ok=True)
     installer = os.path.join(dl, "gs-setup.exe")
     print("[ghostscript] 下载官方安装器(约 65MB,Artifex 官方发行)…", file=sys.stderr)
-    urllib.request.urlretrieve(GS_URL, installer)
+    try:
+        download(GS_URL, installer, label="ghostscript")
+    except RuntimeError as exc:
+        raise RuntimeError(str(exc)) from exc
     print("[ghostscript] 7-Zip 解包为便携版(免管理员,不运行安装器)…", file=sys.stderr)
-    subprocess.run([z, "x", "-y", f"-o{target}", installer],
-                   check=True, capture_output=True, timeout=600)
-    os.remove(installer)
+    try:
+        subprocess.run([z, "x", "-y", f"-o{target}", installer],
+                       check=True, capture_output=True, timeout=600)
+    finally:
+        if os.path.isfile(installer):
+            os.remove(installer)
     exe = os.path.join(target, "bin", "gswin64c.exe")
     if not os.path.isfile(exe):
         raise RuntimeError(f"解包后未找到 gswin64c.exe: {target}")
@@ -128,7 +128,13 @@ def main() -> int:
     if pd:
         print(f"[OK] poppler 已就绪: {pd}")
     else:
-        changed["poppler_dir"] = deploy_poppler(root)
+        try:
+            changed["poppler_dir"] = deploy_poppler(root)
+        except RuntimeError as exc:
+            print(f"[FAIL] poppler 部署失败: {exc}", file=sys.stderr)
+            print("  (pdftocairo/pdftops 缺失 → SVG / EPS / print-pdf 自检不可用;"
+                  "可手动下载 Release 后把目录填入 config.json 的 poppler_dir)",
+                  file=sys.stderr)
 
     gs = gs_ok(cfg("gs_path"))
     if gs:
@@ -142,8 +148,8 @@ def main() -> int:
                   "仅 gs-EPS 引擎与 EPS 相似度校验不可用)", file=sys.stderr)
 
     if changed:
-        write_config(**changed)
-        print(f"[done] 已写入 config.json: {', '.join(changed)}", file=sys.stderr)
+        path = write_config(changed)
+        print(f"[done] 已写入 {path}: {', '.join(changed)}", file=sys.stderr)
     print("矢量交付就绪:python scripts/to_vector.py --source <proj>/src "
           "--output <proj>/export/poster --width 1080 --height 1440")
     return 0

@@ -129,15 +129,24 @@ python "<skill>/scripts/export_fallback.py" --source "<project>/src/index.html" 
 2. 过 `guardrails.md` 排版自检清单 + 风格分册的禁则。
 3. 发现问题 → 改 HTML → 重导 → 再看。**2 轮后仍有小瑕疵:交付并明确列出已知瑕疵**;有 FATAL 级问题(文字溢出/字体没加载)→ 告知用户并给修复建议。
 
-## Step 6.5 生成一键导出批处理(每张 HTML 都要有)
+## Step 6.5 生成一键导出入口(每张 HTML 都要有)
 
 用户改稿后可自己双击导出,不必再叫 Agent。写完 HTML 后:
 ```bash
-python scripts/make_bats.py <项目路径>
+python scripts/make_bats.py <项目> --embed
 ```
-会给 src/ 下每个 .html 生成同名 `导出-<名字>.bat`(自识别、复制即用,
-含 PNG 高清 + PDF,检测到 @keyframes 动画追加 GIF/MP4)。
-打印件在 project.json 标 `"print": true`,导出时追加 `--cmyk`(CMYK PDF+TIFF)。
+给 `src/` 下每个 .html 生成同名 **`导出-<名字>.bat`**,双击即导出该张:
+
+- 画布宽/倍率/高度从 `project.json` 读,不写死;
+- 默认出 PNG + PDF 到 `../export/`;`--formats` 可改;
+- HTML 含 `@keyframes` 且 ffmpeg 在 → 自动追加 GIF / MP4;
+- `project.json` 标 `"print": true` → 追加 `--cmyk`(CMYK PDF + TIFF);
+- `--embed` 让 bat 自带兜底:主引擎失败自动改调 `export_fallback.py`(仅 PNG);
+- bat 内写死当前 Python 与 export.py 的绝对路径(双击时 PATH 里通常没有 python)。
+
+补充:`scaffold.py` 建项目时还会投放 **`导出.py`**(双击导出**全部** HTML),
+与上面的单张 bat 互补。**两者都必须在 `<项目>/src/` 下运行** —— 直接在 `scripts/` 下
+执行会在 skill 目录里生成多余产物。
 
 ## Step 7 交付
 

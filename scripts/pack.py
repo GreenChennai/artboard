@@ -142,7 +142,8 @@ def main() -> int:
             text = text.replace(old_ref, new_ref)
         return text
 
-    os.makedirs(os.path.dirname(out), exist_ok=True)
+    # --out 只给文件名时 dirname 为 "",必须 abspath 兜底
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     count = 0
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         for fp in own:

@@ -100,7 +100,7 @@
 - `.stage` 上开 `-webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility`;
 - 修改交付过的项目时只动相关部分,重跑自检,旧版本留 `index_v2.html` 备份。
 
-## 9. 出图前自检清单(每轮必过,见流水线 Step 5)
+## 9. 出图前自检清单(每轮必过,见流水线 Step 6;量化打分见 design-review-rubric.md)
 
 1. 主标 3 米外可读?信息层级清晰?
 2. 文字无溢出、无截断、无换行孤字?

@@ -13,12 +13,9 @@ import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
-SKILL_DIR = os.path.dirname(os.path.abspath(__file__))
-if os.path.isfile(os.path.join(SKILL_DIR, "config.json")) or \
-        os.path.isfile(os.path.join(SKILL_DIR, "config.example.json")):
-    CONFIG_PATH = os.path.join(SKILL_DIR, "config.json")
-else:
-    CONFIG_PATH = os.path.join(os.getcwd(), "config.json")
+# 技能根目录:scripts/ 的上一级(与 _config.py / export.py / preflight.py 保持一致)
+SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CONFIG_PATH = os.path.join(SKILL_DIR, "config.json")
 EXAMPLE = os.path.join(SKILL_DIR, "config.example.json")
 
 # 键 → (中文名, 类型, 获取指引)
@@ -62,7 +59,14 @@ FIELDS = [
      "本地图片问答模块目录(内含 qora_assets\\qor08b.exe)。\n"
      "没有?跑 scripts\\fetch_model.py vqa 从 GitHub 发行页下载。"),
     ("ocr_path", "本地 OCR 路径(可选)", "dir",
-     "本地 OCR 模块目录(内含 OCR.exe)。没有?跑 scripts\\fetch_model.py ocr。"),
+     "本地 OCR 模块目录(内含 OCR.exe)。没有?跑 scripts\\fetch_model.py ocr。\n"
+     "注:artboard 主流水线不消费 OCR(复刻走 Agent 视觉,见 ADR-0003)。"),
+    ("poppler_dir", "Poppler 目录(可选)", "dir",
+     "矢量导出用的 poppler 工具目录(内含 pdftocairo.exe / pdftops.exe)。\n"
+     "没有?跑 scripts\\setup_vector.py 一键部署。"),
+    ("gs_path", "Ghostscript 路径(可选)", "file",
+     "gswin64c.exe / gs.exe 的完整路径,用于 EPS 与转曲 PDF。\n"
+     "没有?跑 scripts\\setup_vector.py 一键部署。"),
 ]
 
 
@@ -160,7 +164,8 @@ class App(tk.Tk):
         try:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
-            self.status.config(text=f"✓ 已保存 {os.path.basename(path)}(即改即生效)")
+            self.status.config(text=f"✓ 已保存 {path}")
+            print(f"[config] 已写入: {path}")
         except Exception as e:
             messagebox.showerror("保存失败", str(e))
 

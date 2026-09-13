@@ -18,12 +18,14 @@ import shutil
 import subprocess
 import sys
 
-from _config import cfg
+from _config import cfg, near_workspace
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SCRIPTS_DIR = os.path.join(SKILL_DIR, "scripts")
 FONTS_DIR = os.path.join(SKILL_DIR, "fonts")
 VENDOR_DIR = os.path.join(SKILL_DIR, "assets", "vendor")
-STUDIO = cfg("studio_dir", r"E:\平日资料\GitHub\artboard-studio")
+# 未配置时回落到工作区同级目录(不再硬编码作者机器路径)
+STUDIO = cfg("studio_dir", near_workspace("artboard-studio"))
 FONT_EXTS = (".ttf", ".otf", ".woff2", ".woff", ".ttc", ".otc")
 
 SIZES = {
@@ -169,15 +171,29 @@ def main() -> int:
     with open(os.path.join(proj, "src", "index.html"), "w", encoding="utf-8") as f:
         f.write(html)
 
+    # skill_dir:投放出去的 src/导出.py 靠它 import _config 读 config.json
     meta = {"slug": args.slug, "size": args.size, "width": size["w"],
             "height": size["h"], "fonts": args.fonts,
-            "embed_fonts": embed,
+            "embed_fonts": embed, "skill_dir": SKILL_DIR,
             "created_by": "artboard.scaffold"}
     with open(os.path.join(proj, "project.json"), "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
 
+    # 投放一键导出器:用户改稿后双击 src/导出.py 即可出图,不必再叫 Agent。
+    # (export_local.py 必须在 <项目>/src/ 下运行——它按自身位置推断项目根。)
+    deployed = ""
+    exporter = os.path.join(SCRIPTS_DIR, "export_local.py")
+    if os.path.isfile(exporter):
+        dst = os.path.join(proj, "src", "导出.py")
+        try:
+            shutil.copy2(exporter, dst)
+            deployed = dst
+        except OSError as exc:
+            print(f"△ 一键导出器投放失败: {exc}", file=sys.stderr)
+
     print(json.dumps({"ok": True, "project": proj, "size": args.size,
-                      "fonts": args.fonts}, ensure_ascii=False))
+                      "fonts": args.fonts, "exporter": deployed},
+                     ensure_ascii=False))
     return 0
 
 

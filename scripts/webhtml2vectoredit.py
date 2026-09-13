@@ -25,17 +25,11 @@ SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 if SCRIPTS not in sys.path:
     sys.path.insert(0, SCRIPTS)
 from text_run_merger import merge_text_runs  # noqa: E402
+from _paths import pick_channel  # noqa: E402
 
 PX_PER_PT = 0.75          # CSS px → PDF pt
 LAYER_ORDER = ("bg", "content")  # 合成自底向上:仅 背景层/内容层(item 5)
 LAYER_NAMES_ZH = {"bg": "背景", "content": "内容"}
-
-EXE_CANDIDATES = {
-    "msedge": (r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-               r"C:\Program Files\Microsoft\Edge\Application\msedge.exe"),
-    "chrome": (r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-               r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"),
-}
 
 # ---- DOM 分层手术(JS,在页面里执行) --------------------------------
 # 规则:
@@ -133,13 +127,6 @@ INJECT_JS = r"""
 """
 
 
-def pick_channel() -> str | None:
-    for channel, paths in EXE_CANDIDATES.items():
-        if any(os.path.isfile(p) for p in paths):
-            return channel
-    return None
-
-
 def poppler_exe(name: str) -> str | None:
     from _config import cfg
     d = cfg("poppler_dir")
@@ -169,7 +156,15 @@ def gs_env() -> dict:
     return env
 
 
+TOOL_HINT = ("矢量工具链未部署:跑 python scripts/setup_vector.py 一键部署,"
+             "或在 config.json 填 poppler_dir / gs_path")
+
+
 def run(cmd: list[str], timeout: float = 300.0) -> tuple[int, str]:
+    # 工具缺失时 poppler_exe/gs_exe 返回 None,直接塞进 subprocess 会抛
+    # TypeError 并被上层吞成 {"error": "TypeError"};这里提前给出可行动的报错。
+    if any(c is None or c == "" for c in cmd):
+        raise RuntimeError(f"{TOOL_HINT}(当前命令首参缺失: {cmd[:2]})")
     r = subprocess.run(cmd, capture_output=True, text=True, env=gs_env(),
                        encoding="utf-8", errors="replace", timeout=timeout,
                        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
@@ -178,18 +173,40 @@ def run(cmd: list[str], timeout: float = 300.0) -> tuple[int, str]:
 
 def run_gs(cmd: list[str]) -> tuple[int, str]:
     gs = gs_exe()
+    if not gs:
+        raise RuntimeError(f"Ghostscript 未部署。{TOOL_HINT}")
     full = [gs] + cmd
-    if gs:
-        root = os.path.dirname(os.path.dirname(gs))
-        if os.path.isdir(os.path.join(root, "Resource")):
-            full.append("-sGenericResourceDir=" + os.path.join(root, "Resource") + os.sep)
+    root = os.path.dirname(os.path.dirname(gs))
+    if os.path.isdir(os.path.join(root, "Resource")):
+        full.append("-sGenericResourceDir=" + os.path.join(root, "Resource") + os.sep)
     return run(full)
 
 
 def work_dir() -> str:
-    """poppler/gs 打不开非 ASCII 路径:全部子进程转换在 ASCII 临时目录进行。"""
+    """poppler/gs 打不开非 ASCII 路径:全部子进程转换在 ASCII 临时目录进行。
+
+    注意 %TEMP% = C:\\Users\\<用户名>\\…,中文用户名下这条保证不成立,
+    故检测到非 ASCII 时改落到 C:\\Windows\\Temp / C:\\Temp。
+    """
     import tempfile
-    return tempfile.mkdtemp(prefix="w2v_")
+    tmp = tempfile.mkdtemp(prefix="w2v_")
+    if any(ord(c) > 127 for c in tmp):
+        for cand in (r"C:\Windows\Temp", r"C:\Temp"):
+            if os.path.isdir(cand):
+                try:
+                    return tempfile.mkdtemp(prefix="w2v_", dir=cand)
+                except OSError:
+                    break
+    return tmp
+
+
+def _cleanup_wd(wd: str) -> None:
+    """清理 ASCII 临时目录;W2V_KEEP=1 时保留(调试用)。"""
+    import shutil as _sh
+    if os.environ.get("W2V_KEEP"):
+        print(f"[keep] 临时目录未清理: {wd}", file=sys.stderr)
+        return
+    _sh.rmtree(wd, ignore_errors=True)
 
 
 def serve(directory: str) -> tuple[http.server.ThreadingHTTPServer, str]:
@@ -409,6 +426,10 @@ class WebHtml2VectorEdit:
     def log(self, msg: str) -> None:
         print(msg, file=sys.stderr)
 
+    @staticmethod
+    def _cleanup(wd: str) -> None:
+        _cleanup_wd(wd)
+
     def run(self) -> dict:
         from playwright.sync_api import sync_playwright
 
@@ -436,6 +457,8 @@ class WebHtml2VectorEdit:
                 browser = pw.chromium.launch(channel=channel, headless=True)
                 probe_w = self.width or 1080
                 probe_h = self.height or 1440
+                # noqa 说明:以下所有中间产物都在 ASCII 临时目录 wd,
+                # finally 中无条件清理(异常路径也不泄漏)
                 page = browser.new_page(
                     viewport={"width": probe_w, "height": probe_h},
                     device_scale_factor=1)
@@ -528,6 +551,10 @@ class WebHtml2VectorEdit:
                         os.remove(cand)
                         self.log(f"[check] {fmt}: SSIM {self.similarity[fmt]['ssim']}")
                 browser.close()
+        except Exception:
+            # 异常路径也要清掉 ASCII 临时目录(内含几十 MB 的 PDF/PNG)
+            _cleanup_wd(wd)
+            raise
         finally:
             if srv:
                 srv.shutdown()
@@ -548,10 +575,7 @@ class WebHtml2VectorEdit:
                 else:
                     _sh.move(src, dst)
                 self.outputs[fmt] = dst
-        if os.environ.get("W2V_KEEP"):          # 调试:保留 ASCII 临时目录
-            self.log(f"[keep] 临时目录未清理: {wd}")
-        else:
-            _sh.rmtree(wd, ignore_errors=True)
+        self._cleanup(wd)
         self.outputs["reference"] = ref_png
 
         failed = {k: v["ssim"] for k, v in self.similarity.items()
@@ -770,7 +794,7 @@ def ai_build_native(source: str, out_ai: str, width: int | None = None,
 
     channel = pick_channel()
     if not channel:
-        raise RuntimeError("未找到 Edge/Chrome")
+        raise RuntimeError("未找到 Edge/Chrome(含用户级安装)")
     wd = work_dir()
 
     from playwright.sync_api import sync_playwright
@@ -792,6 +816,9 @@ def ai_build_native(source: str, out_ai: str, width: int | None = None,
                 settle(page, max_wait)
             tree = page.evaluate(_DOM_EXTRACT_JS)
             browser.close()
+    except Exception:
+        _cleanup_wd(wd)
+        raise
     finally:
         if srv:
             srv.shutdown()

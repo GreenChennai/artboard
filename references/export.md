@@ -4,8 +4,12 @@
 
 1. **WPI 源码版**(`wpi_path`,Python API):功能最全,默认;
 2. **WPI CLI 单文件**(`wpi_cli_exe`,约 63MB):`setup_wpi.py` 从 artboard 发行页部署;
-   源码版不可用时自动切换(同参数命令行,退出码 0 = 成功);
+   源码版不可用时 `export.py` **自动切换**(同参数命令行,退出码 0 + 产出文件 = 成功);
 3. **export_fallback.py**(独立 Playwright):仅 PNG 的最后兜底。
+
+> 第 2 级需 `wpi_cli_exe` 已部署(见 `setup_wpi.py`);未部署时自动跳过。
+> `preflight.py` 会把实际生效的引擎标为「源码版 …」或「CLI 单文件 …」,
+> 两者都没有才报 WARN。
 
 ## 双路径
 

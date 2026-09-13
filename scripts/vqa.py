@@ -16,9 +16,10 @@ import os
 import subprocess
 import sys
 
-from _config import cfg
+from _config import cfg, near_workspace
 
-DEFAULT_VQA_PATH = r"E:\平日资料\GitHub\VQA"  # 内置默认路径,config.json 可覆盖
+# 未配置时的回落(工作区同级目录),不再硬编码作者机器路径
+DEFAULT_VQA_PATH = near_workspace("VQA")
 DEFAULT_PROMPT = "用中文详细描述这张图片的内容,包括主体、颜色、场景和可见文字。"
 
 
@@ -66,9 +67,11 @@ def main() -> int:
     p.add_argument("--mode", default="qora", choices=["qora", "caption"])
     args = p.parse_args()
 
-    if not cfg("vqa_path"):
-        emit({"ok": False, "error": "NO_VQA_PATH",
-              "hint": "config.json 填 vqa_path(本地 VQA 项目路径)"})
+    vqa_dir = cfg("vqa_path", DEFAULT_VQA_PATH)
+    if not (vqa_dir and os.path.isdir(vqa_dir)):
+        emit({"ok": False, "error": "NO_VQA_PATH", "detail": vqa_dir,
+              "hint": "config.json 填 vqa_path(本地 VQA 项目路径),"
+                      "或跑 scripts/fetch_model.py vqa 部署"})
         return 2
 
     results = []

@@ -14,20 +14,16 @@ import os
 import shutil
 import sys
 
-from _config import cfg
+SCRIPTS = os.path.dirname(os.path.abspath(__file__))
+if SCRIPTS not in sys.path:
+    sys.path.insert(0, SCRIPTS)
+from _config import cfg, config_error, near_workspace  # noqa: E402
+from _paths import find_chrome, find_edge  # noqa: E402
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_WPI = r"E:\平日资料\GitHub\WPI"
+DEFAULT_WPI = near_workspace("WPI")      # 未配置时的回落,不再硬编码作者机器路径
+DEFAULT_VQA = near_workspace("VQA")
 
-EDGE_PATHS = [
-    r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-    r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
-]
-CHROME_PATHS = [
-    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
-    os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
-]
 FONT_EXTS = (".ttf", ".otf", ".woff", ".woff2", ".ttc", ".otc")
 
 
@@ -50,19 +46,31 @@ def main() -> int:
             line += f"\n         ↳ {hint}"
         print(line)
 
-    # 1. WPI
+    # 0. config.json 可解析性(解析失败时 cfg() 全部回落默认值,必须先报)
+    cfg_err = config_error()
+    if cfg_err:
+        add("config.json", "FATAL", f"解析失败({cfg_err})",
+            f"修正 {os.path.join(SKILL_DIR, 'config.json')} 后重跑;"
+            "当前所有配置按默认值运行,排查结果不可信")
+
+    # 1. WPI(源码版 → CLI 单文件,与 export.py 的选用顺序一致)
     wpi = cfg("wpi_path", DEFAULT_WPI)
     has_controller = os.path.isfile(
         os.path.join(wpi, "src", "core", "controller.py"))
+    cli = cfg("wpi_cli_exe")
+    has_cli = bool(cli and os.path.isfile(cli))
     if has_controller:
-        add("WPI", "PASS", wpi)
+        add("WPI", "PASS", f"源码版 {wpi}")
+    elif has_cli:
+        add("WPI", "PASS", f"CLI 单文件 {cli}")
     else:
-        add("WPI", "WARN", f"未找到 {wpi}",
-            "设环境变量 ARTBOARD_WPI 指向 WPI 根目录;或仅用 export_fallback.py 兜底(需 playwright)")
+        add("WPI", "WARN", f"未找到(源码 {wpi} / CLI 未配置)",
+            "跑 scripts/setup_wpi.py 部署;或设 ARTBOARD_WPI 指向 WPI 根目录;"
+            "或仅用 export_fallback.py 兜底(需 playwright)")
 
-    # 2. 系统浏览器(主路径与兜底都依赖)
-    edge = next((p for p in EDGE_PATHS if os.path.isfile(p)), None)
-    chrome = next((p for p in CHROME_PATHS if os.path.isfile(p)), None)
+    # 2. 系统浏览器(主路径与兜底都依赖;含用户级安装的 Chrome)
+    edge = find_edge()
+    chrome = find_chrome()
     if edge or chrome:
         add("浏览器内核", "PASS", f"{'Edge' if edge else ''}{'+' if edge and chrome else ''}"
             f"{'Chrome' if chrome else ''}")
@@ -79,7 +87,7 @@ def main() -> int:
 
     # 4. ffmpeg(动图)
     ffmpeg = (cfg("ffmpeg")
-              or os.environ.get("WPI_FFMPEG")
+              or os.environ.get("WPI_FFMPEG")      # WPI 自带的 ffmpeg(WPI 侧约定)
               or shutil.which("ffmpeg")
               or (wpi and os.path.isfile(os.path.join(wpi, "ffmpeg.exe"))
                   and os.path.join(wpi, "ffmpeg.exe"))
@@ -100,10 +108,15 @@ def main() -> int:
         loaded = [f for f in fams if any(
             fn.lower().endswith(FONT_EXTS)
             for fn in os.listdir(os.path.join(fonts_dir, f)))]
-        import json as _json
-        manifest = _json.load(open(os.path.join(fonts_dir, "download.json"),
-                                   encoding="utf-8")) if os.path.isfile(
-            os.path.join(fonts_dir, "download.json")) else {}
+        manifest: dict = {}
+        manifest_path = os.path.join(fonts_dir, "download.json")
+        if os.path.isfile(manifest_path):
+            try:
+                with open(manifest_path, encoding="utf-8") as _f:
+                    manifest = json.load(_f)
+            except (OSError, ValueError) as _exc:
+                add("字体库清单", "WARN", f"download.json 解析失败: {_exc}",
+                    "重新拉取技能仓库,或按需跑 fetch_font.py")
         missing = [d for d, e in manifest.items() if not d.startswith("_") and any(
             not os.path.isfile(os.path.join(fonts_dir, d, f))
             for f in e.get("files", []))]
@@ -144,7 +157,7 @@ def main() -> int:
                       else "(强制本地 VQA/OCR)") if vmode in ("auto", "local") else f"未知值 {vmode}(按 auto 处理)")
 
     # 7.5 VQA(看图理解)
-    vqa = cfg("vqa_path", r"E:\平日资料\GitHub\VQA")
+    vqa = cfg("vqa_path", DEFAULT_VQA)
     if vqa and os.path.isdir(vqa):
         add("VQA", "PASS", vqa)
     else:
@@ -184,7 +197,12 @@ def main() -> int:
         return any(r["check"] == name and r["level"] == "PASS" for r in results)
     caps = []
     caps.append(("静态海报", not fatal))
-    caps.append(("动图 GIF", not fatal and (has("ffmpeg") or True)))  # Pillow 回退可用
+    try:
+        import PIL  # noqa: F401
+        _has_pillow = True
+    except ImportError:
+        _has_pillow = False
+    caps.append(("动图 GIF", not fatal and (has("ffmpeg") or _has_pillow)))  # Pillow 回退可用
     caps.append(("MP4 视频", has("ffmpeg")))
     caps.append(("抠图/贴纸", has("rembg(抠图)")))
     caps.append(("授权图库", has("图库 key")))

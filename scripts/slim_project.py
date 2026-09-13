@@ -40,9 +40,6 @@ def dir_size(path: str) -> int:
     return total
 
 
-from junction import is_junction, probe as probe_junction
-
-
 from junction import create_junction, is_junction
 
 
@@ -80,18 +77,30 @@ def main() -> int:
                            "status": f"WOULD_LINK(可省 {size // 1024 // 1024}MB)"})
             saved_total += size
             continue
-        shutil.rmtree(path)
+        # 先重命名备份,建联接失败可回滚——不能无条件 rmtree(失败即丢字体)
+        bak = path + ".bak"
+        if os.path.exists(bak):
+            shutil.rmtree(bak)
+        os.rename(path, bak)
         try:
             make_junction(path, skill_target)
-            report.append({"dir": name,
-                           "status": f"LINKED(省 {size // 1024 // 1024}MB)",
-                           "target": skill_target})
-            saved_total += size
         except Exception as exc:  # noqa: BLE001
             failures += 1
-            report.append({"dir": name, "status": f"FAILED: {exc}",
-                           "recover": "原目录已删;重建请跑 scaffold --embed-fonts 或 fetch_font.py"})
-            saved_total += size
+            try:
+                if os.path.lexists(path):
+                    os.rmdir(path)
+            except OSError:
+                pass
+            os.rename(bak, path)        # 回滚:原目录完整恢复
+            report.append({"dir": name, "status": f"FAILED(已回滚): {exc}",
+                           "recover": "联接创建失败(权限/非 NTFS/目标缺失);"
+                                      "原目录已完整恢复,可改用 --embed-fonts"})
+            continue
+        shutil.rmtree(bak, ignore_errors=True)
+        report.append({"dir": name,
+                       "status": f"LINKED(省 {size // 1024 // 1024}MB)",
+                       "target": skill_target})
+        saved_total += size
 
     emit({"ok": failures == 0, "project": os.path.abspath(args.project),
           "saved_mb": saved_total // 1024 // 1024, "results": report,

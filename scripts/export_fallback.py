@@ -13,28 +13,14 @@ import sys
 import threading
 import urllib.parse
 
-EXE_CANDIDATES = {
-    "msedge": [
-        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
-        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
-    ],
-    "chrome": [
-        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
-        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
-        os.path.expandvars(r"%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe"),
-    ],
-}
+SCRIPTS = os.path.dirname(os.path.abspath(__file__))
+if SCRIPTS not in sys.path:
+    sys.path.insert(0, SCRIPTS)
+from _paths import pick_channel  # noqa: E402
 
 
 def emit(obj: dict) -> None:
     print(json.dumps(obj, ensure_ascii=False))
-
-
-def pick_channel() -> str | None:
-    for channel, paths in EXE_CANDIDATES.items():
-        if any(os.path.isfile(p) for p in paths):
-            return channel
-    return None
 
 
 def serve(directory: str) -> tuple[http.server.ThreadingHTTPServer, str]:
@@ -66,7 +52,7 @@ def main() -> int:
     channel = pick_channel()
     if not channel:
         emit({"ok": False, "error": "NO_BROWSER",
-              "hint": "未找到 Edge/Chrome,无法渲染"})
+              "hint": "未找到 Edge/Chrome(含用户级安装),无法渲染"})
         return 2
 
     try:
@@ -79,11 +65,21 @@ def main() -> int:
     is_dir = os.path.isdir(args.source)
     srv = None
     if is_dir:
+        idx = resolve_index(args.source)
+        if not idx:
+            emit({"ok": False, "error": "NO_INDEX_HTML",
+                  "detail": args.source,
+                  "hint": "源目录下没有 .html;--source 应指向项目的 src/ 目录"})
+            return 2
         srv, base = serve(os.path.abspath(args.source))
-        url = base + "/" + (resolve_index(args.source) or "index.html")
+        url = base + "/" + idx
     else:
         url = "file:///" + urllib.parse.quote(
             os.path.abspath(args.source).replace("\\", "/"))
+
+    out_dir = os.path.dirname(os.path.abspath(args.output))
+    if out_dir:
+        os.makedirs(out_dir, exist_ok=True)
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(channel=channel, headless=True)
@@ -110,6 +106,11 @@ def main() -> int:
             else:
                 image = page.screenshot(
                     full_page=True, omit_background=args.transparent)
+            if not image or len(image) < 1024:
+                emit({"ok": False, "error": "EMPTY_SCREENSHOT",
+                      "detail": f"{len(image) if image else 0} bytes",
+                      "hint": "截图过小,疑似空白页或 404;检查 --source 与 index.html"})
+                return 1
             with open(args.output, "wb") as f:
                 f.write(image)
             emit({"ok": True, "path": os.path.abspath(args.output),

@@ -13,14 +13,13 @@
 """
 
 import argparse
-import json
 import os
 import sys
-import urllib.request
 
 SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPTS)
-from _config import cfg, CONFIG_PATH  # noqa: E402
+from _config import cfg, write_config  # noqa: E402
+from _download import download  # noqa: E402
 
 RELEASE_BASE = ("https://github.com/GreenChennai/artboard/releases/download/"
                 "wpi-cli-v3.2.0-3582225")
@@ -35,49 +34,47 @@ def ok_source(path: str) -> bool:
     return os.path.isfile(os.path.join(path, "src", "core", "controller.py"))
 
 
-def write_config(patch: dict) -> None:
-    data = {}
-    if os.path.isfile(CONFIG_PATH):
-        data = json.load(open(CONFIG_PATH, encoding="utf-8"))
-    data.update(patch)
-    json.dump(data, open(CONFIG_PATH, "w", encoding="utf-8"),
-              ensure_ascii=False, indent=2)
-
-
-def download(url: str, dest: str) -> None:
-    def report(blocks, bs, total):
-        if total > 0 and blocks % 100 == 0:
-            print(f"\r  {blocks * bs // 1024 // 1024}/{total // 1024 // 1024} MB",
-                  end="", flush=True)
-    urllib.request.urlretrieve(url, dest, reporthook=report)
-    print()
-
-
 def deploy_cli(target_dir: str) -> None:
     os.makedirs(target_dir, exist_ok=True)
     exe = os.path.join(target_dir, CLI_EXE)
     print(f"[1/2] 下载 {CLI_EXE}(约 63MB,artboard 发行页统一分发)…")
-    download(CLI_URL, exe)
     try:
-        download(CLI_README, os.path.join(target_dir, "README-CLI.md"))
-    except Exception:  # noqa: BLE001 — 说明文件非必需
+        download(CLI_URL, exe, label=CLI_EXE)
+    except RuntimeError as exc:
+        print(f"[FAIL] {exc}")
+        print("      也可改用源码版: python setup_wpi.py --source-install")
+        sys.exit(1)
+    try:
+        download(CLI_README, os.path.join(target_dir, "README-CLI.md"),
+                 label="README-CLI", retries=0)
+    except RuntimeError:  # 说明文件非必需
         pass
-    write_config({"wpi_cli_exe": exe})
-    print(f"[2/2] 完成!已写入 config.json: wpi_cli_exe = {exe}")
+    path = write_config({"wpi_cli_exe": exe})
+    print(f"[2/2] 完成!已写入 {path}: wpi_cli_exe = {exe}")
+    print("  · export.py 会按 wpi_path(源码)→ wpi_cli_exe(CLI)顺序选用引擎;")
     print("  · 需要 Edge 或 Chrome(系统已装即可);FFmpeg 可选,未装则 MP4 不可用。")
 
 
 def deploy_source(target_dir: str) -> None:
     import subprocess
-    print(f"[1/3] 下载 WPI 源码(main.zip)…")
+    import zipfile
+    print("[1/3] 下载 WPI 源码(main.zip)…")
     os.makedirs(target_dir, exist_ok=True)
     tmp_zip = os.path.join(target_dir, "_wpi.zip")
-    download(WPI_REPO_ZIP, tmp_zip)
-    print("[2/3] 解压…")
-    import zipfile
-    with zipfile.ZipFile(tmp_zip) as z:
-        z.extractall(target_dir)
-    os.remove(tmp_zip)
+    try:
+        download(WPI_REPO_ZIP, tmp_zip, label="WPI 源码")
+        print("[2/3] 解压…")
+        try:
+            with zipfile.ZipFile(tmp_zip) as z:
+                z.extractall(target_dir)
+        finally:
+            if os.path.isfile(tmp_zip):
+                os.remove(tmp_zip)
+    except RuntimeError as exc:
+        if os.path.isfile(tmp_zip):
+            os.remove(tmp_zip)
+        print(f"[FAIL] {exc}")
+        sys.exit(1)
     inner = os.path.join(target_dir, "WPI-main")
     if os.path.isdir(inner):
         for item in os.listdir(inner):
@@ -91,8 +88,8 @@ def deploy_source(target_dir: str) -> None:
                         "playwright>=1.40", "Pillow>=10.0"])
     if r.returncode != 0:
         print("[WARN] 依赖安装失败,请手动: pip install playwright Pillow")
-    write_config({"wpi_path": target_dir})
-    print(f"完成!wpi_path 已写入 config.json: {target_dir}")
+    path = write_config({"wpi_path": target_dir})
+    print(f"完成!已写入 {path}: wpi_path = {target_dir}")
 
 
 def main() -> int:

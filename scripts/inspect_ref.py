@@ -14,7 +14,11 @@ import os
 import sys
 from collections import Counter
 
-from PIL import Image, ImageDraw, ImageFont
+try:
+    from PIL import Image, ImageDraw, ImageFont
+except ImportError:
+    print('{"ok": false, "error": "NO_PILLOW", "hint": "pip install Pillow"}')
+    sys.exit(3)
 
 
 def _save(im: Image.Image, path: str) -> None:
@@ -36,7 +40,13 @@ def _load(path: str) -> Image.Image:
 
 
 def _box(s: str, size) -> tuple:
-    x0, y0, x1, y1 = (int(v) for v in s.split(","))
+    parts = [v.strip() for v in s.split(",") if v.strip()]
+    if len(parts) != 4:
+        sys.exit(f"--box 需要 4 个整数 x0,y0,x1,y1,收到 {len(parts)} 个: {s}")
+    try:
+        x0, y0, x1, y1 = (int(v) for v in parts)
+    except ValueError:
+        sys.exit(f"--box 只能填整数: {s}")
     x0, y0 = max(0, x0), max(0, y0)
     x1, y1 = min(size[0], x1), min(size[1], y1)
     if x1 - x0 < 2 or y1 - y0 < 2:
@@ -179,8 +189,6 @@ def main() -> int:
         if name == "bbox":
             sp.add_argument("--bg", default="auto", help="auto=边框环众数 或 #RRGGBB")
             sp.add_argument("--tol", type=int, default=12)
-        if name in ("bbox", "crop"):
-            pass
         if name == "crop":
             sp.add_argument("-o", "--out", required=True)
             sp.add_argument("--scale", type=float, default=1.0)

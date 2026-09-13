@@ -41,11 +41,19 @@ def main() -> int:
     if args.mode == "mm":
         if not args.w or not args.h:
             p.error("mm 模式需要 宽 高(mm)")
-        pxw, pxh = round(args.w / MM_PER_INCH * args.dpi), round(args.h / MM_PER_INCH * args.dpi)
+        # 口径统一(与 export.md / scaffold.py 一致):
+        #   成品 px = mm ÷ 25.4 × DPI;CSS 画布 = 成品 px ÷ scale
+        full_w = round(args.w / MM_PER_INCH * args.dpi)
+        full_h = round(args.h / MM_PER_INCH * args.dpi)
+        pxw, pxh = round(full_w / args.scale), round(full_h / args.scale)
         out({"mode": "mm→px", "mm": [args.w, args.h], "dpi": args.dpi,
+             "scale": args.scale,
              "css_canvas": [pxw, pxh],
-             "export": f"--width {pxw} --scale 1(即 {args.dpi}dpi)",
-             "scale2": f"--width {pxw} --scale 2 --height {pxh} → {pxw*2}×{pxh*2}"})
+             "export_px": [full_w, full_h],
+             "export": f"--width {pxw} --scale {args.scale:g} --height {pxh}"
+                       f" → {pxw * args.scale:.0f}×{pxh * args.scale:.0f}({args.dpi:g}dpi)",
+             "note": "CSS 画布 = 成品 px ÷ scale;scale=1 时两者相等"
+                     "(例:A4 300dpi scale2 → 画布 1240×1754,导出 2480×3508)"})
     elif args.mode == "inch":
         if not args.w or not args.h:
             p.error("inch 模式需要 宽 高(inch)")

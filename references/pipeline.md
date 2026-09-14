@@ -124,10 +124,40 @@ python "<skill>/scripts/export_fallback.py" --source "<project>/src/index.html" 
 ① 首版 HTML 完成时自检一遍;② 用户明确要求检查时自检一遍。
 用户迭代改稿阶段 → 定点修改重导即可,不自动自检(省时省 token)。
 
-自检动作(触发时):
+> **"机检"与"自检"是两件事**,别混:
+> - **机检**(`check_overflow.py`)= **每次重导前的门禁**,跑一次 3–5 秒、**零 token 成本**,
+>   **不受**上面两个时机限制。它做几何量测,查的是肉眼看不见的那两类缺陷
+>   (文字出卡片框但没出画布、内容进了字幕带)。
+> - **自检**= Agent 的 Read 看图与评审,只在上面两个时机做。
+>
+> 改稿阶段虽然不自检,但**机检仍要跑** —— 改文案/字号/间距正是溢出最常见的成因。
+
+### 6.0 机检门禁(每次重导前必跑)
+
+```bash
+# 静态海报:查容器越框(A/B 类)
+python "<skill>/scripts/check_overflow.py" "<project>/src"
+
+# 视频卡 / 会被叠字幕的动图:追加安全区检查(C 类)
+python "<skill>/scripts/check_overflow.py" "<project>/src" --safe-area auto
+```
+
+- `ok:false` / 退出码 1 → **先修再导**,别导完再改(白导一轮);
+- **A/B 类(容器越框)** → 修法见 `card-layout.md §五「一行修复对照表」`;
+- **C 类(越出安全区)** → 先精简文案 / 拆卡(比贴边稳);确实装不下才降档:
+  `--safe-tier tight`(垂直放宽、左右不动)→ `--safe-tier extreme`(四边 2.5%,有代价);
+  细则与代价见 `video-safe-area.md §二`;
+- 尺寸由页面实际几何算,不必传 `--width/--height`(长图也可用);
+- 装饰越界是设计,加 `data-allow-overflow` 即豁免。
+
+### 6.1 看图自检(触发时)
+
 1. **Read 导出的 PNG**(必须看图,不能只看代码)。
-2. 过 `guardrails.md` 排版自检清单 + 风格分册的禁则。
-3. 发现问题 → 改 HTML → 重导 → 再看。**2 轮后仍有小瑕疵:交付并明确列出已知瑕疵**;有 FATAL 级问题(文字溢出/字体没加载)→ 告知用户并给修复建议。
+2. 过 `guardrails.md` 排版自检清单 + 风格分册的禁则;视频卡再过 `video-safe-area.md §六`;
+   首版完成时可过 `design-review-rubric.md` 打分。
+3. 发现问题 → 改 HTML → **重跑 6.0 机检** → 重导 → 再看。
+   **2 轮后仍有小瑕疵:交付并明确列出已知瑕疵**;
+   有 FATAL 级问题(文字溢出/字体没加载)→ 告知用户并给修复建议。
 
 ## Step 6.5 生成一键导出入口(每张 HTML 都要有)
 

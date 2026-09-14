@@ -195,15 +195,20 @@
 ## 七、机检:自动找出出框
 
 ```bash
-python scripts/check_overflow.py <项目>/src --width 1080 --height 1440
+# 容器越框(A/B 类)—— 每次重导前的门禁
+python scripts/check_overflow.py <项目>/src
+
+# 视频卡 / 会被叠字幕的动图:追加安全区检查(C 类)
+python scripts/check_overflow.py <项目>/src --safe-area auto
 ```
 
-用 Playwright 加载页面后遍历 DOM,报两类:
+用 Playwright 加载页面后遍历 DOM,报三类:
 
 | 类型 | 判据 |
 |---|---|
-| **A 内容溢出自身盒** | `scrollHeight > clientHeight + tol` 或 `scrollWidth > clientWidth + tol` |
+| **A 内容溢出自身盒** | `scrollHeight > clientHeight + tol` 或 `scrollWidth > clientWidth + tol`(限"有背景/边框"的盒) |
 | **B 越出绘制的祖先** | 文字盒超出最近"有背景色或可见边框"的祖先盒(容差 `tol` px) |
+| **C 越出安全区** | 内容盒超出视频安全区矩形(`--safe-area` 时启用,细则见 `video-safe-area.md`) |
 
 ```json
 {"ok": false, "issues": [
@@ -213,7 +218,8 @@ python scripts/check_overflow.py <项目>/src --width 1080 --height 1440
 ```
 
 - 装饰元素用 `data-allow-overflow` 标记即豁免:`<div class="glow" data-allow-overflow>`
-- 退出码 0/1,可直接接进 Step 6 自检与 CI
+- 尺寸由页面实际几何算,不必传 `--width/--height`(长图也可用)
+- 退出码 0/1;**已接进流水线 Step 6.0 作为每次重导前的门禁**(零 token 成本)
 
 **它是唯一能看见"出卡片但没出画布"的手段**——读导出图看不出(线条颜色相近时),
 必须靠几何量测。

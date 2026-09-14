@@ -1,7 +1,7 @@
 ---
 name: artboard
 description: 用 HTML/CSS 绘制平面设计级图片并导出成品的海报工作室。输入文案直出、给图复刻、或换风格改配色,产出海报/banner/小红书封面/主KV/信息长图(PNG/GIF/MP4/PDF),并为视频制作场景卡(口播信息卡/图解动画卡/片头尾,支持出入场动画)。风格像 Illustrator/Photoshop 做的设计图,不是网页交互风。当用户想要:做海报、出图、画封面、小红书配图、banner、KV 主视觉、信息长图、数据图、动态海报、GIF、视频信息卡、科普动画卡、把文案变成图片、复刻一张设计图、换风格重做时使用。Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.7.5
+version: 1.7.6
 ---
 
 # artboard · HTML 海报工作室
@@ -25,7 +25,9 @@ Step 4 写图     scripts/scaffold.py 建项目;电商/食品/吉祥物类先走
 Step 4.5 素材   references/materials.md — 用户图抠图(cutout.py)/ 图库搜图(fetch_asset.py)/
                                           图片内容拿不准 → VQA 解读(config.json vqa_path)
 Step 5 导出     scripts/export.py(WPI)→ 失败走 export_fallback.py(仅 PNG)
-Step 6 自检+改稿 Read 导出图 → 过自检清单 → 修复重导(≤2 轮);
+Step 6 自检+改稿 **6.0 机检门禁**(每次重导前必跑,3–5s、零 token):
+                scripts/check_overflow.py <proj>/src [--safe-area auto]
+                → 6.1 Read 导出图 + 过自检清单 → 修复重导(≤2 轮);
                 用户不满意 → **不重新生成**:按用户指定部位改现有 HTML(同 AI 生图的局部重绘)
 Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材并提醒更换
 ```
@@ -130,7 +132,7 @@ python $S/ai_export.py <项目目录> [--svg --eps --ai]      # 矢量/工程文
 2. 离线渲染:HTML 零 CDN 引用;字体/vendor 一律复制进项目。
 3. 一图一个焦点、层级 ≤3 层、强调 ≤2 处、特效 ≤3 种、字体 ≤3 款。
 4. 文案逐字来自用户,不编造数据与条款。
-5. **自检只在两个时机触发**:①首版 HTML 完成时;②用户要求检查时。之后的用户改稿一律定点修改,不自动自检不派子代理(省时省 token)。
+5. **自检只在两个时机触发**:①首版 HTML 完成时;②用户要求检查时。之后的用户改稿一律定点修改,不自动自检不派子代理(省时省 token)。**机检 `check_overflow.py` 不受此限**——每次重导前都跑(零 token 成本,3–5s,改文案最易引入溢出)。
 6. 动图**分两模式**(数值细则见 references/animation.md §〇):
    **模式 P 海报循环**——无缝循环,终态必须仍是合格静态海报;
    **模式 S 视频场景卡**(口播桥/图解卡)——五段式一次性时间轴,全 finite 禁 infinite、

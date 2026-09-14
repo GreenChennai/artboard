@@ -188,7 +188,9 @@ python scripts/export.py --source src --output out.png \
     --width 1080 --scale 2 --height 1440                       # 导出(主路径)
 python scripts/export_fallback.py --source src/index.html \
     --output out.png --width 1080 --scale 2                    # 导出(兜底,仅 PNG)
-python scripts/check_overflow.py src                           # 机检文字越出容器边框
+python scripts/check_overflow.py src                           # 机检文字越出容器边框(A/B 类)
+python scripts/check_overflow.py src --safe-area 9x16          # 追加安全区检查(C 类)
+python scripts/check_overflow.py src --safe-area 9x16 --safe-tier tight   # 内容多时的紧凑档
 ```
 
 **双击即出图**(用户改稿后自给自足)

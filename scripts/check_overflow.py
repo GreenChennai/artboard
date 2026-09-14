@@ -1,25 +1,36 @@
-"""artboard 溢出机检:找出"文字越出容器边框"与"内容溢出自身盒"。
+"""artboard 溢出与安全区机检。
 
-为什么需要它:读导出图看不出「文字出卡片但没出画布」——线条颜色相近时肉眼无感,
-而所有人工自检(guardrails §9 / rubric / typography §六)都以**画布**为参照系,
-这类缺陷会全部通过。只有几何量测能看见。
+为什么需要它:读导出图看不出「文字出卡片但没出画布」与「内容进了字幕带」——
+线条/颜色相近时肉眼无感,而所有人工自检(guardrails §9 / rubric / typography §六)
+都以**画布**为参照系,这两类缺陷会全部通过。只有几何量测能看见。
 
 用法:
+  # 静态海报:查容器越框
   python check_overflow.py <项目目录|src目录|HTML文件>
   python check_overflow.py src --width 1080 --height 1440 --tol 2
-  python check_overflow.py src --all          # 连"已设 overflow 收口"的也报(clamp 体检)
+  python check_overflow.py src --all                 # 连"已设 overflow 收口"的也报(clamp 体检)
+
+  # 视频卡:再加查内容是否越出安全区(字幕带 / 平台按钮列)
+  python check_overflow.py src --safe-area 9x16                    # 标准档(保守交集)
+  python check_overflow.py src --safe-area 9x16 --safe-tier tight  # 内容多时的紧凑档
+  python check_overflow.py src --safe-area 9x16 --safe-tier extreme # 极限档(四边 2.5%)
+  python check_overflow.py src --safe-inset 48,27,48,27            # 直接给 px(上右下左)
+
 输出:stdout 单行 JSON;人类可读清单走 stderr。退出码 0=无问题 / 1=有越界 / 2=用法错
 
-两类检测:
+三类检测:
   A 内容溢出自身盒:scrollHeight > clientHeight + tol 且**未设 overflow 收口**
     —— 真问题(定高卡片 + 长文案,内容会画到盒外)
   B 越出绘制的祖先:文字盒超出最近"有背景色或可见边框"的祖先的 border-box
     —— 更贴近"文字突破底层边框"
+  C 越出安全区(需 --safe-area):内容盒超出视频安全区矩形
+    —— 字幕带 / 平台 UI 遮挡带,细则见 references/video-safe-area.md
 
 豁免:
   - 任何 `data-allow-overflow` 元素及其子树(装饰:光晕/放射线/水印)
-  - 画布级容器(.poster/.stage/.bg)不算"卡片祖先"
+  - 画布级容器(.poster/.stage/.bg)不算"卡片祖先",也不算安全区违规的主体
   - A 类中已设 overflow:hidden|clip|auto|scroll 的盒默认跳过(那是有意收口)
+  - C 类只报**最外层**越界的元素(父子重复不刷屏)
 """
 
 from __future__ import annotations
@@ -41,6 +52,92 @@ from _config import cfg  # noqa: E402
 from _paths import pick_channel  # noqa: E402
 
 CANVAS_CLASSES = ("poster", "stage", "canvas", "bg", "backdrop")
+
+# 安全区三档:每档四边保留量,单位 %(顶/底按 H,左右按 W)。
+#   standard = 跨平台保守交集(video-safe-area.md §二)
+#   tight    = 内容较多时的紧凑档:垂直方向压到有依据的下限;
+#              **9:16 左右仍保持 17%** —— 右侧平台按钮列是硬约束,压不动
+#   extreme  = 极限档:四边统一 2.5%,几乎贴画布边。代价见 video-safe-area.md §三
+SAFE_TIERS: dict[str, dict[str, tuple[float, float, float, float]]] = {
+    #           (top%, right%, bottom%, left%)
+    "9x16": {
+        "standard": (12.0, 17.0, 30.0, 17.0),
+        "tight": (7.0, 17.0, 25.0, 17.0),
+        "extreme": (2.5, 2.5, 2.5, 2.5),
+    },
+    "16x9": {
+        "standard": (10.0, 8.0, 16.0, 8.0),
+        "tight": (7.0, 5.0, 12.0, 5.0),
+        "extreme": (2.5, 2.5, 2.5, 2.5),
+    },
+    "3x4": {
+        "standard": (10.0, 7.0, 18.0, 7.0),
+        "tight": (7.0, 5.0, 13.0, 5.0),
+        "extreme": (2.5, 2.5, 2.5, 2.5),
+    },
+}
+SAFE_LABEL = {"standard": "标准(跨平台交集)", "tight": "紧凑(内容多)",
+              "extreme": "极限(几乎贴边,有代价)"}
+
+
+def guess_ratio(w: int, h: int) -> str:
+    """按画布尺寸猜画幅;猜不出返回 9x16 基准比并让调用方提示。"""
+    if not w or not h:
+        return "9x16"
+    r = w / h
+    for name, (rw, rh) in (("9x16", (9, 16)), ("3x4", (3, 4)), ("16x9", (16, 9))):
+        if abs(r - rw / rh) < 0.02:
+            return name
+    return "9x16" if r < 1 else "16x9"
+
+
+def resolve_safe(args) -> dict | None:
+    """解析安全区规则。返回 {mode,top,right,bottom,left,ratio,tier,label} 或 None。
+
+    mode:
+      'pct'  四边为百分比,由页面按**画布实际尺寸**换算(长图 h 未知也不受影响)
+      'px'   四边为绝对像素
+      'auto' 画幅由页面按画布长宽比判定,四边取自 SAFE_TIERS[判出的画幅][tier]
+    **不在 Python 侧换算 px** —— 交给渲染后的真实几何算才准。
+    """
+    tier = args.safe_tier
+    if tier not in SAFE_LABEL:
+        return {"error": f"未知档位 {tier};可选 {'/'.join(SAFE_LABEL)}"}
+
+    if args.safe_inset:
+        parts = [p.strip() for p in args.safe_inset.split(",")]
+        if len(parts) == 1:
+            parts *= 4
+        if len(parts) != 4:
+            return {"error": "--safe-inset 需要 1 个或 4 个值(上,右,下,左),"
+                             f"收到 {len(parts)} 个"}
+        out: dict = {"mode": "px", "tier": tier, "ratio": None,
+                     "tierLabel": SAFE_LABEL[tier], "label": "自定义 --safe-inset"}
+        for name, v in zip(("top", "right", "bottom", "left"), parts):
+            try:
+                if v.endswith("%"):
+                    out["mode"] = "pct"
+                    out[name] = float(v[:-1])
+                else:
+                    out[name] = float(v)
+            except ValueError:
+                return {"error": f"--safe-inset 的 {name} 值不是数字/百分比: {v}"}
+        return out
+
+    if not args.safe_area:
+        return None
+
+    if args.safe_area == "auto":
+        return {"mode": "auto", "ratio": "auto", "tier": tier,
+                "tierLabel": SAFE_LABEL[tier], "label": "auto(页内判定画幅)"}
+
+    ratio = args.safe_area
+    if ratio not in SAFE_TIERS:
+        return {"error": f"未知画幅 {ratio};可选 {'/'.join(SAFE_TIERS)} 或 auto"}
+    t, r, b, l = SAFE_TIERS[ratio][tier]
+    return {"mode": "pct", "top": t, "right": r, "bottom": b, "left": l,
+            "ratio": ratio, "tier": tier, "tierLabel": SAFE_LABEL[tier],
+            "label": f"{ratio} {SAFE_LABEL[tier]}"}
 
 DETECT_JS = r"""
 (payload) => {
@@ -134,7 +231,81 @@ DETECT_JS = r"""
         hint: '越出 ' + SEL(a) + ' 边框:' + dirs });
     }
   }
-  return issues.slice(0, 300);
+
+  // ---- C 类:内容越出安全区(需 --safe-area;视频卡防字幕/平台 UI 遮挡)----
+  var safeInfo = null;
+  if (payload.safe) {
+    const S = payload.safe;
+    const host = document.querySelector('.poster, .stage, .canvas') || document.body;
+    const hr = R(host);
+    const hw = hr.width, hh = hr.height;
+    const guessRatio = (w, h) => {
+      const r = w / h;
+      const cands = [['9x16', 9 / 16], ['3x4', 3 / 4], ['16x9', 16 / 9]];
+      for (const c of cands) { if (Math.abs(r - c[1]) < 0.02) return c[0]; }
+      return r < 1 ? '9x16' : '16x9';
+    };
+    const ratio = S.mode === 'auto' ? guessRatio(hw, hh) : (S.ratio || '9x16');
+    let vals;
+    if (S.mode === 'auto') {
+      const tbl = (payload.safeTiers || {})[ratio] || {};
+      vals = tbl[S.tier] || [0, 0, 0, 0];
+    } else {
+      vals = [S.top, S.right, S.bottom, S.left];
+    }
+    // 百分比按**对应边**换算:上/下用 H,左/右用 W
+    const toPx = (i) => (S.mode === 'px' ? vals[i]
+      : Math.round(vals[i] / 100 * ((i === 1 || i === 3) ? hw : hh)));
+    const insT = toPx(0), insR = toPx(1), insB = toPx(2), insL = toPx(3);
+    const safeRect = { top: hr.top + insT, right: hr.right - insR,
+                       bottom: hr.bottom - insB, left: hr.left + insL };
+    const label = S.mode === 'auto' ? (ratio + ' ' + (S.tierLabel || S.tier)) : S.label;
+    const actualRatio = guessRatio(hw, hh);
+    safeInfo = {
+      label: label, ratio: ratio, tier: S.tier,
+      canvas: { width: Math.round(hw), height: Math.round(hh) },
+      actualRatio: actualRatio,
+      ratioMismatch: !!(S.mode === 'pct' && S.ratio && S.ratio !== actualRatio),
+      inset: { top: insT, right: insR, bottom: insB, left: insL },
+      usable: { width: Math.round(hw - insL - insR),
+                height: Math.round(hh - insT - insB) },
+      rect: { x: Math.round(safeRect.left - hr.left), y: Math.round(safeRect.top - hr.top),
+              w: Math.round(safeRect.right - safeRect.left),
+              h: Math.round(safeRect.bottom - safeRect.top) }
+    };
+
+    const CONTENT_TAGS = ['IMG', 'SVG', 'CANVAS', 'VIDEO', 'PICTURE'];
+    const isContent = (el) => hasDirectText(el) || CONTENT_TAGS.includes(el.tagName);
+    const outs = [];
+    for (const el of document.querySelectorAll('body *')) {
+      if (skip(el) || !isContent(el)) continue;
+      if (isCanvas(el)) continue;                  // 画布自身不算内容主体
+      const r = R(el);
+      if (r.width < 1 || r.height < 1) continue;
+      const o = {
+        top:    Math.round(safeRect.top - r.top),
+        right:  Math.round(r.right - safeRect.right),
+        bottom: Math.round(r.bottom - safeRect.bottom),
+        left:   Math.round(safeRect.left - r.left),
+      };
+      if (Math.max(o.top, o.right, o.bottom, o.left) > TOL) outs.push({ el: el, o: o });
+    }
+    // 只报最外层越界元素,避免父子把同一处刷成多行
+    const hit = new Set();
+    for (const x of outs) hit.add(x.el);
+    for (const x of outs) {
+      let p = x.el.parentElement, nested = false;
+      while (p) { if (hit.has(p)) { nested = true; break; } p = p.parentElement; }
+      if (nested) continue;
+      const dirs = Object.entries(x.o).filter(function (kv) { return kv[1] > TOL; })
+        .map(function (kv) { return kv[0] + ' ' + kv[1] + 'px'; }).join(', ');
+      issues.push({ type: 'C', selector: SEL(x.el),
+        top: Math.max(0, x.o.top), right: Math.max(0, x.o.right),
+        bottom: Math.max(0, x.o.bottom), left: Math.max(0, x.o.left),
+        hint: '越出安全区(' + label + '):' + dirs });
+    }
+  }
+  return { issues: issues.slice(0, 300), safe: safeInfo };
 }
 """
 
@@ -195,7 +366,8 @@ def main() -> int:
     except Exception:
         pass
 
-    p = argparse.ArgumentParser(description="artboard 溢出机检(文字越出容器边框)")
+    p = argparse.ArgumentParser(
+        description="artboard 溢出与安全区机检(文字越出容器边框 / 内容进字幕带)")
     p.add_argument("source", help="项目目录 / src 目录 / HTML 文件")
     p.add_argument("--width", type=int, default=0)
     p.add_argument("--height", type=int, default=0)
@@ -204,7 +376,21 @@ def main() -> int:
                         "1px 描边等不计;要严可 --tol 1)")
     p.add_argument("--all", action="store_true",
                    help="连已设 overflow 收口的盒也报(clamp 体检)")
+    p.add_argument("--safe-area", default="",
+                   help="启用安全区检查:9x16 / 16x9 / 3x4 / auto(按画布比例判)")
+    p.add_argument("--safe-tier", default="standard",
+                   choices=list(SAFE_LABEL),
+                   help="安全区档位:standard 跨平台交集(默认)/ tight 内容多时的紧凑档 / "
+                        "extreme 极限档(四边 2.5%%,几乎贴边,有代价)")
+    p.add_argument("--safe-inset", default="",
+                   help="直接给四边保留量,如 48,27,48,27(上,右,下,左)或 2.5%%,"
+                        "或单个值表示四边相同;优先级高于 --safe-area")
     args = p.parse_args()
+
+    safe = resolve_safe(args)
+    if safe and safe.get("error"):
+        emit({"ok": False, "error": "BAD_SAFE_ARGS", "detail": safe["error"]})
+        return 2
 
     kind, path, index = resolve_source(args.source)
     if kind == "missing":
@@ -234,6 +420,7 @@ def main() -> int:
         url = "file:///" + urllib.parse.quote(path.replace("\\", "/"))
 
     issues: list[dict] = []
+    safe_used: dict | None = None
     try:
         with sync_playwright() as pw:
             browser = pw.chromium.launch(channel=channel, headless=True)
@@ -249,9 +436,12 @@ def main() -> int:
                     pass
                 page.evaluate("() => document.fonts ? document.fonts.ready : true")
                 page.wait_for_timeout(500)          # 字体落位后再量,防假报
-                issues = page.evaluate(DETECT_JS, {
-                    "tol": args.tol, "all": args.all,
+                res = page.evaluate(DETECT_JS, {
+                    "tol": args.tol, "all": args.all, "safe": safe,
+                    "safeTiers": SAFE_TIERS,
                     "canvasClasses": list(CANVAS_CLASSES)})
+                issues = res.get("issues", [])
+                safe_used = res.get("safe")
             finally:
                 browser.close()
     except Exception as exc:  # noqa: BLE001
@@ -263,19 +453,44 @@ def main() -> int:
 
     out = {"ok": not issues, "source": url, "canvas": {"width": w, "height": h},
            "count": len(issues), "issues": issues}
+    if safe_used:
+        out["safe_area"] = safe_used
     emit(out)
+
+    TAGS = {"A": "A 内容溢出自身盒", "B": "B 越出容器边框", "C": "C 越出安全区"}
+    if safe_used:
+        si = safe_used
+        print(f"\n安全区 {si['label']}  画布 {si['canvas']['width']}×"
+              f"{si['canvas']['height']}", file=sys.stderr)
+        print(f"  四边保留 上{si['inset']['top']} 右{si['inset']['right']} "
+              f"下{si['inset']['bottom']} 左{si['inset']['left']}  →  可用 "
+              f"{si['usable']['width']}×{si['usable']['height']}", file=sys.stderr)
+        if si.get("ratioMismatch"):
+            print(f"  △ 画幅不符:你指定 {si['ratio']},而画布实际是 "
+                  f"{si['actualRatio']} —— 百分比已按实际画布边长换算,"
+                  f"\n    但这通常不是你想要的。改用 --safe-area auto 让程序自己判。",
+                  file=sys.stderr)
 
     if issues:
         print(f"\n发现 {len(issues)} 处越界(容差 {args.tol}px):", file=sys.stderr)
         for i in issues[:30]:
-            tag = "A 内容溢出自身盒" if i["type"] == "A" else "B 越出容器边框"
+            tag = TAGS.get(i["type"], i["type"])
             print(f"  ✗ [{tag}] {i['selector']}"
                   + (f"  祖先 {i['ancestor']}" if i.get("ancestor") else "")
                   + f" — {i['hint']}", file=sys.stderr)
         if len(issues) > 30:
             print(f"  … 其余 {len(issues) - 30} 处见 JSON", file=sys.stderr)
-        print("\n  修法见 references/card-layout.md §五「一行修复对照表」;"
-              "\n  装饰元素可加 data-allow-overflow 豁免。", file=sys.stderr)
+        kinds = {i["type"] for i in issues}
+        print("", file=sys.stderr)
+        if kinds & {"A", "B"}:
+            print("  容器越框修法见 references/card-layout.md §五「一行修复对照表」;"
+                  "\n  装饰元素可加 data-allow-overflow 豁免。", file=sys.stderr)
+        if "C" in kinds:
+            print("  安全区越界见 references/video-safe-area.md:"
+                  "\n    · 先试 content 精简 / 拆卡(比贴边更稳)"
+                  "\n    · 空间确实不够 → --safe-tier tight(垂直放宽,左右不动)"
+                  "\n    · 仍不够 → --safe-tier extreme(四边 2.5%,字幕/按钮会盖住边缘内容)",
+                  file=sys.stderr)
     return 1 if issues else 0
 
 

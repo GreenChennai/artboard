@@ -305,6 +305,7 @@ python scripts/export.py --source <proj>/src --output <proj>/export/scene.mp4 \
       顶部 **230px** / 底部 **576px**;16:9 与 3:4 换用各画幅数值。
       最容易漏的是**左右 184px**(平台按钮列)——"logo 放右下""落款贴边"必中
 - [ ] 卡片本身不越框(`card-layout.md`):`.card` 用 `min-height`、无定高、文案超长已 `line-clamp`
-- [ ] 跑过 `scripts/check_overflow.py`(出图前)与安全区叠图目测(出片前,§十三)
+- [ ] **跑过机检门禁**:`scripts/check_overflow.py <proj>/src --safe-area auto` → `ok:true`
+      (A/B 类查容器越框,C 类查越出安全区;每次重导前必跑,见 `pipeline.md` Step 6.0)
 - [ ] L2 ≤3 处、L3 同屏 ≤1 个;同屏动 ≤2 组
 - [ ] 需要静态版的卡,已另出 index_static.html → PNG(不是直接导动画卡的 PNG)

@@ -258,13 +258,26 @@ python scripts/export.py --source <proj>/src --output <proj>/export/anim.mp4 \
 /* 持住期环境微动:有限次数,禁 infinite;结束须 ≤ 出场结束 */
 .drift { animation: drift 1.8s ease-in-out 2 both; animation-delay: calc(var(--t0) + var(--in)); }
 @keyframes drift { 0%,100% { transform: translateY(-6px); } 50% { transform: translateY(6px); } }
+
+/* 【硬】安全区包裹层:所有内容必须放在 .safe 里,否则会被成片字幕/平台按钮盖住。
+   数值与另两个画幅见 video-safe-area.md;装饰越界放 .bg 并加 data-allow-overflow。 */
+.safe {
+  position: absolute; left: 184px; right: 184px; top: 230px; bottom: 576px;
+  display: flex; flex-direction: column; justify-content: center;
+  /* 用 flex 居中,不要在里面再用 top:/bottom: 绝对定位贴边——那会跑回安全区外 */
+}
 ```
 
 ```html
-<h2>
-  <span class="tl si" style="--i:0"><span class="tl so" style="--i:0; color:var(--c-ink)">店群运营</span></span>
-  <span class="tl si" style="--i:1"><span class="tl tl-accent so" style="--i:1; color:var(--c-accent)">被认定为拆分收入</span></span>
-</h2>
+<div class="poster">
+  <div class="bg" data-allow-overflow><!-- 装饰层:可越界,透明度 ≤.5 --></div>
+  <div class="safe"><!-- 内容层:一切内容都在这层里 -->
+    <h2>
+      <span class="tl si" style="--i:0"><span class="tl so" style="--i:0; color:var(--c-ink)">店群运营</span></span>
+      <span class="tl si" style="--i:1"><span class="tl tl-accent so" style="--i:1; color:var(--c-accent)">被认定为拆分收入</span></span>
+    </h2>
+  </div>
+</div>
 ```
 
 导出(S 卡一律 MP4;深底渐变 GIF 会带状化):
@@ -288,6 +301,10 @@ python scripts/export.py --source <proj>/src --output <proj>/export/scene.mp4 \
 - [ ] 入场+出场分属**两层嵌套元素**(外入内出;同元素双动画会让元素从 0s 起常驻,§十二)
 - [ ] 文字:标题逐行 span 制,断点无词被劈(见 typography-rules.md §一「标题语义断行」);
       卡片文字 ≤3 组元素、单行 ≤14 字、dwell ≥1.5s/13 字符
-- [ ] 视频安全区(cutflow 9:16):顶部 230px / 底部 576px / 左右 118px 无内容
+- [ ] **内容全部落在视频安全区内**(细则见 `video-safe-area.md`):9:16 左/右 **184px** /
+      顶部 **230px** / 底部 **576px**;16:9 与 3:4 换用各画幅数值。
+      最容易漏的是**左右 184px**(平台按钮列)——"logo 放右下""落款贴边"必中
+- [ ] 卡片本身不越框(`card-layout.md`):`.card` 用 `min-height`、无定高、文案超长已 `line-clamp`
+- [ ] 跑过 `scripts/check_overflow.py`(出图前)与安全区叠图目测(出片前,§十三)
 - [ ] L2 ≤3 处、L3 同屏 ≤1 个;同屏动 ≤2 组
 - [ ] 需要静态版的卡,已另出 index_static.html → PNG(不是直接导动画卡的 PNG)

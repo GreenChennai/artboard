@@ -1,7 +1,7 @@
 ---
 name: artboard
 description: 用 HTML/CSS 绘制平面设计级图片并导出成品的海报工作室。输入文案直出、给图复刻、或换风格改配色,产出海报/banner/小红书封面/主KV/信息长图(PNG/GIF/MP4/PDF),并为视频制作场景卡(口播信息卡/图解动画卡/片头尾,支持出入场动画)。风格像 Illustrator/Photoshop 做的设计图,不是网页交互风。当用户想要:做海报、出图、画封面、小红书配图、banner、KV 主视觉、信息长图、数据图、动态海报、GIF、视频信息卡、科普动画卡、把文案变成图片、复刻一张设计图、换风格重做时使用。Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.7.4
+version: 1.7.5
 ---
 
 # artboard · HTML 海报工作室
@@ -67,6 +67,8 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 风格分册 | references/styles/<命中项>.md | 选定该风格时,只读命中的 1 份 |
 | 风格系统 | references/style-system.md | 需要布局原型/配色 tokens 时 |
 | **构图与版式骨架** | references/composition.md | 选完风格之后、写 HTML 之前;或画面"看着散/没重点"时 |
+| **卡片与容器布局** | references/card-layout.md | 写任何带背景/边框的文字容器(卡片/要点框/条目)时;或文字越出边框时 |
+| **视频安全区** | references/video-safe-area.md | 做视频场景卡(模式 S)、口播桥/图解卡、会被叠字幕的动图时(**必读**) |
 | 视觉特效 43 式 | references/effects.md | 需要特效配方时(通常写 HTML 时) |
 | 标题手法库 | references/title-fx.md | 标题需要描边/蒙版/错位等处理时 |
 | 物料尺寸总表 | references/material-catalog.md | 需要非常规物料尺寸/平台规范时(40+ 物料) |
@@ -109,6 +111,7 @@ python $S/export.py --source <proj>/src --output <proj>/export/o.png \
 python $S/export_fallback.py --source <proj>/src/index.html \
     --output <proj>/export/o.png --width 1080 --scale 2   # 兜底(仅 PNG)
 python $S/make_bats.py <项目> --embed         # 给每个 HTML 生成"导出-<名字>.bat"双击即出图
+python $S/check_overflow.py <proj>/src        # 机检:文字越出容器边框(出图/出片前必跑)
 python $S/ai_export.py <项目目录> [--svg --eps --ai]      # 矢量/工程文件(用户明确要才跑)
 ```
 

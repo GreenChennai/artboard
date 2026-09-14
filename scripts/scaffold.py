@@ -222,6 +222,9 @@ html, body {{ margin: 0; background: #ffffff; }}
   --c-primary: #2b4acb;  /* 主色 */
   --c-accent: #e84a5f;   /* 强调色(最多 1-2 个元素用) */
   --c-muted: #8a8578;    /* 辅助文字 */
+  --pad: 40px;           /* 卡片内边距 */
+  --gap: 24px;           /* 卡片间距 */
+  --radius: 20px;        /* 统一圆角(不要 8/12/16 混用) */
 {font_vars}
 }}
 
@@ -232,12 +235,57 @@ html, body {{ margin: 0; background: #ffffff; }}
 .tl     {{ display: block; }}          /* 一行一块:断行=换色=动画 stagger 三合一 */
 .t-keep {{ word-break: keep-all; text-wrap: balance; }}
 
+/* ===== 卡片工具(card-layout.md)=====================================
+   铁律:文字容器禁写死 height;要下限用 min-height;文案长度不可控必须夹住。
+   外层列表用 flex 消化高度差,不要用 top+bottom 双锁。 */
+.card {{
+  padding: var(--pad);
+  border-radius: var(--radius);
+  background: #ffffff;
+  min-height: 0;                       /* 需要时改成具体下限,如 120px */
+  display: flex; flex-direction: column; gap: 12px;
+}}
+.list {{
+  display: flex; flex-direction: column; gap: var(--gap);
+  flex: 1;                             /* 吃满剩余高度 */
+  justify-content: center;             /* 内容少时居中,而非硬撑留白 */
+}}
+/* 收口:文案是别人给的/会长变时加,交付时须提示"已截断,建议精简" */
+.clamp-1, .clamp-2, .clamp-3 {{
+  display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;
+}}
+.clamp-1 {{ -webkit-line-clamp: 1; }}
+.clamp-2 {{ -webkit-line-clamp: 2; }}
+.clamp-3 {{ -webkit-line-clamp: 3; }}
+/* flex 子项要出省略号时**必须**加,否则不肯收缩、ellipsis 不生效 */
+.ellip {{ min-width: 0; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }}
+/* 装饰越界必须显式声明豁免,否则 check_overflow.py 会报 */
+.allow-ovf {{ pointer-events: none; }}
+
+/* ===== 视频卡安全区(video-safe-area.md,做动图/场景卡时用)=====
+   9:16 内容可用区:左右 184 / 顶 230 / 底 576;装饰可越界但要 data-allow-overflow。
+   16:9 换成:左右 8% / 顶 10% / 底 16%;3:4 换成:左右 7% / 顶 10% / 底 18%。 */
+.safe {{
+  position: absolute; left: 184px; right: 184px; top: 230px; bottom: 576px;
+  display: flex; flex-direction: column; justify-content: center;
+  /* 用 flex 居中而非逐个 top 定位:内容行数变化时仍留在安全区内 */
+}}
+
 /* ===== 内容从这里开始 ===== */
 </style>
 </head>
 <body>
   <div class="poster">
     <!-- 画布 {w}px 宽;所有内容放这里面,溢出即隐藏 -->
+    <!-- 卡片示例(照此写,勿写 height):
+      <div class="list">
+        <div class="card">
+          <h3>标题</h3>
+          <p class="clamp-2">正文,长度不可控时用 clamp 夹住</p>
+        </div>
+      </div>
+     装饰越界:<div class="glow" data-allow-overflow></div>
+    -->
   </div>
 </body>
 </html>

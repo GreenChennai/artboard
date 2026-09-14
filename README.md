@@ -188,6 +188,7 @@ python scripts/export.py --source src --output out.png \
     --width 1080 --scale 2 --height 1440                       # 导出(主路径)
 python scripts/export_fallback.py --source src/index.html \
     --output out.png --width 1080 --scale 2                    # 导出(兜底,仅 PNG)
+python scripts/check_overflow.py src                           # 机检文字越出容器边框
 ```
 
 **双击即出图**(用户改稿后自给自足)
@@ -275,6 +276,8 @@ artboard/
 │   ├── effects.md           #   视觉特效 43 式(fx- 34 + tx- 9)
 │   ├── title-fx.md          #   标题手法(描边/蒙版/模糊/重组)
 │   ├── composition.md       #   构图与版式骨架(动线/三分/黄金/视觉重量/基线网格)
+│   ├── card-layout.md       #   卡片与容器布局(防文字出框:卡高公式/自适应/收口)
+│   ├── video-safe-area.md   #   视频安全区(字幕带 / 平台 UI 遮挡,三画幅)
 │   ├── typography-rules.md  #   排版硬规则(断行/层级/留白/数字)
 │   ├── cjk-typography-css.md#   中文排版 CSS 落地(标点挤压/中西文间距/断行)
 │   ├── numeric-typography.md#   数字·单位·日期排版

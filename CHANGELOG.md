@@ -1,5 +1,34 @@
 # Changelog
 
+## v1.8.0 — 微信公众号双封面 + 内容排版
+
+### Added · 公众号双封面(gzh_cover.py)
+- **双封面一次生成**:`new` 产出主封面 900×383(2.35:1 头条)+ 次条 383×383(1:1),
+  共用同一套主题 tokens(blue/dark/warm/green 四套)与字体,信息流里"同一个栏目"
+- **三种导出路径**:`export` 默认三图齐出(合一导出);`--only main|sub|merged` 单出任意一张;
+  `merge` 仅重拼合并图(Pillow 纯像素拼接,不重渲染,单张原始比例零形变)
+- **居中安全区版式**:转发卡片只露中央 383×383 → 主封面关键信息全部居中;
+  次条元素 ≤3 居中堆叠(规格依据 docs/gzh-spec-summary.md,多源交叉验证)
+- 产物命名 `cover-main/sub/merged-<slug>.png`,可直接上传公众号后台
+
+### Added · 公众号正文排版(gzh_article.py)
+- **Markdown → 全内联样式 HTML**:零依赖解析(标题/引用/列表/表格/代码块/分割线/图片),
+  每个元素 style 内联,无 class/id/`<style>`/`<script>`/外链 CSS——粘贴进公众号编辑器不塌样式
+- **四套主题**(default=微信蓝/green/orange/red)+ 本地预览页(`--preview`,手机宽度壳)
+- **兼容性自检**:`check` 子命令输出违规报告(禁用模式/白名单外标签/缺内联样式标签);
+  `demo` 一键生成全组件示例并自检
+
+### Added · 规范文档
+- `references/formats/gzh-cover.md`:双封面品类分册(尺寸/安全区/合并图规范/字号阶/禁则)
+- `references/gzh-typography.md`:公众号排版分册(兼容性硬规则/组件样式表/阅读节奏)
+- `docs/gzh-spec-summary.md`:权威资料归纳(封面规格与排版约束的来源清单 + 决策映射)
+- `docs/gzh-guide.md`:使用指南(上手/规格/导出方式/异常处理/回滚)
+
+### Fixed · 导出健壮性
+- `export.py` 同目录导入在 Python safe_path 环境(≥3.11 PYTHONSAFEPATH / 3.13+ 默认)下
+  不再 `ModuleNotFoundError`(补 sys.path 守卫,同 preflight.py 先例)
+
+
 ## v1.7.6 — 机检纳入 Step 6 门禁 + 安全区三档降级
 
 ### Added · 机检门禁(ADR-0017 决策一)

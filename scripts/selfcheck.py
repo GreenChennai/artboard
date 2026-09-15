@@ -64,6 +64,9 @@ DEFAULT_SMOKE_ARGS = ["--help"]
 
 # 失败路径 JSON 契约:给必失败的输入,断言最后一行 stdout 是合法 JSON
 JSONFAIL_CASES = (
+    ("gzh_cover.py", ["export", "__nope__"]),
+    ("gzh_article.py", ["convert", "__nope__.md", "--out", "__nope__.html"]),
+    ("gzh_article.py", ["check", "__nope__.html"]),
     ("vectoredit2webhtml.py", ["__nope__.pdf", "__nope__.html"]),
     ("export_fallback.py", ["--source", "__nope__", "--output", "__nope__.png"]),
     ("ai_export.py", ["__nope__"]),

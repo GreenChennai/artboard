@@ -19,7 +19,10 @@ import os
 import subprocess
 import sys
 
-from _config import cfg, near_workspace
+_SCRIPTS = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPTS not in sys.path:
+    sys.path.insert(0, _SCRIPTS)          # safe_path 环境(脚本目录不再自动入 sys.path)
+from _config import cfg, near_workspace   # noqa: E402  同目录导入需显式补路径(同 preflight.py)
 
 DEFAULT_WPI = near_workspace("WPI")
 

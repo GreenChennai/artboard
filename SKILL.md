@@ -1,7 +1,7 @@
 ---
 name: artboard
 description: 用 HTML/CSS 绘制平面设计级图片并导出成品的海报工作室。输入文案直出、给图复刻、或换风格改配色,产出海报/banner/小红书封面/主KV/信息长图(PNG/GIF/MP4/PDF),并为视频制作场景卡(口播信息卡/图解动画卡/片头尾,支持出入场动画)。风格像 Illustrator/Photoshop 做的设计图,不是网页交互风。当用户想要:做海报、出图、画封面、小红书配图、banner、KV 主视觉、信息长图、数据图、动态海报、GIF、视频信息卡、科普动画卡、把文案变成图片、复刻一张设计图、换风格重做时使用。Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.7.6
+version: 1.8.0
 ---
 
 # artboard · HTML 海报工作室
@@ -45,6 +45,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 
 | 品类 | --size | 规范分册 | 要点 |
 |---|---|---|---|
+| 公众号双封面 | `gzh`(经 `gzh_cover.py`) | formats/gzh-cover.md | 头条 900×383 + 次条 383×383;居中安全区;三种导出 |
 | 名片 90×54mm | `card` | formats/card.md | scale 1=300dpi;7pt 可读底线;双面双画布 |
 | A4 海报 | `a4p` | formats/a4p.md | scale 2=300dpi;Z 动线;禁荧光色 |
 | 三折页 | `trifold` | formats/trifold.md | 双面双画布;折线 x=585/1169;文字禁跨折线 |
@@ -88,6 +89,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 动效分册 | references/animation.md | 动图任务(GIF/MP4)或**视频桥场景卡**(口播信息卡/图解卡)时 |
 | 导出手册 | references/export.md | 导出参数/故障不确定时 |
 | 矢量交付手册 | references/vector-export.md | 用户要 SVG/EPS/AI 可编辑 PDF/.ai/可编辑矢量时(必读) |
+| 公众号排版规范 | references/gzh-typography.md | 公众号正文排版任务(Markdown→内联样式 HTML / 粘贴不塌样式)时 |
 | 品类规范 | references/formats/<品类>.md | 选中印刷/PPT 品类时,只读命中 1 份(注意 slug `slide` 的文件是 `ppt.md`) |
 | 印刷 CMYK 流程 | references/print-cmyk.md | 印刷任务定色时(TAC/单色黑/安全色谱) |
 | 印前与后工艺 | references/print-production.md | 用户提"印刷/打样/烫金/UV/模切/专色/裁切线"时 |
@@ -114,6 +116,9 @@ python $S/export_fallback.py --source <proj>/src/index.html \
     --output <proj>/export/o.png --width 1080 --scale 2   # 兜底(仅 PNG)
 python $S/make_bats.py <项目> --embed         # 给每个 HTML 生成"导出-<名字>.bat"双击即出图
 python $S/check_overflow.py <proj>/src        # 机检:文字越出容器边框(出图/出片前必跑)
+python $S/gzh_cover.py new <slug> --title "标题"          # 公众号双封面项目(主 900×383 + 次 383×383)
+python $S/gzh_cover.py export <slug>                      # 双封面导出:主/次/合并三图(可 --only 单出)
+python $S/gzh_article.py convert 文章.md --out a.html     # 公众号正文排版(Markdown→内联样式 HTML)
 python $S/ai_export.py <项目目录> [--svg --eps --ai]      # 矢量/工程文件(用户明确要才跑)
 ```
 

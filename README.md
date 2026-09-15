@@ -121,6 +121,7 @@ python scripts\preflight.py
 | 易拉宝 80×200cm | `rollup` | 2362×5906 | 2x = 150dpi |
 | PPT 页 16:9 | `slide` | 1280×720 | 2x = 2560×1440 |
 | 公众号封面 | `gzh` | 900×383 | 2x |
+| 公众号双封面 | `gzh_cover.py` | 900×383 + 383×383 | 2x(另出合并图) |
 | 电商主图 | `taobao` | 800×800 | 2x |
 
 > 完整 40+ 物料尺寸(含社媒/广告/印刷)见 [material-catalog.md](references/material-catalog.md)。
@@ -192,6 +193,21 @@ python scripts/check_overflow.py src                           # 机检文字越
 python scripts/check_overflow.py src --safe-area 9x16          # 追加安全区检查(C 类)
 python scripts/check_overflow.py src --safe-area 9x16 --safe-tier tight   # 内容多时的紧凑档
 ```
+
+**公众号双封面与正文排版**(v1.8.0 新增)
+
+```bash
+python scripts/gzh_cover.py new <slug> --title "标题" --theme blue   # 双封面项目(主 900×383 + 次 383×383)
+python scripts/gzh_cover.py export <slug>                            # 三图齐出:主/次/合并(可 --only 单出)
+python scripts/gzh_cover.py merge <slug> --gap 57                    # 仅重拼合并图(Pillow 纯拼接)
+python scripts/gzh_article.py convert 文章.md --out article.html --preview  # 正文排版(Markdown→内联样式 HTML)
+python scripts/gzh_article.py check article.html                     # 公众号兼容性自检
+python scripts/gzh_article.py demo --outdir <目录>                   # 全组件示例 + 自检报告
+```
+
+> 规格与兼容性依据:[docs/gzh-spec-summary.md](docs/gzh-spec-summary.md) ·
+> 排版规范:[references/gzh-typography.md](references/gzh-typography.md) ·
+> 使用指南:[docs/gzh-guide.md](docs/gzh-guide.md)
 
 **双击即出图**(用户改稿后自给自足)
 

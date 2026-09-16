@@ -46,8 +46,9 @@ def main() -> int:
     except Exception:
         pass
     ap = argparse.ArgumentParser(description="Kiln 引擎部署")
-    ap.add_argument("--from", dest="from_url", default="",
-                    help="从 URL 下载 Kiln-noGUI-CLI.exe(省事;否则走本地探测)")
+    default_url = "https://github.com/GreenChennai/artboard/releases/download/kiln-cli-v0.5.0/Kiln-noGUI-CLI.exe"
+    ap.add_argument("--from", dest="from_url", default=default_url,
+                    help="从 URL 下载 Kiln-noGUI-CLI.exe(默认 artboard 发行页最新资产)")
     args = ap.parse_args()
 
     found = probe()

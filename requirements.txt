@@ -1,8 +1,9 @@
-# artboard 核心依赖 —— 导出主路径(WPI)与兜底路径都需要
+# artboard 核心依赖
 #   pip install -r requirements.txt
 Pillow>=10.0
 playwright>=1.40
 
 # 说明:
-# - WPI 源码版自身依赖由 scripts/setup_wpi.py --source-install 自动安装(同上两项)
-# - 只出静态 PNG/GIF/PDF 时,装这两项即可
+# - v1.9 起导出主路径为 Kiln 原生引擎(单文件,零 Python 依赖),本清单仅供
+#   兜底路径(export_fallback.py)与机检(check_overflow.py)使用 playwright
+# - Pillow 用于 CMYK 打印交付、公众号封面合并等纯像素工序

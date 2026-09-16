@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./docs/readme/hero.svg" width="100%" alt="artboard · HTML 海报工作室:字落生根,版上开花——把文案与照片养成印刷级设计图,导出 PNG/GIF/MP4/PDF">
+  <img src="./docs/readme/hero.svg" width="100%" alt="artboard · HTML 海报工作室:字落生根,版上开花——把文案与照片养成印刷级设计图,导出 PNG/JPG/GIF/MP4/PDF/SVG/EPS/AI/PPTX">
 </p>
 
 <h1 align="center">artboard · HTML 海报工作室</h1>
@@ -7,10 +7,29 @@
 <p align="center">
   <strong>AI Agent Skill:让 AI 像设计师一样工作</strong><br>
   不调用 AI 生图,而是写 HTML/CSS、用真实摄影素材、按印刷规范排版,<br>
-  再经 Playwright 渲染成成品图——文字永远锐利,配色永远可控,结果永远可复现。
+  再经 <strong>Kiln 原生引擎</strong>渲染成成品图——文字永远锐利,配色永远可控,<br>
+  结果永远可复现,而且<b>零浏览器依赖、单文件离线直出九种格式</b>。
 </p>
 
 ---
+
+## 🆕 v1.9.0 · 导出引擎全面换血
+
+> 渲染引擎从浏览器方案(WPI/Playwright)整体切换为 **Kiln**——
+> VellumBench 出品的 Rust 原生导出核心,单文件零依赖,平均提速 **20×+**。
+
+- **九格式同源直出**:PNG / JPG / GIF / MP4 / SVG / PDF / EPS / AI / PPTX,
+  一次渲染全部可得;
+- **CSS 动画原生时间轴**:`@keyframes` 逐帧求值直出 GIF/MP4——五段式场景卡、
+  入场/循环动画不再依赖浏览器录制,没有录制偏移,`t=0` 即首帧;
+- **PDF 中文真文本**:CIDFontType2 字体子集嵌入 + ToUnicode,
+  中文在阅读器里**可选中、可复制、可检索**;
+- **矢量真文本**:SVG/PPTX 保留真实文字节点,PDF/Ai 走 CID 真文本,
+  Illustrator 直接打开;
+- **外部矢量稿改造**:`kiln-cli import` 把设计师交付的 PDF/AI
+  反向导回规范化 HTML,继续在 artboard 里迭代;
+- **保真度背书**:重建的五用例固定基准套件,以浏览器渲染为基线的
+  全像素平均还原度 **97.76/100**(口径与验收脚本随仓库开源,可复跑)。
 
 ## ✨ 成品样例
 
@@ -45,6 +64,7 @@ AI 生图工具做海报的三座大山:**文字必糊、配色看运气、改�
 | 配色 | 每次随机 | 设计 token 锁定,改一处全局生效 |
 | 迭代 | 改一字重跑全图 | 定点修改 HTML,秒级重导 |
 | 素材 | AI 幻觉 | 真实摄影(Pexels 授权/用户提供) |
+| 交付 | 一张位图 | 九格式:位图 + 矢量 + 视频 + 工程文件 |
 
 ## 🔄 工作流水线
 
@@ -53,10 +73,11 @@ AI 生图工具做海报的三座大山:**文字必糊、配色看运气、改�
 </p>
 
 - **开工先追问**:内置五问协议(用途/尺寸/风格/配色/素材),拒绝拿到文案就盲做;
-- **单文件原生导出**:Kiln 引擎(v1.9)九格式零浏览器依赖,独立 Playwright 脚本兜底;
+- **单文件原生导出**:Kiln 引擎九格式零浏览器依赖,独立 Playwright 脚本兜底(可选);
 - **出图自检闭环**:渲染后自动看图检查溢出/对比度/字体加载,修复重导,2 轮上限;
-- **动图**:CSS 动画 → GIF/MP4,迪士尼十二法则 + Material 缓动 token,无缝循环经帧差校验;
-  双模式:**海报循环**(模式 P)/ **视频场景卡**(模式 S,口播信息卡五段式出入场,ADR-0012);
+- **动图**:CSS `@keyframes` 逐帧求值直出 GIF/MP4,迪士尼十二法则 + Material 缓动
+  token,无缝循环经帧差校验;双模式:**海报循环**(模式 P)/ **视频场景卡**
+  (模式 S,口播信息卡五段式出入场,ADR-0012);
 - **物料尺寸总表**:社媒/电商/印刷/办公/广告 40+ 物料的尺寸、安全区与设计法则。
 
 ## 🚀 快速开始
@@ -94,12 +115,15 @@ AI 生图工具做海报的三座大山:**文字必糊、配色看运气、改�
 **第 4 步 · 一键部署运行环境**(`artboard\scripts\` 下)
 
 ```bat
-pip install -r ..\requirements.txt   :: 核心依赖(Pillow + playwright)
-python setup_kiln.py         :: Kiln 渲染引擎(自动探测/部署)
-python setup_ffmpeg.py       :: FFmpeg(可选:MP4 + 高质量 GIF)
-python fetch_model.py vqa    :: 本地 VQA 模型(可选:离线看图问答)
+pip install -r ..\requirements.txt   :: 兜底导出与机检(playwright)+ 像素工序(Pillow)
+python setup_kiln.py                 :: Kiln 渲染引擎(自动探测;可 --from 直链下载)
+python setup_ffmpeg.py               :: FFmpeg(可选:MP4 + 高质量 GIF)
+python fetch_model.py vqa            :: 本地 VQA 模型(可选:离线看图问答)
 ```
-> 要出 SVG / EPS / AI 可编辑 PDF:再装 `pip install -r ..\requirements-vector.txt`
+
+> Kiln 引擎也可以从上游自行构建:
+> `git clone https://github.com/GreenChennai/VellumBench`
+> → `cargo build -p vb_kiln --release --bin kiln-cli`。
 
 **第 5 步 · 体检**
 
@@ -146,33 +170,39 @@ python scripts\preflight.py
 ## 🧩 矢量交付与工程文件(Kiln 原生)
 
 默认流水线产出 PNG/JPG 等成品图;当用户需要**设计软件可编辑的工程文件**时,
-**Kiln 原生直出**矢量产物(真文本可编辑、中文 CID 嵌入,
-相似度以 SSIM 验收,三样张实测 0.97–0.99):
+Kiln 同一渲染管线直接产出矢量格式——真文本、中文可选中、免转换损耗:
 
 ```bash
-python scripts/ai_export.py <项目目录>                # 一键:分层 AI 可编辑 PDF
-python scripts/ai_export.py <项目目录> --svg --eps --ai   # 追加 SVG / EPS / 真 .ai
+python scripts/ai_export.py <项目目录>                      # 一键:SVG + PDF
+python scripts/ai_export.py <项目目录> --eps --ai --pptx    # 追加 EPS / Ai / PPTX
+python scripts/to_vector.py --source src --outdir export --formats svg,pdf,eps
 ```
 
 | 产物 | 说明 |
 |---|---|
-| `*-ai.pdf` | **AI 可编辑 PDF**:背景/内容 双图层(OCG)+ 整句可编辑文字(逐字断层自动合并),PDF 阅读器可直接开关图层 |
-| `*.ai` | 真 .ai 源文件(原生构建):按 DOM 组件树在 Illustrator 内递归建**嵌套真组**(Ctrl+G 语义,非剪切蒙版),文字为整句 TextFrame,背景/内容双层 |
-| `*.svg` | 全矢量、文字转曲、图片内嵌,网页/Figma/AI 通吃 |
-| `*.eps` | 老印刷流程用(透明自动压平) |
-| `*-reference.png` + `*-diff-*.png` | SSIM 相似度验收:基准截图 + 逐格式差异热区 |
+| `*.svg` | 全矢量 + **真实文字节点**(非转曲),浏览器/Figma/AI 通吃,分组可开关 |
+| `*.pdf` | CIDFontType2 字体子集嵌入 + Identity-H,**中文可选中复制可检索**,OCG 图层 |
+| `*.ai` | PDF 兼容流 + Illustrator 头(ADR-0008),Illustrator 直接打开 |
+| `*.eps` | 老印刷流程用(中文轮廓化) |
+| `*.pptx` | 真文本 shape,汇报/二次编辑 |
 
-**逆向重维护**:`kiln-cli import` 把外部 PDF/AI 变回规范化 HTML——
+> v1.9 起矢量交付不再经过浏览器打印/poppler 转换链,也不再有 SSIM 转换验收——
+> 同一引擎同源渲染,保真度走 [bench/fidelity.py](../VellumBench/bench/fidelity.py)
+> (五用例平均 97.76/100,详见上游 BENCHMARK.md §九)。
+> 细节与验收清单见 [references/vector-export.md](references/vector-export.md)。
+
+**矢量安全清单**:五条禁令(硬切透明渐变 / mix-blend-mode / 渐变字 /
+conic-gradient / 渐变 alpha-stop 压圆角)——目标产物含矢量交付时源 HTML 应避免,
+细则见 vector-export.md §4。
+
+**逆向重维护**:`kiln-cli import` 把外部 PDF/AI 矢量稿导回规范化 HTML——
 
 ```bash
-Kiln-noGUI-CLI.exe import --source poster.pdf --output <项目目录>   # 外部 PDF/AI → 规范化 HTML
+Kiln-noGUI-CLI.exe import --source poster.pdf --output <项目目录>
 ```
 
-转换前,复制一份 HTML 后改写时请遵守 **矢量安全清单**(vector-export.md §5,五条禁令:
-禁硬切透明渐变/blend-mode/渐变字/conic-gradient/alpha 渐变压圆角),
-否则转换会脏色、丢字或出伪影。注意:工程文件导出**不在默认流水线**,
-仅按需运行;文字/图形分层细则与验收协议见
-[references/vector-export.md](references/vector-export.md)。
+- 产出 `index.html + styles/main.css + assets/`,文本可编辑、可直接重导出;
+- 依赖 `pdfium.dll`(环境变量 `PDFIUM_DLL` 指定,或放在 exe 同目录)。
 
 ## 📦 脚本一览
 
@@ -184,12 +214,13 @@ Kiln-noGUI-CLI.exe import --source poster.pdf --output <项目目录>   # 外部
 python scripts/preflight.py                                    # 环境自检报告
 python scripts/scaffold.py <slug> --size xhs --fonts 思源黑体,霞鹜文楷
 python scripts/export.py --source src --output out.png \
-    --width 1080 --scale 2 --height 1440                       # 导出(主路径)
+    --width 1080 --scale 2                                     # 导出(主路径,九格式)
+python scripts/export.py --source src --output out.gif \
+    --format GIF --fps 25 --max-wait 6                         # 动画时长 = max-wait
 python scripts/export_fallback.py --source src/index.html \
     --output out.png --width 1080 --scale 2                    # 导出(兜底,仅 PNG)
 python scripts/check_overflow.py src                           # 机检文字越出容器边框(A/B 类)
 python scripts/check_overflow.py src --safe-area 9x16          # 追加安全区检查(C 类)
-python scripts/check_overflow.py src --safe-area 9x16 --safe-tier tight   # 内容多时的紧凑档
 ```
 
 **公众号双封面与正文排版**(v1.8.0 新增)
@@ -214,7 +245,7 @@ python scripts/make_bats.py <项目> --embed   # 每个 HTML 生成"导出-<名�
 python scripts/export_local.py               # 批量导出器本体(须先投放到 <项目>/src/)
 ```
 
-**矢量 / 工程文件**(仅当用户明确要 SVG/EPS/AI 可编辑 PDF/.ai)
+**矢量 / 工程文件 / 逆向**(仅当用户明确要 SVG/EPS/AI/PPTX/PDF 工程文件或外部矢量稿改造)
 
 ```bash
 python scripts/ai_export.py <项目目录> [--svg --eps --ai --pptx]   # 一键矢量
@@ -306,6 +337,7 @@ artboard/
 │   ├── print-production.md  #   印前与后工艺(陷印/专色/裁切线/LPI/后加工)
 │   ├── replicate.md         #   图片复刻协议
 │   ├── export.md            #   导出手册
+│   ├── vector-export.md     #   矢量交付手册(v1.9:Kiln 原生直出)
 │   ├── style-guide.md       #   新增风格指南
 │   ├── styles-catalog.md    #   123 风格方向速查
 │   ├── styles/              #   4 个视觉风格分册(+参考案例)
@@ -332,6 +364,9 @@ artboard/
 > 仓库只收"实际性工作内容 + 必备指导文档"。以下为**本地留档,不进仓库**
 > (已在 `.gitignore` 排除):`docs/adr/`(架构决策)、`docs/ITERATION.md`(迭代台账)、
 > `docs/review/`(审查报告)。
+>
+> 上游渲染引擎:[GreenChennai/VellumBench](https://github.com/GreenChennai/VellumBench)
+> (Kiln 导出核心,tag v0.5.0-kiln;布局引擎/文本引擎/CSS 动画时间轴/CID 中文真文本/导入)。
 
 ## 🔑 素材与版权政策
 
@@ -363,6 +398,8 @@ artboard/
 字体:思源黑体/宋体(Noto CJK)· 得意黑(Smiley Sans)· 霞鹜文楷(LXGW WenKai)· 站酷快乐体(ZCOOL KuaiLe)· MiSans(小米)· 阿里巴巴普惠体 3.0 · HarmonyOS Sans(华为)。
 
 图标:[Tabler Icons](https://github.com/tabler/tabler-icons)(MIT) · 插画:[Open Doodles](https://www.opendoodles.com/)(CC0)。
+
+渲染引擎:[GreenChennai/VellumBench](https://github.com/GreenChennai/VellumBench) — Kiln 导出核心(Rust,自研)。
 
 ## 📄 License
 

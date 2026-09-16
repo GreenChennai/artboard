@@ -54,7 +54,18 @@ Kiln-noGUI-CLI.exe import --source poster.pdf --output <项目目录>
 - 文本可编辑;路径/图像分别映射;依赖 pdfium.dll(PDFIUM_DLL 指定)
 - v1 边界:对象取色未暴露(统一近似色);路径以盒近似;SVG 源后续版
 
-## 4. 验收清单
+## 4. 矢量安全清单(五条禁令)
+
+以下 CSS 原语在 Kiln 原生渲染下无法忠实转矢量(要么丢弃要么脏色),
+**目标产物含矢量交付时,源 HTML 应避免**:
+
+① 硬切透明渐变(`linear-gradient` 带 transparent 端点)——矢量端变实色,渐变断裂
+② mix-blend-mode —— PDF/EPS 无对应混合语义,整层脏色
+③ 渐变字(background-clip:text)——文字退回纯色
+④ conic-gradient —— 解析为降级填充
+⑤ alpha 渐变 stop 压圆角 —— 圆角外溢出杂边
+
+## 5. 验收清单
 
 - [ ] SVG 在浏览器/设计工具打开,文字可选中、中文无豆腐块
 - [ ] PDF 文本可选中复制(中文逐字正确)

@@ -54,7 +54,7 @@ C:\Users\你\.agents\skills\artboard\
 
 | 配置项 | 填什么 | 必填? |
 |---|---|---|
-| WPI 渲染引擎路径 | 见第 5 步(可一键部署) | ✅ |
+| Kiln 渲染引擎(kiln_cli_exe) | 见第 5 步(自动探测/部署) | ✅ |
 | 作品落盘目录 | 海报保存位置,如 `E:\artboard-studio` | ✅ |
 | Pexels API Key | 第 3 步复制的 Key | 推荐 |
 | Pixabay API Key | 第 3 步复制的 Key | 推荐 |
@@ -63,7 +63,6 @@ C:\Users\你\.agents\skills\artboard\
 | 本地代理 | 访问 Pinterest 等境外源时填,如 `http://127.0.0.1:7890` | 可选 |
 | 视觉识别模式 | 保持 `auto`(Agent 自带视觉优先) | 保持默认 |
 | 本地 VQA / OCR 路径 | 跑 `scripts\fetch_model.py vqa`(或 `ocr`)自动下载部署 | 可选 |
-| Poppler 目录 / Ghostscript 路径 | 跑 `scripts\setup_vector.py` 一键部署;仅矢量交付需要 | 可选 |
 
 点**保存**。配置即改即生效,不用重启。
 
@@ -83,8 +82,8 @@ C:\Users\你\.agents\skills\artboard\
 :: 0. Python 依赖(核心:Pillow + playwright)
 pip install -r ..\requirements.txt
 
-:: 1. WPI 渲染引擎(GitHub 自动下载 + 装依赖)
-python setup_wpi.py
+:: 1. Kiln 渲染引擎(v1.9 起唯一引擎,自动探测/部署)
+python setup_kiln.py
 
 :: 2. FFmpeg(可选:GIF 高质量 + MP4 视频)
 python setup_ffmpeg.py

@@ -53,7 +53,7 @@ AI 生图工具做海报的三座大山:**文字必糊、配色看运气、改�
 </p>
 
 - **开工先追问**:内置五问协议(用途/尺寸/风格/配色/素材),拒绝拿到文案就盲做;
-- **双路径导出**:WPI(Playwright 驱动系统 Edge/Chrome)为主,独立 Playwright 脚本兜底;
+- **单文件原生导出**:Kiln 引擎(v1.9)九格式零浏览器依赖,独立 Playwright 脚本兜底;
 - **出图自检闭环**:渲染后自动看图检查溢出/对比度/字体加载,修复重导,2 轮上限;
 - **动图**:CSS 动画 → GIF/MP4,迪士尼十二法则 + Material 缓动 token,无缝循环经帧差校验;
   双模式:**海报循环**(模式 P)/ **视频场景卡**(模式 S,口播信息卡五段式出入场,ADR-0012);
@@ -95,7 +95,7 @@ AI 生图工具做海报的三座大山:**文字必糊、配色看运气、改�
 
 ```bat
 pip install -r ..\requirements.txt   :: 核心依赖(Pillow + playwright)
-python setup_wpi.py          :: WPI 渲染引擎(GitHub 自动下载+装依赖)
+python setup_kiln.py         :: Kiln 渲染引擎(自动探测/部署)
 python setup_ffmpeg.py       :: FFmpeg(可选:MP4 + 高质量 GIF)
 python fetch_model.py vqa    :: 本地 VQA 模型(可选:离线看图问答)
 ```
@@ -132,7 +132,7 @@ python scripts\preflight.py
 
 | 键 | 说明 |
 |---|---|
-| `wpi_path` | WPI 渲染引擎路径(Playwright + 系统 Edge/Chrome) |
+| `kiln_cli_exe` | Kiln 引擎 exe 路径(未配置则自动探测) |
 | `studio_dir` | 海报项目与素材库落盘目录 |
 | `pexels_key` / `pixabay_key` | 免费图库 API key |
 | `*_cookie` | 素材站 Cookie,用 [tools/cookie-extension](tools/cookie-extension/)(MV3)一键抓取 |
@@ -143,14 +143,13 @@ python scripts\preflight.py
 
 优先级:环境变量 > config.json > 默认值。改完即生效。
 
-## 🧩 矢量交付与工程文件(WebHtml2VectorEdit)
+## 🧩 矢量交付与工程文件(Kiln 原生)
 
 默认流水线产出 PNG/JPG 等成品图;当用户需要**设计软件可编辑的工程文件**时,
-自写核心 **WebHtml2VectorEdit** 把 HTML 转成矢量产物(与 WPI 无关,
+**Kiln 原生直出**矢量产物(真文本可编辑、中文 CID 嵌入,
 相似度以 SSIM 验收,三样张实测 0.97–0.99):
 
 ```bash
-python scripts/setup_vector.py                       # 一次性部署 poppler + Ghostscript
 python scripts/ai_export.py <项目目录>                # 一键:分层 AI 可编辑 PDF
 python scripts/ai_export.py <项目目录> --svg --eps --ai   # 追加 SVG / EPS / 真 .ai
 ```
@@ -163,11 +162,10 @@ python scripts/ai_export.py <项目目录> --svg --eps --ai   # 追加 SVG / EPS
 | `*.eps` | 老印刷流程用(透明自动压平) |
 | `*-reference.png` + `*-diff-*.png` | SSIM 相似度验收:基准截图 + 逐格式差异热区 |
 
-**逆向重维护**:`VectorEdit2WebHtml` 把 PDF/EPS/SVG/.ai 变回可维护 HTML——
+**逆向重维护**:`kiln-cli import` 把外部 PDF/AI 变回规范化 HTML——
 
 ```bash
-python scripts/vectoredit2webhtml.py poster-ai.pdf rebuild.html               # 视觉完整(底景+可选文字)
-python scripts/vectoredit2webhtml.py poster-print.pdf rebuild.html --mode editable  # 纯文字+照片,改完可重导
+Kiln-noGUI-CLI.exe import --source poster.pdf --output <项目目录>   # 外部 PDF/AI → 规范化 HTML
 ```
 
 转换前,复制一份 HTML 后改写时请遵守 **矢量安全清单**(vector-export.md §5,五条禁令:
@@ -219,10 +217,9 @@ python scripts/export_local.py               # 批量导出器本体(须先投�
 **矢量 / 工程文件**(仅当用户明确要 SVG/EPS/AI 可编辑 PDF/.ai)
 
 ```bash
-python scripts/setup_vector.py                                  # 一次性部署 poppler + gs
-python scripts/ai_export.py <项目目录> [--svg --eps --ai]        # 一键矢量
-python scripts/to_vector.py --source src --output export/poster --width 1080 --height 1440
-python scripts/vectoredit2webhtml.py poster-ai.pdf rebuild.html  # 逆向:PDF/EPS/SVG/.ai → HTML
+python scripts/ai_export.py <项目目录> [--svg --eps --ai --pptx]   # 一键矢量
+python scripts/to_vector.py --source src --outdir export --formats svg,pdf,eps
+Kiln-noGUI-CLI.exe import --source poster.pdf --output <项目目录>   # 逆向:PDF/AI → HTML
 ```
 
 **素材**
@@ -275,7 +272,7 @@ python scripts/qr.py decode poster.png
 python scripts/pack.py <项目> [--include-fonts] [--include-vendor]   # 自包含 zip
 python scripts/slim_project.py <项目> --dry-run                  # 老项目改瘦身影子
 python scripts/calc_size.py mm 210 297 --dpi 300 --scale 2       # 印刷尺寸计算器
-python scripts/setup_wpi.py [--source-install]                   # 部署 WPI
+python scripts/setup_kiln.py                                     # 部署 Kiln 引擎
 python scripts/setup_ffmpeg.py                                   # 部署 FFmpeg
 python scripts/fetch_model.py vqa                                # 部署本地 VQA
 ```
@@ -314,7 +311,7 @@ artboard/
 │   ├── styles/              #   4 个视觉风格分册(+参考案例)
 │   └── formats/             #   名片/A4/三折页/易拉宝/PPT 品类规范
 ├── scripts/                 # preflight/scaffold/export/cutout/fetch_asset
-│   │                        #   vqa/qr/add_font/setup_wpi/setup_ffmpeg
+│   │                        #   vqa/qr/add_font/setup_kiln/setup_ffmpeg
 │   │                        #   fetch_font/export_local/junction/slim_project
 ├── fonts/                   # 28 款开源中英文字体族(按需下载,见 fonts/README.md)
 ├── assets/

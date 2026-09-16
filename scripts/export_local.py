@@ -4,8 +4,8 @@
 (它按自身位置推断项目根与输出目录)。直接在 scripts/ 下运行会在 scripts/ 里
 生成空的「导出」目录——本文件已加防护,检测到即退出。
 
-- 自定位引擎:向上逐级找 WPI 源码(src/core/controller.py),找到即用其渲染管线;
-  再退回 config.json 的 wpi_path / 环境变量 ARTBOARD_WPI(需能导入 _config);
+- 自定位引擎:环境变量 ARTBOARD_KILN_CLI → config.json 的 kiln_cli_exe →
+  向上逐级找 VellumBench/dist/Kiln-noGUI-CLI.exe(v1.9 起唯一导出引擎);
 - 参数不写死:画布宽/倍率/高度从 project.json 读取,每次运行重新校准;
 - 自动检测动画:HTML 含 @keyframes 且能找到 ffmpeg 时,追加导出 GIF / MP4;
 - 打印项目:project.json 里 "print": true 时,自动追加 CMYK PDF / TIFF;
@@ -86,17 +86,10 @@ def main() -> int:
         pass
 
     here = _here
-    wpi = find_wpi(here)
-    if not wpi:
-        print("[X] 未找到 WPI 引擎(向上 8 级无 src/core/controller.py)。")
-        print("    请确认 WPI 源码在同级目录,或设置环境变量 ARTBOARD_WPI,")
-        print("    或在 <技能根>/config.json 里填 wpi_path。")
-        return 1
-
-    main_py = os.path.join(wpi, "src", "main.py")
-    if not os.path.isfile(main_py):
-        print(f"[X] WPI 目录缺少 src/main.py: {main_py}")
-        print("    当前导出器通过 main.py --export 调用引擎;请更新 WPI 或改用 export.py。")
+    kiln = find_kiln(here)
+    if not kiln:
+        print("[X] 未找到 Kiln 引擎(向上 8 级无 VellumBench/dist/Kiln-noGUI-CLI.exe)。")
+        print("    请设置环境变量 ARTBOARD_KILN_CLI,或在 <技能根>/config.json 里填 kiln_cli_exe。")
         return 1
     out_dir = os.path.join(here, "导出")
     os.makedirs(out_dir, exist_ok=True)
@@ -116,7 +109,7 @@ def main() -> int:
         print("[X] 当前目录没有可导出的 .html 文件。")
         return 1
 
-    print(f"== artboard 一键导出:{len(htmls)} 张,引擎 {wpi},输出 {out_dir} ==")
+    print(f"== artboard 一键导出:{len(htmls)} 张,引擎 {kiln},输出 {out_dir} ==")
     print(f"   画布 {W}×{H or 'auto'} · scale {SC}")
 
     ffmpeg = (_cfg("ffmpeg") or shutil.which("ffmpeg") or "")
@@ -134,17 +127,18 @@ def main() -> int:
             print(f"  [FAIL] 读取失败: {exc}")
             failures.append(fn)
             continue
-        if "@keyframes" in text and ffmpeg:
-            steps.append(("GIF", ["--format", "GIF", "--fps", "25", "--max-wait", "6"]))
-            steps.append(("MP4", ["--format", "MP4", "--fps", "30", "--max-wait", "6"]))
+        if "@keyframes" in text:
+            dur = "9" if meta.get("scene_card") else "6"
+            steps.append(("GIF", ["--format", "GIF", "--fps", "25",
+                                  "--max-wait", dur, "--duration", dur]))
+            steps.append(("MP4", ["--format", "MP4", "--fps", "30",
+                                  "--max-wait", dur, "--duration", dur]))
 
         for tag, extra in steps:
             out = os.path.join(out_dir, f"{name}.{tag.lower()}")
-            cmd = [sys.executable, main_py,
-                   "--export", "--source", src, "--output", out,
+            cmd = [kiln, "export",
+                   "--source", src, "--output", out,
                    "--width", str(W), "--scale", str(SC), *extra]
-            if H:
-                cmd += ["--height", str(H)]
             try:
                 r = subprocess.run(cmd, capture_output=True, timeout=600)
                 if r.returncode == 0 and os.path.isfile(out):

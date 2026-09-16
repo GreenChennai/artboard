@@ -21,7 +21,7 @@ from _config import cfg, config_error, near_workspace  # noqa: E402
 from _paths import find_chrome, find_edge  # noqa: E402
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_WPI = near_workspace("WPI")      # 未配置时的回落,不再硬编码作者机器路径
+DEFAULT_KILN = near_workspace("VellumBench\dist\Kiln-noGUI-CLI.exe")  # v1.9 兜底探测
 DEFAULT_VQA = near_workspace("VQA")
 
 FONT_EXTS = (".ttf", ".otf", ".woff", ".woff2", ".ttc", ".otc")
@@ -53,20 +53,21 @@ def main() -> int:
             f"修正 {os.path.join(SKILL_DIR, 'config.json')} 后重跑;"
             "当前所有配置按默认值运行,排查结果不可信")
 
-    # 1. WPI(源码版 → CLI 单文件,与 export.py 的选用顺序一致)
-    wpi = cfg("wpi_path", DEFAULT_WPI)
-    has_controller = os.path.isfile(
-        os.path.join(wpi, "src", "core", "controller.py"))
-    cli = cfg("wpi_cli_exe")
+    # 1. Kiln(v1.9 起的唯一导出引擎,与 export.py 的选用顺序一致)
+    cli = cfg("kiln_cli_exe")
     has_cli = bool(cli and os.path.isfile(cli))
-    if has_controller:
-        add("WPI", "PASS", f"源码版 {wpi}")
-    elif has_cli:
-        add("WPI", "PASS", f"CLI 单文件 {cli}")
+    if not has_cli and os.path.isfile(DEFAULT_KILN):
+        cli, has_cli = DEFAULT_KILN, True
+    if not has_cli:
+        dev = near_workspace(os.path.join("VellumBench", "target", "release", "kiln-cli.exe"))
+        if os.path.isfile(dev):
+            cli, has_cli = dev, True
+    if has_cli:
+        add("Kiln", "PASS", f"CLI 单文件 {cli}")
     else:
-        add("WPI", "WARN", f"未找到(源码 {wpi} / CLI 未配置)",
-            "跑 scripts/setup_wpi.py 部署;或设 ARTBOARD_WPI 指向 WPI 根目录;"
-            "或仅用 export_fallback.py 兜底(需 playwright)")
+        add("Kiln", "WARN", "未找到(kiln_cli_exe 未配置)",
+            "跑 scripts/setup_kiln.py 部署;或设 ARTBOARD_KILN_CLI 指向 "
+            "Kiln-noGUI-CLI.exe;或仅用 export_fallback.py 兜底(需 playwright)")
 
     # 2. 系统浏览器(主路径与兜底都依赖;含用户级安装的 Chrome)
     edge = find_edge()

@@ -84,7 +84,7 @@ python $S/gzh_article.py check article.html     # 必须 ok:true
 
 | 现象 | 报错 | 处理 |
 |---|---|---|
-| 渲染引擎缺失 | `WPI_NOT_FOUND` | `python $S/setup_wpi.py` 或设 `ARTBOARD_WPI` |
+| 渲染引擎缺失 | `KILN_NOT_FOUND` | `python $S/setup_kiln.py` 或设 `ARTBOARD_KILN_CLI` |
 | 字体目录写错 | `NO_FONTS` | 用 `fonts/` 下真实目录名;`auto` 恒可用 |
 | 单张未导出就合并 | `MISSING_EXPORTS` | 先 `export --only main` / `--only sub` |
 | Pillow 缺失 | `PILLOW_MISSING` | `pip install Pillow` |

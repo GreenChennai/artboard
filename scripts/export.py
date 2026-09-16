@@ -1,14 +1,20 @@
-"""artboard 导出薄壳(主路径):WPI 源码版(Python API)→ WPI CLI 单文件 → 失败给 hint。
+"""artboard 导出薄壳(主路径):Kiln 原生引擎(v1.9.0 起)→ 失败给 hint。
 
 用法:
-  python export.py --source <项目目录|HTML文件|URL> --output out.png \
-      [--format PNG|GIF|MP4|PDF] [--width 1080] [--scale 1|2|4|8] \
+  python export.py --source <项目目录|HTML文件> --output out.png \
+      [--format PNG|JPG|GIF|MP4|PDF|SVG|EPS|AI|PPTX] [--width 1080] [--scale 1|2|4|8] \
       [--height 0] [--fps 25] [--transparent] [--max-wait 15]
 
-引擎优先级:
-  1. WPI 源码版(config.json: wpi_path / env ARTBOARD_WPI)→ import core.controller
-  2. WPI CLI 单文件(config.json: wpi_cli_exe)→ 同参数子进程调用
-  3. 都没有 → ok=false + hint(改用 scripts/export_fallback.py,仅 PNG)
+引擎:
+  Kiln 原生单文件(config.json: kiln_cli_exe / env ARTBOARD_KILN_CLI,
+  兜底自动探测仓库内 VellumBench/dist/Kiln-noGUI-CLI.exe)。
+  零浏览器/Python 依赖;GIF/MP4 动画按 --duration(缺省取 --max-wait)逐帧求值。
+  找不到引擎 → ok=false + hint(改用 scripts/export_fallback.py,仅 PNG)。
+
+与 WPI 的参数差异(引擎换血):
+  --width 保留但 Kiln 以画板几何为准;--height 不再支持(画板尺寸决定);
+  --max-wait 在 GIF/MP4 时作为动画时长(--duration)透传,其余格式忽略。
+  静态格式单帧;含 @keyframes 的 HTML 输出 GIF/MP4 时自动逐帧求值。
 
 输出:单行 JSON。ok=false 时带 error/hint,按 hint 处理。
 """
@@ -24,7 +30,8 @@ if _SCRIPTS not in sys.path:
     sys.path.insert(0, _SCRIPTS)          # safe_path 环境(脚本目录不再自动入 sys.path)
 from _config import cfg, near_workspace   # noqa: E402  同目录导入需显式补路径(同 preflight.py)
 
-DEFAULT_WPI = near_workspace("WPI")
+DEFAULT_KILN = near_workspace(os.path.join("VellumBench", "dist", "Kiln-noGUI-CLI.exe"))
+DEFAULT_KILN_DEV = near_workspace(os.path.join("VellumBench", "target", "release", "kiln-cli.exe"))
 
 FIELDS = ("format", "path", "width", "height", "frames", "encoder", "warnings")
 
@@ -33,42 +40,41 @@ def emit(obj: dict) -> None:
     print(json.dumps(obj, ensure_ascii=False))
 
 
-def find_wpi() -> tuple[str, str]:
-    """返回 (引擎类型, 路径):("source", dir) / ("cli", exe) / ("", "")。"""
-    src_dir = cfg("wpi_path", DEFAULT_WPI)
-    if src_dir and os.path.isfile(os.path.join(src_dir, "src", "core", "controller.py")):
-        return "source", src_dir
-    cli = cfg("wpi_cli_exe")
+def find_kiln() -> str:
+    """返回 kiln-cli exe 路径;找不到返回空串。"""
+    cli = cfg("kiln_cli_exe")
     if cli and os.path.isfile(cli):
-        return "cli", cli
-    return "", ""
+        return cli
+    for cand in (DEFAULT_KILN, DEFAULT_KILN_DEV):
+        if cand and os.path.isfile(cand):
+            return cand
+    return ""
 
 
-def export_via_cli(cli: str, args) -> tuple[int, dict]:
-    """WPI 单文件 CLI:与 main.py --export 同参数,退出码 0 且产出文件视为成功。
-    返回 (退出码, 失败时的 error dict)。成功时 error dict 为空。"""
-    cmd = [cli, "--export",
+def export_via_kiln(cli: str, args) -> tuple[int, dict]:
+    """Kiln CLI:退出码 0 且产出文件视为成功。返回 (退出码, 失败时 error dict)。"""
+    cmd = [cli, "export",
            "--source", args.source, "--output", args.output,
            "--format", args.format,
-           "--width", str(args.width), "--scale", str(args.scale)]
-    if args.height > 0:
-        cmd += ["--height", str(args.height)]
+           "--width", str(args.width), "--scale", str(args.scale),
+           "--max-wait", str(args.max_wait)]
     if args.format in ("GIF", "MP4"):
         cmd += ["--fps", str(args.fps)]
-    cmd += ["--max-wait", str(args.max_wait)]
+        # 动画时长:artboard 语义里 --max-wait 即总时长(五段式总长 + 余量)
+        cmd += ["--duration", str(args.max_wait)]
     if args.transparent:
         cmd += ["--transparent"]
     try:
         r = subprocess.run(cmd, capture_output=True, timeout=900)
     except Exception as exc:  # noqa: BLE001
-        return 1, {"ok": False, "error": "WPI_CLI_FAILED", "detail": str(exc),
+        return 1, {"ok": False, "error": "KILN_CLI_FAILED", "detail": str(exc),
                    "hint": "改用 scripts/export_fallback.py(仅 PNG)"}
     if r.returncode != 0:
-        return 1, {"ok": False, "error": "WPI_CLI_FAILED", "detail": f"rc={r.returncode}",
+        return 1, {"ok": False, "error": "KILN_CLI_FAILED", "detail": f"rc={r.returncode}",
                    "stderr": r.stderr.decode("utf-8", errors="replace")[:400],
                    "hint": "改用 scripts/export_fallback.py(仅 PNG)"}
     if not os.path.isfile(args.output):
-        return 1, {"ok": False, "error": "WPI_CLI_NO_OUTPUT", "detail": args.output,
+        return 1, {"ok": False, "error": "KILN_CLI_NO_OUTPUT", "detail": args.output,
                    "hint": "CLI 退出 0 但没产出文件;改用 scripts/export_fallback.py(仅 PNG)"}
     return 0, {}
 
@@ -79,61 +85,37 @@ def main() -> int:
     except Exception:
         pass
 
-    p = argparse.ArgumentParser(description="artboard → WPI 导出")
-    p.add_argument("--source", required=True, help="项目目录 / HTML 文件 / http(s) URL")
+    p = argparse.ArgumentParser(description="artboard → Kiln 导出")
+    p.add_argument("--source", required=True, help="项目目录 / HTML 文件")
     p.add_argument("--output", required=True)
-    p.add_argument("--format", default="PNG", choices=["PNG", "GIF", "MP4", "PDF"])
+    p.add_argument("--format", default="PNG",
+                   choices=["PNG", "JPG", "GIF", "MP4", "PDF", "SVG", "EPS", "AI", "PPTX"])
     p.add_argument("--width", type=int, default=1080)
     p.add_argument("--scale", type=int, default=1, choices=[1, 2, 4, 8])
-    p.add_argument("--height", type=int, default=0, help=">0 时锁定高度,超出不导出")
+    p.add_argument("--height", type=int, default=0, help="兼容保留(Kiln 以画板几何为准)")
     p.add_argument("--fps", type=int, default=25)
     p.add_argument("--transparent", action="store_true")
     p.add_argument("--cmyk", action="store_true",
                    help="打印交付:追加导出 CMYK PDF + TIFF(印刷流程见 print-cmyk.md)")
-    p.add_argument("--max-wait", type=float, default=15.0, dest="max_wait")
+    p.add_argument("--max-wait", type=float, default=15.0, dest="max_wait",
+                   help="GIF/MP4 时作为动画总时长(秒),其余格式忽略")
     args = p.parse_args()
 
-    kind, wpi = find_wpi()
-    if not kind:
-        emit({"ok": False, "error": "WPI_NOT_FOUND",
-              "hint": "未找到 WPI。跑 scripts/setup_wpi.py 部署,"
-                      "或设 ARTBOARD_WPI 指向 WPI 根目录,"
+    kiln = find_kiln()
+    if not kiln:
+        emit({"ok": False, "error": "KILN_NOT_FOUND",
+              "hint": "未找到 Kiln 引擎。跑 scripts/setup_kiln.py 部署,"
+                      "或设 ARTBOARD_KILN_CLI 指向 Kiln-noGUI-CLI.exe,"
                       "或改用 scripts/export_fallback.py(仅 PNG)"})
         return 2
 
     result: dict = {}
-    if kind == "cli":
-        rc, err = export_via_cli(wpi, args)
-        if rc != 0:
-            emit(err)
-            return rc
-        result = {"path": os.path.abspath(args.output), "format": args.format}
-    else:
-        src = os.path.join(wpi, "src")
-        if src not in sys.path:
-            sys.path.insert(0, src)
-        try:
-            from core.controller import ExportParams, run_export_sync
-        except Exception as exc:  # noqa: BLE001
-            emit({"ok": False, "error": "WPI_IMPORT_FAILED", "detail": str(exc),
-                  "hint": "检查 WPI 依赖(playwright/Pillow),或改用 scripts/export_fallback.py(仅 PNG)"})
-            return 3
-
-        params = ExportParams(
-            source=args.source, format=args.format, width=args.width,
-            scale=args.scale, height=args.height, fps=args.fps,
-            transparent=args.transparent, max_wait=args.max_wait,
-            output_path=args.output,
-        )
-        try:
-            result = run_export_sync(params)
-        except Exception as exc:  # noqa: BLE001
-            emit({"ok": False, "error": type(exc).__name__, "detail": str(exc)})
-            return 1
-        if not isinstance(result, dict):
-            emit({"ok": False, "error": "WPI_BAD_RESULT",
-                  "detail": f"run_export_sync 返回 {type(result).__name__},期望 dict"})
-            return 1
+    rc, err = export_via_kiln(kiln, args)
+    if rc != 0:
+        emit(err)
+        return rc
+    result = {"path": os.path.abspath(args.output), "format": args.format,
+              "engine": "kiln"}
 
     warnings: list[str] = []
 
@@ -156,8 +138,7 @@ def main() -> int:
 
     payload = {k: result.get(k) for k in FIELDS} if result else {}
     payload["ok"] = True
-    if kind == "source":
-        payload["engine"] = "wpi-source"
+    payload["engine"] = "kiln"
     if warnings:
         payload["warnings"] = (result.get("warnings") or []) + warnings
     emit(payload)

@@ -17,8 +17,8 @@
 | 原子混搭 | 分册章节按单关注点组织,可跨风格借用单个原子(如"瑞士版式+Y2K 配色") |
 | 版权风险- | 爬虫来源素材的强制文件名前缀,交付时必须提醒更换(materials.md) |
 | vision_mode | auto=Agent 视觉优先;local=强制本地 VQA/OCR(ADR 0003) |
-| WPI | 渲染导出引擎:Playwright 驱动系统 Edge/Chrome,输出 PNG/GIF/MP4/PDF |
-| settle | WPI 导出前的稳定化:等字体/图片、滚动触发 reveal、动画收敛到终态 |
+| Kiln | 渲染导出引擎(v1.9 起):VellumBench 原生单文件,九格式 PNG/JPG/GIF/MP4/SVG/PDF/EPS/AI/PPTX;动画逐帧求值;中文真文本(CID) |
+| settle | (WPI 时代概念,v1.9 起消亡)导出前的稳定化等待;Kiln 原生渲染无外部等待 |
 | 孤字 | 段落末行仅 1 个汉字——排版硬禁(typography-rules.md) |
 | tabular-nums | 等宽数字;数据列必须使用以垂直对齐 |
 | 反 AI 味自检 | 12 条交付前清单(guardrails.md §5) |
@@ -29,16 +29,16 @@
 | AI 兼容 PDF | Illustrator 可直接打开编辑的 PDF;真 .ai = 在 AI 里打开它另存一次(ADR 0008) |
 | SSIM 验收 | 转换产物栅格化后与基准截图算结构相似度,≥0.95 合格 ≥0.99 优秀(vector-export.md) |
 | 矢量安全清单 | 16 种 CSS 原语转换实测表;**五条禁令**:硬切透明渐变 / mix-blend-mode / 渐变字 / conic-gradient / 渐变 alpha-stop 压圆角(vector-export.md §5) |
-| WebHtml2VectorEdit | 自写正向转换核心:HTML→分层 AI 可编辑 PDF/SVG/EPS,不依赖 WPI |
-| VectorEdit2WebHtml | 自写逆向核心:PDF/EPS/SVG/.ai → 可维护 HTML(visual/editable 双模式) |
+| 矢量直出 | v1.9 起 Kiln 原生直出 SVG/PDF/EPS/AI/PPTX(真文本可编辑),替代旧 WebHtml2VectorEdit 转换核心 |
+| kiln import | v1.9 起的逆向:外部 PDF/AI → 场景图 → 规范化 HTML(kiln-cli import 子命令) |
 | OCG | PDF 可选内容组;ai.pdf 的图层载体,Acrobat/浏览器可开关 |
 | 蒙层 | 图片之后的同级渐变遮罩,单独成层保证盖在照片上 |
 | 面板底色克隆 | 分层手术:有底色又含内容的元素,底色剥离进图形层,本体转结构 |
 | 模式 P(海报循环) | 动效分册的循环模式:无缝循环 2–6s,首帧=末帧,终态=合格静态海报(animation.md §〇) |
 | 模式 S(场景卡) | 动效分册的视频模式:插进口播之间的信息卡/图解卡,五段式一次性时间轴,全 finite,必须有出场 |
 | 五段式 | 模式 S 时间轴契约:前置静置→入场→持住→出场→收尾静置(ADR-0012) |
-| 前置静置 | 五段式第一段:空卡 ≥2.0s,吸收 WPI 录制起点偏移(实测 1.7–1.9s),片头呈现为"空卡一拍" |
-| 录制偏移 | WPI 录制起点比 CSS 时间轴 0s 晚(1080×1920 实测 1.7–1.9s)的现象;对策是前置静置 ≥2.0s(ADR-0012) |
+| 前置静置 | 五段式第一段:空卡 ≥2.0s;v1.9 起纯作构图留白(Kiln 时间轴 t=0 即首帧,无录制偏移) |
+| 录制偏移 | (WPI 时代概念,v1.9 起消亡)Kiln 逐帧求值 t=0 即首帧,无录制偏移 |
 | 出场三原则 | 比入场短(0.4–0.6s)、方向延续(入向=出向)、stagger 反序(后进先出) |
 | 语义断行 | 中文标题断点手动给:两行=两个 `.tl` span;断点选语法边界,禁止词中间劈开(typography-rules.md §一) |
 | 逐行三合一 | 视频卡标题逐行 span:断行、换色、入场 stagger 三者共用同一 span 边界 |

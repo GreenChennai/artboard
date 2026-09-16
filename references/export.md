@@ -22,9 +22,9 @@
 ## 矢量交付(SVG / EPS / AI 可编辑 PDF)
 
 用户要 SVG、EPS、AI 可编辑 PDF、.ai 或"可编辑矢量"时,不走本手册——
-走 **vector-export.md**(PDF 枢纽管线 + SSIM 相似度自检 + 矢量安全清单):
-`python scripts/to_vector.py --source <proj>/src --output <proj>/export/poster --width 1080 --height 1440`
-(工具未部署先跑 `scripts/setup_vector.py`;WPI 的 PDF 导出是分页版,不能当矢量枢纽用。)
+走 **vector-export.md**(Kiln 原生九格式直出,真文本/中文 CID):
+`python scripts/to_vector.py --source <proj>/src --outdir <proj>/export --formats svg,pdf`
+(引擎未部署先跑 `scripts/setup_kiln.py`。)
 
 ## 尺寸与倍率预设
 

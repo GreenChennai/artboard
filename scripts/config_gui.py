@@ -52,10 +52,9 @@ EXAMPLE = os.path.join(SKILL_DIR, "config.example.json")
 
 # 键 → (中文名, 类型, 获取指引)
 FIELDS = [
-    ("wpi_path", "WPI 渲染引擎路径", "dir",
-     "WPI 项目根目录(里面应有 src\\core\\controller.py)。\n"
-     "没有?跑 scripts\\setup_wpi.py 一键从 GitHub 下载部署,\n"
-     "或手动克隆 github.com/GreenChennai/WPI。"),
+    ("kiln_cli_exe", "Kiln 渲染引擎(v1.9+)", "file",
+     "Kiln-noGUI-CLI.exe 的完整路径(约 16MB 单文件引擎)。\n"
+     "跑 scripts\setup_kiln.py 自动部署;上游 VellumBench 仓库。"),
     ("studio_dir", "作品落盘目录", "dir",
      "生成的海报项目保存位置,例如 E:\\artboard-studio。\n"
      "每个海报会建一个子文件夹(src/ 源码 + export/ 成品图)。"),
@@ -81,10 +80,6 @@ FIELDS = [
     ("proxy", "本地代理(可选)", "text",
      "访问 Pinterest 等境外源的代理,如 http://127.0.0.1:7890。\n"
      "留空 = 直连。"),
-    ("wpi_cli_exe", "WPI CLI 单文件(可选)", "file",
-     "WPI-noGUI-cli.exe 的完整路径(约 63MB 单文件引擎)。\n"
-     "跑 scripts\\setup_wpi.py 自动从 artboard 发行页下载部署;\n"
-     "手动更新:下载新 exe 覆盖即可。"),
     ("vision_mode", "视觉识别模式", "choice: auto,local",
      "auto = Agent 自带视觉优先(推荐);\nlocal = 强制用本地 VQA/OCR 模型。"),
     ("vqa_path", "本地 VQA 路径(可选)", "dir",
@@ -93,12 +88,6 @@ FIELDS = [
     ("ocr_path", "本地 OCR 路径(可选)", "dir",
      "本地 OCR 模块目录(内含 OCR.exe)。没有?跑 scripts\\fetch_model.py ocr。\n"
      "注:artboard 主流水线不消费 OCR(复刻走 Agent 视觉,见 ADR-0003)。"),
-    ("poppler_dir", "Poppler 目录(可选)", "dir",
-     "矢量导出用的 poppler 工具目录(内含 pdftocairo.exe / pdftops.exe)。\n"
-     "没有?跑 scripts\\setup_vector.py 一键部署。"),
-    ("gs_path", "Ghostscript 路径(可选)", "file",
-     "gswin64c.exe / gs.exe 的完整路径,用于 EPS 与转曲 PDF。\n"
-     "没有?跑 scripts\\setup_vector.py 一键部署。"),
 ]
 
 

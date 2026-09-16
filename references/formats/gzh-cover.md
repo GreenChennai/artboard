@@ -61,7 +61,7 @@
 
 | 报错 | 原因 | 处理 |
 |---|---|---|
-| `WPI_NOT_FOUND` | 渲染引擎未部署 | 跑 `scripts/setup_wpi.py`,或设 `ARTBOARD_WPI` |
+| `KILN_NOT_FOUND` | 渲染引擎未部署 | 跑 `scripts/setup_kiln.py`,或设 `ARTBOARD_KILN_CLI` |
 | `NO_FONTS` | 所选字体目录不存在 | 换 `fonts/` 下已有目录,或用默认 `auto` |
 | `MISSING_EXPORTS` | 合并前单张未导出 | 先 `export --only main` / `--only sub` |
 | `PILLOW_MISSING` | Pillow 未安装 | `pip install Pillow`(核心依赖) |

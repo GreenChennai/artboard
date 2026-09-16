@@ -1,5 +1,46 @@
 # Changelog
 
+## v1.9.0 — Kiln 引擎全面换血(WPI 退役)
+
+### Changed · 渲染引擎整体替换(v1.9 主线)
+- **Kiln 原生引擎上位**:导出走 VellumBench Kiln 单文件(九格式
+  PNG/JPG/GIF/MP4/SVG/PDF/EPS/AI/PPTX),零浏览器/Python 依赖,
+  速度 1.9×–48×;三级引擎简化为 Kiln → export_fallback.py(PNG 兜底)
+- **WPI 全量退役**:删除 wpi_path/wpi_cli_exe/ARTBOARD_WPI、
+  setup_wpi.py、WPI_FFMPEG 私有约定;WPI_NOT_FOUND → KILN_NOT_FOUND
+- **配置收敛**:kiln_cli_exe 单键 + ARTBOARD_KILN_CLI + near_workspace
+  自动探测(VellumBench/dist);setup_wpi.py → setup_kiln.py
+
+### Added · Kiln v0.5 能力(上游 VellumBench,tag v0.5.0-kiln)
+- **文档流布局引擎**(taffy):flow/flex/absolute/inset/margin/padding/
+  gap;后代链选择器;var()/calc() 求值;font 简写展开;@font-face 注册表
+- **文本引擎**:`<br>`/`
+` 真断行、共享贪心断行(禁则逐字策略)、
+  行高/字距/对齐、行内富文本段(span 颜色/粗斜体)、五写出器全部多行化
+- **CSS 动画时间轴**:@keyframes 逐帧求值(@keyframes/animation 简写/
+  cubic-bezier/fill-mode/alternate),transform+opacity 全量,
+  clip-path(inset/circle/ellipse)+ filter(blur/brightness/saturate);
+  五段式场景卡 GIF/MP4 原生直出(不再依赖浏览器录制)
+- **PDF 中文真文本**:CIDFontType2/Identity-H 子集嵌入 + ToUnicode,
+  中文可选中可复制;SVG/PPTX 真文本;AI(PDF 兼容流)
+- **PDF/AI 导入**:`kiln-cli import --source x.pdf --output <dir>` →
+  规范化 HTML(替代 VectorEdit2WebHtml 的外部矢量稿改造通道)
+
+### Changed · 矢量交付与逆向
+- 矢量交付改 Kiln 直出(to_vector.py/ai_export.py 重写为 Kiln 薄壳);
+  删除 webhtml2vectoredit.py / text_run_merger.py / vectoredit2webhtml.py /
+  setup_vector.py / requirements-vector.txt(poppler/gs/pikepdf 链退役)
+- 新增 scripts/kiln_import.py 包装 kiln-cli import
+
+### Removed
+- WPI 全链(源码 API/CLI 调用/部署脚本/错误码/文档)
+- poppler + Ghostscript + pikepdf + scikit-image 依赖链
+
+### 已知边界
+- 动画 clip-path 仅 inset/circle/ellipse;@property 数字滚动静态化
+- L3 滤镜(blur/brightness/saturate)仅 CPU 栅格路径(SVG/PDF 矢量输出不含)
+- kiln import 的 PDF 取色未暴露(v1 统一近似色);SVG 导入后续版
+
 ## v1.8.0 — 微信公众号双封面 + 内容排版
 
 ### Added · 公众号双封面(gzh_cover.py)

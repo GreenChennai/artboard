@@ -78,14 +78,15 @@ def resolve_project(slug_or_dir: str) -> str:
     return ""
 
 
-def check_wpi() -> tuple[str, str]:
-    """与 export.py 相同的引擎发现逻辑(源码版 → CLI 单文件)。"""
-    src_dir = cfg("wpi_path", near_workspace("WPI"))
-    if src_dir and os.path.isfile(os.path.join(src_dir, "src", "core", "controller.py")):
-        return "source", src_dir
-    cli = cfg("wpi_cli_exe")
+def check_kiln() -> tuple[str, str]:
+    """与 export.py 相同的引擎发现逻辑(配置 → 兜底探测)。"""
+    cli = cfg("kiln_cli_exe")
     if cli and os.path.isfile(cli):
         return "cli", cli
+    for cand in (near_workspace(os.path.join("VellumBench", "dist", "Kiln-noGUI-CLI.exe")),
+                 near_workspace(os.path.join("VellumBench", "target", "release", "kiln-cli.exe"))):
+        if cand and os.path.isfile(cand):
+            return "cli", cand
     return "", ""
 
 
@@ -374,9 +375,9 @@ def cmd_export(args) -> int:
         return fail("NO_MAIN_HTML", "src/index.html 不存在;先跑 gzh_cover.py new", project=proj)
     if args.only in ("", "sub") and not os.path.isfile(sub_html_p):
         return fail("NO_SUB_HTML", "src/sub.html 不存在;先跑 gzh_cover.py new", project=proj)
-    if args.only != "merged" and not check_wpi():
-        return fail("WPI_NOT_FOUND",
-                    "跑 scripts/setup_wpi.py 部署,或设 ARTBOARD_WPI 指向 WPI 根目录")
+    if args.only != "merged" and not check_kiln():
+        return fail("KILN_NOT_FOUND",
+                    "跑 scripts/setup_kiln.py 部署,或设 ARTBOARD_KILN_CLI 指向 Kiln-noGUI-CLI.exe")
 
     outdir = args.outdir or os.path.join(proj, "export")
     os.makedirs(outdir, exist_ok=True)
@@ -427,7 +428,7 @@ def cmd_export(args) -> int:
 
 
 def cmd_merge(args) -> int:
-    """仅重拼合并图:单张 PNG 已在时使用,不重导(不需要 WPI)。"""
+    """仅重拼合并图:单张 PNG 已在时使用,不重导(不需要引擎)。"""
     proj = resolve_project(args.project)
     if not proj:
         return fail("PROJECT_NOT_FOUND", "传项目目录或 slug", project=args.project)
@@ -485,7 +486,7 @@ def main() -> int:
     pe.add_argument("--bg", default="#f6f7f9", help="合并图底色")
     pe.set_defaults(func=cmd_export)
 
-    pm = sub.add_parser("merge", help="仅重拼合并图(不重导单张,不需要 WPI)")
+    pm = sub.add_parser("merge", help="仅重拼合并图(不重导单张,不需要引擎)")
     pm.add_argument("project")
     pm.add_argument("--gap", type=int, default=MERGE_GAP, help="间隔 CSS px(按导出 scale 自动放大)")
     pm.add_argument("--bg", default="#f6f7f9")

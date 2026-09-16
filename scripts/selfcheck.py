@@ -121,6 +121,8 @@ REF_RE = re.compile(
 def check_refs(rep: Report) -> None:
     checked = 0
     for md in md_files():
+        if rel(md) == "CHANGELOG.md":
+            continue  # 历史版本记录:引用旧脚本名属正常,不参与悬挂检查
         for lineno, line in enumerate(read(md).splitlines(), 1):
             for m in REF_RE.finditer(line):
                 ref = m.group(1)
@@ -135,6 +137,8 @@ def check_refs(rep: Report) -> None:
     # 代码块里 `python $S/xxx.py` 这类调用
     call_re = re.compile(r"(?:python|python3)[^\n]*?([\w\-_]+\.py)")
     for md in md_files():
+        if rel(md) == "CHANGELOG.md":
+            continue
         for lineno, line in enumerate(read(md).splitlines(), 1):
             for m in call_re.finditer(line):
                 name = m.group(1)

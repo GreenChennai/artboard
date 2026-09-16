@@ -2,9 +2,9 @@
 
 用法(其他脚本):
     from _config import cfg, write_config, near_workspace
-    wpi = cfg("wpi_path", near_workspace("WPI"))
+    kiln = cfg("kiln_cli_exe", near_workspace(os.path.join("VellumBench", "dist")))
     key = cfg("pexels_key")
-    write_config({"wpi_path": r"D:\\WPI"})     # 原子写,自动合并
+    write_config({"kiln_cli_exe": r"D:\\WPI"})     # 原子写,自动合并
 """
 
 import json
@@ -27,8 +27,7 @@ def near_workspace(name: str) -> str:
 
 # 配置键 → 环境变量(环境变量优先,便于临时覆盖)
 ENV_MAP = {
-    "wpi_path": "ARTBOARD_WPI",
-    "wpi_cli_exe": "ARTBOARD_WPI_CLI",
+    "kiln_cli_exe": "ARTBOARD_KILN_CLI",
     "studio_dir": "ARTBOARD_STUDIO",
     "ffmpeg": "ARTBOARD_FFMPEG",
     "pexels_key": "ARTBOARD_PEXELS_KEY",
@@ -40,8 +39,6 @@ ENV_MAP = {
     "vision_mode": "ARTBOARD_VISION_MODE",
     "vqa_path": "ARTBOARD_VQA",
     "ocr_path": "ARTBOARD_OCR",
-    "poppler_dir": "ARTBOARD_POPPLER",
-    "gs_path": "ARTBOARD_GS",
 }
 
 _cache: dict | None = None

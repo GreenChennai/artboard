@@ -7,13 +7,14 @@ version: 1.8.0
 # artboard · HTML 海报工作室
 
 **定位**:把文案/图片变成"平面设计成品图"。不调用 AI 生图,而是写 HTML/CSS
-(有护栏、风格库、字体库),经 WPI 渲染导出 PNG/GIF/MP4/PDF;
-用户要矢量/工程文件时才走 WebHtml2VectorEdit(**正常流水线无此步**)。
+(有护栏、风格库、字体库),经 Kiln 原生引擎渲染导出 PNG/JPG/GIF/MP4/PDF/
+SVG/EPS/AI/PPTX 九格式(v1.9 起零浏览器依赖,动画逐帧求值,中文真文本);
+用户要外部矢量稿改回 HTML 时走 kiln-cli import(**正常流水线无此步**)。
 
 ## 流水线(Step 0–7,含 1.5/4.5 两个子步,细则见 references/pipeline.md)
 
 ```
-Step 0 预检     scripts/preflight.py   — 有 FATAL 才停(WPI 缺失已降级 WARN,可走兜底);
+Step 0 预检     scripts/preflight.py   — 有 FATAL 才停(Kiln 缺失降级 WARN,可走兜底);
                                           ffmpeg 缺失且要动图 → 先问用户
 Step 1 追问+路由 references/intake.md   — 五问(用途/尺寸/风格/配色/素材)打包问完带推荐;
                                           B/C 模式只问用途+尺寸;用户明说「直接做」才可跳过
@@ -24,7 +25,7 @@ Step 3 选字体   fonts/README.md 两级筛查 → ≤3 款
 Step 4 写图     scripts/scaffold.py 建项目;电商/食品/吉祥物类先走 Step 4.5
 Step 4.5 素材   references/materials.md — 用户图抠图(cutout.py)/ 图库搜图(fetch_asset.py)/
                                           图片内容拿不准 → VQA 解读(config.json vqa_path)
-Step 5 导出     scripts/export.py(WPI)→ 失败走 export_fallback.py(仅 PNG)
+Step 5 导出     scripts/export.py(Kiln 九格式)→ 失败走 export_fallback.py(仅 PNG)
 Step 6 自检+改稿 **6.0 机检门禁**(每次重导前必跑,3–5s、零 token):
                 scripts/check_overflow.py <proj>/src [--safe-area auto]
                 → 6.1 Read 导出图 + 过自检清单 → 修复重导(≤2 轮);
@@ -100,7 +101,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 参考案例 | assets/cases/*.html | 写 HTML 需要参照时,只读命中风格的 1 份 |
 | vendor/图标/插画包 | assets/… | 引用具体文件时,不预读 |
 | 模型下载 | scripts/fetch_model.py | 本地 VQA 模型缺失且需要时 |
-| 环境部署 | scripts/setup_wpi.py / setup_ffmpeg.py | 预检报缺失时 |
+| 环境部署 | scripts/setup_kiln.py / setup_ffmpeg.py | 预检报缺失时 |
 | 词汇表·术语消歧 | docs/glossary.md | 术语含义或取值口径有疑问时 |
 
 ## 脚本(主线;完整清单见 README)
@@ -129,7 +130,7 @@ python $S/ai_export.py <项目目录> [--svg --eps --ai]      # 矢量/工程文
 - 项目落盘:`config.json` 的 `studio_dir` 下 `<slug>/`(src/ + export/)。
 - **瘦身影子(默认)**:src/fonts、src/vendor 是指向 Skill 资产库的目录联接,零拷贝;
   交付迁移用 `pack.py` 打包自包含 zip;`--embed-fonts` 则真拷贝(体积大,单件交付用)。
-- 环境变量 `ARTBOARD_WPI` / `ARTBOARD_FFMPEG` / `ARTBOARD_STUDIO` 可临时覆盖 config.json。
+- 环境变量 `ARTBOARD_KILN_CLI` / `ARTBOARD_FFMPEG` / `ARTBOARD_STUDIO` 可临时覆盖 config.json。
 
 ## 铁律(违反任何一条 = 重做)
 

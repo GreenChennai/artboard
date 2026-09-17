@@ -44,15 +44,19 @@ python scripts/to_vector.py --source <项目>/src --outdir <项目>/export --for
 
 ## 3. 逆向重维护(kiln-cli import)
 
-外部矢量稿(设计师交付的 PDF/AI)→ 规范化 HTML:
+外部矢量稿(设计师交付的 PDF/AI/SVG)→ 规范化 HTML:
 
 ```bash
-Kiln-noGUI-CLI.exe import --source poster.pdf --output <项目目录>
+Kiln-noGUI-CLI.exe import --source poster.pdf --output <项目目录>   # PDF/AI:需 pdfium.dll(PDFIUM_DLL 指定)
+Kiln-noGUI-CLI.exe import --source poster.svg --output <项目目录>   # SVG:纯 Rust(usvg),零外部依赖
 ```
 
 - 产出 index.html + styles/main.css(绝对定位规范化形态)+ assets/
-- 文本可编辑;路径/图像分别映射;依赖 pdfium.dll(PDFIUM_DLL 指定)
-- v1 边界:对象取色未暴露(统一近似色);路径以盒近似;SVG 源后续版
+- 文本可编辑(提取真实字符串,不转曲);路径/图像分别映射
+- PDF v1 边界:pdfium 对象取色未暴露(统一近似色);路径以盒近似
+- SVG v1 边界:矩形/圆角矩形(半径反推)/圆/椭圆/文本/嵌入位图逐对象
+  精确映射;其余自由路径以包围盒矩形近似并给警告;渐变取中点色;
+  filter/mask/clipPath 跳过
 
 ## 4. 矢量安全清单(五条禁令)
 

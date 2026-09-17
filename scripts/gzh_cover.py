@@ -339,29 +339,48 @@ def cmd_new(args) -> int:
     return 0
 
 
+def find_kiln_for_img() -> str:
+    """与 export.py 相同的 Kiln 引擎发现(位图拼接走 kiln img 工具箱)。"""
+    cli = cfg("kiln_cli_exe")
+    if cli and os.path.isfile(cli):
+        return cli
+    for cand in (near_workspace(os.path.join("VellumBench", "dist", "Kiln-noGUI-CLI.exe")),
+                 near_workspace(os.path.join("VellumBench", "target", "release", "kiln-cli.exe"))):
+        if cand and os.path.isfile(cand):
+            return cand
+    return ""
+
+
 def stitch_merged(main_png: str, sub_png: str, out_path: str, gap: int,
                   bg: str) -> dict:
-    """Pillow 等高拼接:主封面在左,次条在右,间隔 gap px,浅底色。
-    纯像素搬运(不缩放、不重采样)→ 单张原始比例与内容零形变。"""
+    """等高拼接:主封面在左,次条在右,间隔 gap px,浅底色。
+    v1.9:委托 kiln-cli img stitch(纯像素搬运,不缩放不重采样)。"""
+    kiln = find_kiln_for_img()
+    if not kiln:
+        return {"ok": False, "error": "KILN_NOT_FOUND",
+                "hint": "跑 scripts/setup_kiln.py 部署(kiln img 工具箱用于拼接)"}
     try:
-        from PIL import Image
-    except ImportError:
-        return {"ok": False, "error": "PILLOW_MISSING",
-                "hint": "pip install Pillow(artboard 核心依赖)"}
-    try:
-        a = Image.open(main_png).convert("RGBA")
-        b = Image.open(sub_png).convert("RGBA")
+        r = subprocess.run(
+            [kiln, "img", "stitch",
+             "--inputs", f"{main_png},{sub_png}",
+             "--output", out_path,
+             "--direction", "horizontal", "--gap", str(gap),
+             "--bg", bg, "--align", "center"],
+            capture_output=True, timeout=120)
+        if r.returncode != 0:
+            err = r.stderr.decode("utf-8", errors="replace")[:200]
+            return {"ok": False, "error": "STITCH_FAILED", "detail": err,
+                    "hint": "检查两张 PNG 是否存在且未损坏"}
     except Exception as exc:  # noqa: BLE001
-        return {"ok": False, "error": "IMAGE_OPEN_FAILED", "detail": str(exc),
-                "hint": "单张 PNG 可能损坏,重跑 export --only main|sub"}
-    h = max(a.height, b.height)
-    w = a.width + gap + b.width
-    canvas = Image.new("RGBA", (w, h), bg)
-    canvas.paste(a, (0, (h - a.height) // 2), a)
-    canvas.paste(b, (a.width + gap, (h - b.height) // 2), b)
-    canvas.convert("RGB").save(out_path, "PNG")
-    return {"ok": True, "path": os.path.abspath(out_path),
-            "width": w, "height": h}
+        return {"ok": False, "error": "STITCH_FAILED", "detail": str(exc)}
+    # 读取输出尺寸
+    try:
+        lines = r.stdout.decode("utf-8", errors="replace").strip().splitlines()
+        j = json.loads(lines[-1])
+        return {"ok": True, "path": os.path.abspath(out_path),
+                "width": j.get("width"), "height": j.get("height")}
+    except Exception:
+        return {"ok": True, "path": os.path.abspath(out_path)}
 
 
 def cmd_export(args) -> int:

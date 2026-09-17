@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.9.1 — Kiln v0.6.0:PDF 保真度全绿 + SVG 导入(2026-09-18)
+
+### Changed · 引擎升级(kiln-cli-v0.6.0 发行资产,上游 VellumBench main 968be94)
+- **PDF 保真度全绿**:22 案例全语料「可编辑 PDF→PDFium 栅格化 vs
+  HTML→Kiln 原生渲染」全像素平均 **98.63/100**(达标线 97),文本一致率
+  100%,0 案例 <90;验收脚本 `VellumBench/bench/pdf_fidelity.py` 开源可复跑
+- **渐变实现换血**:pdfium 不渲染 PDF shading(实测),线性/径向渐变按
+  CPU 栅格同款数学降采样为位图嵌入 + SMask 半透明——任意渲染器结果一致;
+  rgba 色标渐变修复(括号感知切分/四通道插值/SMask 独立编号),此前
+  rgba 渐变蒙版被静默丢弃
+- **透明度修复**:实心/描边/文本 = 项透明度 × 颜色 alpha 分部发
+  ExtGState(此前 rgba alpha 被丢弃,玻璃卡片变不透明白块)
+- **旋转统一**:q+cm 仅旋转项单层包裹(此前文本 Tm 手工旋转与图像块二次旋转)
+
+### Added · SVG 导入(纯 Rust,零外部依赖)
+- `kiln-cli import --source x.svg`:usvg 解析,矩形/圆角矩形(半径反推)/
+  圆/椭圆/真实文本(不转曲)/嵌入位图逐对象映射;
+  自由曲线 v1 包围盒近似 + 警告;PDF/AI 导入不变(需 pdfium.dll)
+- setup_kiln.py 默认下载源升级 kiln-cli-v0.6.0;vector-export.md、README 同步
+
 ## v1.9.0 — Kiln 引擎全面换血(WPI 退役)
 
 ### Changed · 渲染引擎整体替换(v1.9 主线)

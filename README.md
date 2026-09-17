@@ -26,10 +26,11 @@
   中文在阅读器里**可选中、可复制、可检索**;
 - **矢量真文本**:SVG/PPTX 保留真实文字节点,PDF/Ai 走 CID 真文本,
   Illustrator 直接打开;
-- **外部矢量稿改造**:`kiln-cli import` 把设计师交付的 PDF/AI
-  反向导回规范化 HTML,继续在 artboard 里迭代;
-- **保真度背书**:重建的五用例固定基准套件,以浏览器渲染为基线的
-  全像素平均还原度 **97.76/100**(口径与验收脚本随仓库开源,可复跑)。
+- **外部矢量稿改造**:`kiln-cli import` 把设计师交付的 PDF/AI/SVG
+  反向导回规范化 HTML(SVG 纯 Rust 解析,文本不转曲),继续在 artboard 里迭代;
+- **保真度背书**:五用例固定基准套件以浏览器渲染为基线全像素平均
+  **97.76/100**;22 案例全语料「可编辑 PDF → PDFium 栅格化 vs 原生渲染」
+  平均 **98.63/100**、文本一致率 100%(口径与验收脚本随仓库开源,可复跑)。
 
 ## ✨ 成品样例
 
@@ -195,14 +196,17 @@ python scripts/to_vector.py --source src --outdir export --formats svg,pdf,eps
 conic-gradient / 渐变 alpha-stop 压圆角)——目标产物含矢量交付时源 HTML 应避免,
 细则见 vector-export.md §4。
 
-**逆向重维护**:`kiln-cli import` 把外部 PDF/AI 矢量稿导回规范化 HTML——
+**逆向重维护**:`kiln-cli import` 把外部矢量稿导回规范化 HTML——
 
 ```bash
-Kiln-noGUI-CLI.exe import --source poster.pdf --output <项目目录>
+Kiln-noGUI-CLI.exe import --source poster.pdf --output <项目目录>   # PDF/AI:需 pdfium.dll
+Kiln-noGUI-CLI.exe import --source poster.svg --output <项目目录>   # SVG:纯 Rust(usvg),零外部依赖
 ```
 
 - 产出 `index.html + styles/main.css + assets/`,文本可编辑、可直接重导出;
-- 依赖 `pdfium.dll`(环境变量 `PDFIUM_DLL` 指定,或放在 exe 同目录)。
+- PDF/AI 依赖 `pdfium.dll`(环境变量 `PDFIUM_DLL` 指定,或放在 exe 同目录);
+- v1 边界:PDF 统一近似色 + 路径盒近似;SVG 矩形/圆角/圆/椭圆/文本精确,
+  自由曲线包围盒近似 + 警告,渐变取中点色。
 
 ## 📦 脚本一览
 
@@ -250,7 +254,8 @@ python scripts/export_local.py               # 批量导出器本体(须先投�
 ```bash
 python scripts/ai_export.py <项目目录> [--svg --eps --ai --pptx]   # 一键矢量
 python scripts/to_vector.py --source src --outdir export --formats svg,pdf,eps
-Kiln-noGUI-CLI.exe import --source poster.pdf --output <项目目录>   # 逆向:PDF/AI → HTML
+Kiln-noGUI-CLI.exe import --source poster.pdf --output <项目目录>   # 逆向:PDF/AI(需 pdfium.dll)→ HTML
+Kiln-noGUI-CLI.exe import --source poster.svg --output <项目目录>   # 逆向:SVG(纯 Rust)→ HTML
 ```
 
 **素材**
@@ -366,7 +371,7 @@ artboard/
 > `docs/review/`(审查报告)。
 >
 > 上游渲染引擎:[GreenChennai/VellumBench](https://github.com/GreenChennai/VellumBench)
-> (Kiln 导出核心,tag v0.5.0-kiln;布局引擎/文本引擎/CSS 动画时间轴/CID 中文真文本/导入)。
+> (Kiln 导出核心,发行资产 kiln-cli-v0.6.0;布局引擎/文本引擎/CSS 动画时间轴/CID 中文真文本/PDF·AI·SVG 导入/22 案例保真度 98.63)。
 
 ## 🔑 素材与版权政策
 

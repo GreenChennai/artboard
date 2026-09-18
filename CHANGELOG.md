@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.10.0 — Kiln v0.7.0 双车道保真导出(2026-09-19)
+
+### Changed · 引擎升级(kiln-cli-v0.7.0 发行资产,上游 VellumBench design/19 + ADR-0020)
+- **双车道导出**:`kiln-cli --engine auto|browser|native`(auto 默认)。浏览器车道由
+  Kiln 内建 Rust 原生 CDP 驱动系统 Edge/Chrome(headless):PNG=整页截图
+  (WPI 捕获协议十要素移植)、PDF/AI=printToPDF(screen 媒体+精确纸张);
+  浏览器缺席自动降级自研引擎并在 JSON 结果 `warnings` 告警
+- **导出参数**:`export` 新增 `--engine` 与 `--height`(高度锁定,WPI 兼容);
+  JSON 结果新增 `engine` / `browser` 字段;`selfcheck` 新增浏览器探活
+- **保真度口径修正**:v1.9.x 宣传的 98.63 系自洽对拍分(无浏览器真值);
+  v0.7.0 起验收以系统浏览器渲染为基线,6 类 26 案例机器门禁:
+  G1 PNG 对拍平均 **99.93**(最差 99.65)、G2/G3 PDF/AI 平均 **99.37**、
+  G5 字体 100% 嵌入(报告随 VellumBench `bench/acceptance/` 开源)
+
+### 注意
+- 浏览器车道需系统 Edge/Chrome(免费);无浏览器环境自动降级车道 K(自研引擎,
+  保真分下降并在结果中声明)。可用环境变量 `VB_BROWSER_PATH` 指定浏览器路径
+- AI 文件 = PDF 兼容流 + AI9 头(Illustrator 可开/文字可改/矢量保留;
+  PGF 私有数据无公开规范故不含),边界详见 VellumBench `docs/ai-editability-checklist.md`
+
 ## v1.9.1 — Kiln v0.6.0:PDF 保真度全绿 + SVG 导入(2026-09-18)
 
 ### Changed · 引擎升级(kiln-cli-v0.6.0 发行资产,上游 VellumBench main 968be94)

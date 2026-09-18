@@ -8,7 +8,7 @@ version: 1.9.0
 
 **定位**:把文案/图片变成"平面设计成品图"。不调用 AI 生图,而是写 HTML/CSS
 (有护栏、风格库、字体库),经 Kiln 原生引擎渲染导出 PNG/JPG/GIF/MP4/PDF/
-SVG/EPS/AI/PPTX 九格式(v1.9 起零浏览器依赖,动画逐帧求值,中文真文本);
+SVG/EPS/AI/PPTX 九格式(v0.7.0 起双车道:浏览器在位时 PNG/PDF/AI 走系统 Edge/Chrome 高保真导出,缺席自动降级自研引擎;动画逐帧求值,中文真文本);
 用户要外部矢量稿改回 HTML 时走 kiln-cli import(**正常流水线无此步**)。
 
 ## 流水线(Step 0–7,含 1.5/4.5 两个子步,细则见 references/pipeline.md)

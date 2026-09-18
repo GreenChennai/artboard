@@ -46,22 +46,29 @@ except Exception:
 def _cfg(key: str, default: str = "") -> str:
     if cfg is not None:
         return cfg(key, default)
-    return os.environ.get({"wpi_path": "ARTBOARD_WPI",
+    return os.environ.get({"kiln_cli_exe": "ARTBOARD_KILN_CLI",
                            "ffmpeg": "ARTBOARD_FFMPEG"}.get(key, ""), "") or default
 
 
-def find_wpi(start: str) -> str:
-    """从 start 向上逐级找 WPI 源码(src/core/controller.py)。"""
+def find_kiln(start: str) -> str:
+    """投放态引擎定位:环境变量 → config → 从项目目录向上 8 级找 Kiln。
+
+    本文件被 scaffold 投放到 <项目>/src/导出.py,技能 scripts/ 不在旁边,
+    故不能复用 export.py 的 find_kiln(它依赖技能目录的 _config)。
+    """
     d = os.path.abspath(start)
     for _ in range(8):
-        if os.path.isfile(os.path.join(d, "src", "core", "controller.py")):
-            return d
+        for rel in (os.path.join("VellumBench", "dist", "Kiln-noGUI-CLI.exe"),
+                    os.path.join("VellumBench", "target", "release", "kiln-cli.exe")):
+            cand = os.path.join(d, rel)
+            if os.path.isfile(cand):
+                return cand
         parent = os.path.dirname(d)
         if parent == d:
             break
         d = parent
-    for cand in (_cfg("wpi_path"), os.environ.get("ARTBOARD_WPI", "")):
-        if cand and os.path.isfile(os.path.join(cand, "src", "core", "controller.py")):
+    for cand in (_cfg("kiln_cli_exe"), os.environ.get("ARTBOARD_KILN_CLI", "")):
+        if cand and os.path.isfile(cand):
             return cand
     return ""
 
@@ -88,8 +95,11 @@ def main() -> int:
     here = _here
     kiln = find_kiln(here)
     if not kiln:
-        print("[X] 未找到 Kiln 引擎(向上 8 级无 VellumBench/dist/Kiln-noGUI-CLI.exe)。")
-        print("    请设置环境变量 ARTBOARD_KILN_CLI,或在 <技能根>/config.json 里填 kiln_cli_exe。")
+        print("[X] 未找到 Kiln 引擎:项目目录向上 8 级无 VellumBench/dist/Kiln-noGUI-CLI.exe,")
+        print("    且 ARTBOARD_KILN_CLI / config.json kiln_cli_exe 均未配置或路径无效。")
+        print("    修复任一:① 设环境变量 ARTBOARD_KILN_CLI 指向 Kiln-noGUI-CLI.exe;")
+        print("            ② config.json 填 kiln_cli_exe;")
+        print("            ③ 把 VellumBench 仓库放到项目任意上溯 8 级以内的目录旁。")
         return 1
     out_dir = os.path.join(here, "导出")
     os.makedirs(out_dir, exist_ok=True)

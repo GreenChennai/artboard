@@ -25,6 +25,7 @@ from _config import cfg, write_config, near_workspace  # noqa: E402
 CANDIDATES = [
     near_workspace(os.path.join("VellumBench", "dist", "Kiln-noGUI-CLI.exe")),
     near_workspace(os.path.join("VellumBench", "target", "release", "kiln-cli.exe")),
+    near_workspace(os.path.join("artboard-tools", "Kiln-noGUI-CLI.exe")),
 ]
 
 SELF_CHECK = ["--help"]
@@ -49,9 +50,17 @@ def main() -> int:
     default_url = "https://github.com/GreenChennai/artboard/releases/download/kiln-cli-v0.6.0/Kiln-noGUI-CLI.exe"
     ap.add_argument("--from", dest="from_url", default=default_url,
                     help="从 URL 下载 Kiln-noGUI-CLI.exe(默认 artboard 发行页最新资产)")
+    ap.add_argument("--exe", dest="exe", default="",
+                    help="指向已手动下载的 Kiln-noGUI-CLI.exe(跳过下载,写 config 并自检)")
     args = ap.parse_args()
 
     found = probe()
+    if not found and args.exe:
+        if os.path.isfile(args.exe):
+            found = os.path.abspath(args.exe)
+        else:
+            print(f"[X] --exe 指向的文件不存在: {args.exe}")
+            return 2
     if not found and args.from_url:
         dest = near_workspace(os.path.join("artboard-tools", "Kiln-noGUI-CLI.exe"))
         os.makedirs(os.path.dirname(dest), exist_ok=True)

@@ -35,6 +35,9 @@ DEFAULT_KILN_DEV = near_workspace(os.path.join("VellumBench", "target", "release
 
 FIELDS = ("format", "path", "width", "height", "frames", "encoder", "warnings")
 
+# Kiln stderr 里解析出的布局告警(合成画板回填/overflow 裁剪/grid 降级)
+kiln_layout_notes: list[str] = []
+
 
 def emit(obj: dict) -> None:
     print(json.dumps(obj, ensure_ascii=False))
@@ -69,6 +72,12 @@ def export_via_kiln(cli: str, args) -> tuple[int, dict]:
     except Exception as exc:  # noqa: BLE001
         return 1, {"ok": False, "error": "KILN_CLI_FAILED", "detail": str(exc),
                    "hint": "改用 scripts/export_fallback.py(仅 PNG)"}
+    # Kiln stderr 的布局告警要在失败判定前解析(存到模块级供 main 读取)
+    global kiln_layout_notes
+    kiln_layout_notes = []
+    for line in r.stderr.decode("utf-8", errors="replace").splitlines():
+        if "vb_layout:" in line:
+            kiln_layout_notes.append(line.split("vb_layout:", 1)[1].rstrip('"}'))
     if r.returncode != 0:
         return 1, {"ok": False, "error": "KILN_CLI_FAILED", "detail": f"rc={r.returncode}",
                    "stderr": r.stderr.decode("utf-8", errors="replace")[:400],
@@ -118,6 +127,13 @@ def main() -> int:
               "engine": "kiln"}
 
     warnings: list[str] = []
+    # 布局告警透传:画板尺寸被内容回填/裁剪/grid 降级时,调用方必须可见
+    # (此前静默 ok:true,存量项目失真无从判定——部署报告 Issue 2/6.3)
+    if kiln_layout_notes:
+        result["degraded_artboard"] = any(
+            ("尺寸回填" in w) or ("裁剪" in w) or ("grid" in w)
+            for w in kiln_layout_notes)
+        warnings.extend(f"vb_layout:{w}" for w in kiln_layout_notes)
 
     # CMYK 打印交付:PNG → CMYK PDF + TIFF(印刷流程,见 print-cmyk.md)
     if args.cmyk:
@@ -139,6 +155,8 @@ def main() -> int:
     payload = {k: result.get(k) for k in FIELDS} if result else {}
     payload["ok"] = True
     payload["engine"] = "kiln"
+    if result.get("degraded_artboard"):
+        payload["degraded_artboard"] = True
     if warnings:
         payload["warnings"] = (result.get("warnings") or []) + warnings
     emit(payload)

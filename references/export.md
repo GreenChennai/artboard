@@ -1,57 +1,63 @@
-# artboard 导出手册
+# artboard 导出手册(v1.9.1 · Kiln 引擎)
 
 ## 引擎选择(三级)
 
-1. **WPI 源码版**(`wpi_path`,Python API):功能最全,默认;
-2. **WPI CLI 单文件**(`wpi_cli_exe`,约 63MB):`setup_wpi.py` 从 artboard 发行页部署;
-   源码版不可用时 `export.py` **自动切换**(同参数命令行,退出码 0 + 产出文件 = 成功);
-3. **export_fallback.py**(独立 Playwright):仅 PNG 的最后兜底。
+1. **Kiln 原生引擎**(唯一主引擎):`kiln_cli_exe` 单文件,九格式
+   PNG/JPG/GIF/MP4/SVG/PDF/EPS/AI/PPTX 直出,零浏览器/Python 依赖;
+   未部署时 `scripts/setup_kiln.py` 从 artboard 发行页自动下载;
+2. **export_fallback.py**(独立 Playwright):仅 PNG 的最后兜底;
+3. 都不可用 → 报错(`KILN_NOT_FOUND`)。
 
-> 第 2 级需 `wpi_cli_exe` 已部署(见 `setup_wpi.py`);未部署时自动跳过。
-> `preflight.py` 会把实际生效的引擎标为「源码版 …」或「CLI 单文件 …」,
-> 两者都没有才报 WARN。
+> WPI 三级引擎(v1.8 及以前)已整体退役:`wpi_path`、`wpi_cli_exe`、
+> `setup_wpi.py`、`ARTBOARD_WPI` 均已删除,遇到旧文档/旧脚本提及即过时。
 
 ## 双路径
 
 | | 主路径 `export.py` | 兜底 `export_fallback.py` |
 |---|---|---|
-| 引擎 | WPI(Playwright + 系统 Edge/Chrome,settle 收敛) | 独立 Playwright 脚本 |
-| 格式 | PNG / GIF / MP4 / PDF | 仅 PNG |
-| 何时用 | 默认 | export.py 报 `WPI_NOT_FOUND` / `WPI_IMPORT_FAILED` |
+| 引擎 | Kiln 单文件(`kiln_cli_exe`) | 独立 Playwright 脚本 |
+| 格式 | PNG / JPG / GIF / MP4 / PDF / SVG / EPS / AI / PPTX | 仅 PNG |
+| 何时用 | 默认 | export.py 报 `KILN_NOT_FOUND` / `KILN_CLI_FAILED` |
 
-## 矢量交付(SVG / EPS / AI 可编辑 PDF)
+## 画板合成规则(存量项目必读)
 
-用户要 SVG、EPS、AI 可编辑 PDF、.ai 或"可编辑矢量"时,不走本手册——
-走 **vector-export.md**(Kiln 原生九格式直出,真文本/中文 CID):
-`python scripts/to_vector.py --source <proj>/src --outdir <proj>/export --formats svg,pdf`
-(引擎未部署先跑 `scripts/setup_kiln.py`。)
+Kiln 对无 `vb-artboard` 标记的普通 HTML **合成画板**,尺寸按以下规则:
+
+1. **`.poster` 等显式尺寸容器是画布真值的唯一来源**:合成画板尺寸 =
+   内容包围盒,但包围盒计算**尊重 `overflow:hidden` 裁剪**——
+   `.poster{width:1240px;height:1754px;overflow:hidden}` 内部溢出的
+   子内容不会撑大画布;
+2. **CSS Grid 已支持**:`display:grid` + `grid-template-columns/rows`
+   (fr/px/%/repeat)/gap 按真实网格布局;模板无法解析时该容器**降级
+   块布局并输出告警**,不再静默塌成单列;
+3. 回填发生时 Kiln 结果 JSON 带 **`degraded_artboard: true`** 字段
+   (stderr 同时有 `vb_layout:合成画板尺寸回填` warn)——批量重跑脚本
+   应检查该字段,`true` 说明画布尺寸由内容推导而非显式声明,需人工核对;
+4. `--width` 为 WPI 兼容参数,**保留但无效**(Kiln 以画板几何为准);
+   `--height` 已不支持。画布尺寸改 HTML 里的容器声明,不改命令行。
 
 ## 尺寸与倍率预设
 
-| 用途 | --size | 画布(CSS px) | 导出命令参数 | 成品(px) |
-|---|---|---|---|---|
-| 小红书封面 | xhs | 1080×1440 | `--width 1080 --scale 2 --height 1440` | 2160×2880 |
-| 长图 | long | 2400×auto | `--width 2400 --scale 1`(图内容多可 2) | 2400×内容高 |
-| 横幅 banner | banner | 1920×600 | `--width 1920 --scale 2 --height 600` | 3840×1200 |
-| 主 KV | kv | 1920×1080 | `--width 1920 --scale 2 --height 1080` | 3840×2160 |
-| 方图 | square | 1080×1080 | `--width 1080 --scale 2 --height 1080` | 2160×2160 |
-| 竖屏 9:16 | vertical | 1080×1920 | `--width 1080 --scale 2 --height 1920` | 2160×3840 |
-| 名片 90×54mm | card | 1063×638 | `--width 1063 --scale 1`(即 300dpi) | 1063×638 |
-| A4 海报 | a4p | 1240×1754 | `--width 1240 --scale 2 --height 1754` | 2480×3508(300dpi) |
-| 三折页单面 | trifold | 1754×1240 | `--width 1754 --scale 2 --height 1240`(正/背各导一次) | 3508×2480(300dpi) |
-| 易拉宝 80×200cm | rollup | 2362×5906 | `--width 2362 --scale 2 --height 5906`(慢,分块拼接属正常) | 4724×11812(150dpi) |
+| 用途 | --size | 画布(CSS px) | 成品(px,@scale2) |
+|---|---|---|---|
+| 小红书封面 | xhs | 1080×1440 | 2160×2880 |
+| 长图 | long | 2400×auto | 2400×内容高(scale1 可 2) |
+| 横幅 banner | banner | 1920×600 | 3840×1200 |
+| 主 KV | kv | 1920×1080 | 3840×2160 |
+| 方图 | square | 1080×1080 | 2160×2160 |
+| 竖屏 9:16 | vertical | 1080×1920 | 2160×3840 |
+| 名片 90×54mm | card | 1063×638 | 1063×638(scale1=300dpi) |
+| A4 海报 | a4p | 1240×1754 | 2480×3508(300dpi) |
+| 三折页单面 | trifold | 1754×1240 | 3508×2480(300dpi,正/背各导) |
+| 易拉宝 80×200cm | rollup | 2362×5906 | 4724×11812(150dpi) |
 
 > 印刷品类规范(字号下限/折线/盲区/双面工作流)见 `references/formats/`。
-
-> **固定尺寸预设(除长图)必须带 `--height <画布高>`**:WPI 初始视口是"宽×宽",
-> 画布矮于视口时整页截图会把视口高度一并截进去(kv 实测出过 3840×3840)。
-- 高度锁定(卡片式精确高度):`--height <px>`(超出内容不导出)。
-- 透明底:`--transparent`(PNG;HTML 里 body 背景设 `transparent`)。
+> 画布真值在 HTML 容器声明里(上表为 scaffold 预设);v1.8 时代
+> 「必须带 --height 否则视口高度截入」的约束随 WPI 退役消亡。
 
 ## 尺寸换算公式与计算器
 
 > 更多物料尺寸(社媒/电商/广告全量)见 material-catalog.md 总表;高频先查 sizes-common.md。
-
 
 **唯一公式链**(记住这一个,其余都是它的变形):
 
@@ -72,25 +78,14 @@ python scripts/calc_size.py px 1080 1440 --dpi 300 --scale 2   # 反查物理尺
 python scripts/calc_size.py dpi --px 2480 3508 --mm 210 297    # 反推 DPI
 ```
 
-**常用尺寸速算表(scale 后成品)**:
-
-| 品类 | mm | CSS 画布 | scale | 成品 px | 成品 DPI |
-|---|---|---|---|---|---|
-| 名片 | 90×54 | 1063×638 | 1 | 1063×638 | 300 |
-| A4 | 210×297 | 1240×1754 | 2 | 2480×3508 | 300 |
-| 三折页 | 297×210 | 1754×1240 | 2 | 3508×2480 | 300 |
-| 易拉宝 | 800×2000 | 2362×5906 | 2 | 4724×11812 | 150 |
-| 小红书 | (3:4) | 1080×1440 | 2 | 2160×2880 | 屏 |
-| PPT 页 | 16:9 | 1280×720 | 2 | 2560×1440 | 屏 |
-
 ## 命令速查
 
 ```bash
-# 静态 PNG(最常用;固定尺寸带 --height)
+# 静态 PNG(最常用;尺寸以画板为准,--width 仅兼容保留)
 python scripts/export.py --source "<project>/src" --output "<project>/export/out.png" \
   --width 1080 --scale 2 --height 1440
 
-# GIF 动图(循环动画,录制 6 秒)
+# GIF 动图(动画逐帧求值,总时长 = --max-wait 秒)
 python scripts/export.py --source "<project>/src" --output "<project>/export/out.gif" \
   --width 1080 --scale 2 --format GIF --fps 25 --max-wait 6
 
@@ -98,9 +93,11 @@ python scripts/export.py --source "<project>/src" --output "<project>/export/out
 python scripts/export.py --source "<project>/src" --output "<project>/export/out.mp4" \
   --width 1080 --scale 2 --format MP4 --fps 30 --max-wait 6
 
-# PDF(长图转 PDF,超 2400px 自动分页)
+# PDF(CID 中文真文本,可选中可复制)
 python scripts/export.py --source "<project>/src" --output "<project>/export/out.pdf" \
   --width 1080 --format PDF
+
+# 矢量/工程文件(SVG/EPS/AI/PPTX)走 vector-export.md 分册
 
 # 兜底(仅 PNG)
 python scripts/export_fallback.py --source "<project>/src/index.html" \
@@ -110,15 +107,19 @@ python scripts/export_fallback.py --source "<project>/src/index.html" \
 ## 输出解析
 
 export.py 输出**单行 JSON**:
-- `ok: true` → `path/width/height/frames` 直接采信;`warnings` 数组非空时检查是否有资源加载失败。
+- `ok: true` → `path/width/height/frames` 直接采信;
+  **`degraded_artboard: true` 时画布尺寸是内容推导值**,人工核对后再交付;
+  `warnings` 数组非空时检查(资源缺失/CMYK 跳过等);
 - `ok: false` → 看 `error`:
-  - `WPI_NOT_FOUND` → 设 `ARTBOARD_WPI` 指向 WPI 根目录,或用兜底;
-  - `WPI_IMPORT_FAILED` → 提示用户 `pip install playwright pillow` 后重试,急用走兜底;
+  - `KILN_NOT_FOUND` → 跑 `scripts/setup_kiln.py`,或 config.json 填
+    `kiln_cli_exe`,或设 `ARTBOARD_KILN_CLI`;
+  - `KILN_CLI_FAILED` → 看 stderr detail;急用 PNG 走兜底;
   - 其他 → 转告用户 detail。
 
-## 已知行为(来自 WPI,遇到不慌)
+## 已知行为(Kiln 语义)
 
-- 导出前自动 settle:等字体(`document.fonts.ready`)、懒加载图片、滚动触发 reveal、**动画收敛到终态**——所以静态图不要依赖动画中间态,动图走 `--format GIF/MP4`(不冻结)。
-- 单拍超 15000px 或有首屏外 canvas:自动分块截图 + 拼接,慢是正常的。
-- GIF 无 ffmpeg 时用 Pillow 回退(质量略降,仍可用);MP4 无 ffmpeg 直接失败。
+- **动画 = 逐帧求值**:GIF/MP4 按 @keyframes + animation 声明逐帧渲染,
+  `--max-wait` 即五段式总时长;静态图求值到 t=0(首帧),不依赖浏览器收敛;
+- 超大画布守门:单边 >32768px 或像素面积超限时显式报错(不静默截断);
+- MP4 无 ffmpeg 自动降级 GIF 流并告警;GIF 永远可出(内置量化器);
 - `--scale 4/8` 仅特殊需求用(印刷);常规 2。

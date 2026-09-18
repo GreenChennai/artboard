@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import builtins
 import glob
 import json
 import os
@@ -384,6 +385,83 @@ def check_smoke(rep: Report) -> None:
     rep.add("smoke", "PASS", f"冒烟 {n} 个脚本")
 
 
+# ---------------------------------------------------------------- stale
+
+STALE_KEYS = ("wpi_path", "wpi_cli_exe", "setup_wpi", "ARTBOARD_WPI",
+              "wpi_not_found", "wpi_import_failed")
+
+
+def check_stale(rep: Report) -> None:
+    """过期引用扫描:references/ 与 SKILL.md 正文不得出现 v1.8 已退役的
+    WPI 配置键/错误码;「已删除/退役」说明行豁免(export.md 的退役注记)。"""
+    root = os.path.dirname(SCRIPTS)
+    targets = [os.path.join(root, "SKILL.md")]
+    refs = os.path.join(root, "references")
+    if os.path.isdir(refs):
+        targets.extend(sorted(
+            os.path.join(refs, f) for f in os.listdir(refs)
+            if f.endswith(".md")))
+    n = hits = 0
+    for f in targets:
+        if not os.path.isfile(f):
+            continue
+        for ln, line in enumerate(open(f, encoding="utf-8").read().splitlines(), 1):
+            low = line.lower()
+            if any(k in low for k in STALE_KEYS):
+                n += 1
+                if any(w in line for w in ("退役", "已删除", "已移除", "均已删除")):
+                    continue
+                hits += 1
+                rep.add("stale", "FAIL", f"{f.name}:{ln} 出现已退役 WPI 键: {line.strip()[:90]}",
+                        "v1.9 已 WPI 退役;若为历史记录请放 CHANGELOG,正文改 Kiln 语义")
+    rep.add("stale", "PASS" if hits == 0 else "FAIL",
+            f"过期引用扫描 {n} 处提及 / {hits} 处违规")
+
+
+# ---------------------------------------------------------------- deploy
+
+def check_deploy(rep: Report) -> None:
+    """投放脚本(export_local.py → <项目>/src/导出.py)名称解析门禁:
+    AST 层校验「被调用即有定义/导入」,拦截 v1.9 的 find_kiln NameError
+    (import 级冒烟查不出只调用无定义)。"""
+    src = os.path.join(SCRIPTS, "export_local.py")
+    if not os.path.isfile(src):
+        rep.add("deploy", "WARN", "export_local.py 不存在,跳过")
+        return
+    with open(src, encoding="utf-8") as f:
+        tree = ast.parse(f.read())
+    defined: set[str] = set()
+    for n in ast.walk(tree):
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            defined.add(n.name)
+        elif isinstance(n, ast.Import):
+            defined.update(a.asname or a.name.split(".")[0] for a in n.names)
+        elif isinstance(n, ast.ImportFrom):
+            defined.update(a.asname or a.name for a in n.names)
+        elif isinstance(n, (ast.Assign, ast.AnnAssign)):
+            targets = n.targets if isinstance(n, ast.Assign) else [n.target]
+            for t in targets:
+                if isinstance(t, ast.Name):
+                    defined.add(t.id)
+        elif isinstance(n, ast.Try):
+            pass
+    calls = {n.func.id for n in ast.walk(tree)
+             if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}
+    missing = calls - defined - set(dir(builtins))
+    if missing:
+        rep.add("deploy", "FAIL",
+                f"export_local.py 调用了未定义的名称: {', '.join(sorted(missing))}",
+                "投放后运行即 NameError;补定义或删调用")
+        return
+    # 死函数扫描:find_wpi 等 WPI 时代残留不得回流
+    dead = [d for d in defined if "wpi" in d.lower()]
+    if dead:
+        rep.add("deploy", "FAIL", f"export_local.py 残留 WPI 时代函数: {', '.join(dead)}",
+                "v1.9 已 WPI 退役,应替换为 find_kiln")
+        return
+    rep.add("deploy", "PASS", "投放脚本名称解析 + WPI 残留扫描")
+
+
 # ---------------------------------------------------------------- jsonfail
 
 def check_jsonfail(rep: Report) -> None:
@@ -422,6 +500,8 @@ CHECKS = {
     "route": check_route,
     "build": check_build,
     "smoke": check_smoke,
+    "deploy": check_deploy,
+    "stale": check_stale,
     "jsonfail": check_jsonfail,
 }
 LEVEL_MARK = {"FAIL": "✗", "WARN": "△", "PASS": "✓"}

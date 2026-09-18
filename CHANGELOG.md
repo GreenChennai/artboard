@@ -20,6 +20,26 @@
   自由曲线 v1 包围盒近似 + 警告;PDF/AI 导入不变(需 pdfium.dll)
 - setup_kiln.py 默认下载源升级 kiln-cli-v0.6.0;vector-export.md、README 同步
 
+### Fixed · 外部部署报告六项(v1.9.1 实测反馈)
+- **P0 export_local.py NameError**:WPI→Kiln 重构漏改,投放的「导出.py」
+  调用未定义的 find_kiln()——补齐定义(环境变量→config→向上 8 级找
+  VellumBench/dist|target),清掉 find_wpi 残留;selfcheck 新增 deploy 门禁
+  (AST 名称解析 + WPI 残留扫描),import 级冒烟拦不住这类 P0
+- **P1 存量项目重跑失真**:CSS Grid 落地(taffy grid,grid-template-columns/
+  rows 的 fr/px/%/repeat + gap;模板不可解析降级块布局并告警,不再静默塌
+  单列);合成画板包围盒尊重 overflow:hidden 裁剪(.poster 显式尺寸成为
+  画布真值,250px 溢出不再把 A4 撑成 2004 高);Kiln JSON 新增
+  degraded_artboard 字段,export.py 解析 Kiln stderr 布局告警透传 warnings
+- **P2 references/export.md 仍是 WPI 时代内容**:重写为 Kiln 三级
+  (Kiln→export_fallback→报错)+ 新增「画板合成规则」章节;
+  selfcheck 新增 stale 门禁(已退役 WPI 键不得出现在正文,退役注记豁免)
+- **P2 setup_kiln.py 死代理卡部署**:_download 代理先 TCP 探活,不可达
+  warn 后自动直连;报错区分「代理进程未运行 / 未配置代理 / 直连被拒」;
+  setup_kiln.py 新增 --exe 参数与 artboard-tools 探测候选
+- **P3 project.json 元数据漂移**:新增 scripts/doctor.py——扫 studio 目录,
+  核对 skill_dir 有效性、.poster 真值 vs project.json 尺寸、scale 缺键;
+  --fix-meta 按 .poster 真值回写 width/height
+
 ## v1.9.0 — Kiln 引擎全面换血(WPI 退役)
 
 ### Changed · 渲染引擎整体替换(v1.9 主线)

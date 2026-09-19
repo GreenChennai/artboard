@@ -1,5 +1,67 @@
 # Changelog
 
+## v1.11.0 — 位图工序族 + Kiln v0.8.0(2026-09-20)
+
+### Added · 位图工序唯一入口(依据《artboard-位图脚本库扩充-迭代指导书》批次一+批次二核心)
+- `scripts/imageops.py` + `_img_core/_img_geom/_img_encode/_img_compose/_img_probe`:
+  30 子命令 + `pipeline` 链式(单次读单次写),覆盖几何/编码/派生切片/合成/检测/工程六类
+- 统一契约:单行 JSON 信封(失败路径也吐 JSON)/ 退出码 0·1·2·3 / `--profile` 质量
+  档位唯一真源 / 尺寸只读 `scaffold.SIZES` / 依赖编码器级探测(deps)/ 版权前缀守卫
+- `references/imaging.md`:位图工作分册(与 materials.md 分工:来源 vs 加工)
+- `SKILL.md`:版本对齐 1.11.0;资源索引登记成像分册;Step 4.5 补 `probe`;脚本小节补 imageops
+- `README.md`:位图工序段 + 内部助手登记;`requirements.txt` 补注释登记 rembg/qrcode/zxing-cpp
+- `selfcheck.py`:JSONFAIL_CASES 增 imageops 三用例;9 项检查全绿
+
+### Fixed · review 修复
+- `cutout.py --prefetch`:pooch 走 GitHub SSL 失败时自动改 curl 直拉 release .onnx
+  (此前 materials.md 记录了绕行方案但脚本未采纳)
+- SKILL.md frontmatter 版本 1.9.0 与 CHANGELOG 脱节的口径分裂收口
+
+### Upstream · Kiln v0.8.0(kiln-cli-v0.8.0 发行资产)
+- ADR-0022 导出路线按格式分化(PNG 回浏览器原生截屏,消融验证 G1 99.82)
+- 导出副产物出源目录(K4);动画简写 var/calc 时序解析修复(5 卡单帧)
+- **animlane 车道 B 动画逐帧**(WPI 理论):GIF/MP4 主路改真浏览器实时采样,
+  人工评分 35 → 99.4(21s/卡)
+- AI 可编辑三轮(21 篇):G6 浏览器真值门禁 / 分段样式逐段整形 / 矢量渐变
+  Pattern / 圆角控制点公式修复 / border 颜色 longhand / svg 矢量导入(近似路径守卫)
+
+
+## v1.10.1 — 技能侧契约收口 + AI 可编辑交付验证(2026-09-19)
+
+### Fixed · 脚本缺陷(指导书《Kiln-迭代指导书.md》§7.3 补丁 A/B/C/D/E/F/G/H/I/K/L/M 全量落地)
+- **A** `preflight.py`:删除未定义变量 `wpi` 引用(特定环境下整个预检
+  NameError 崩溃);ffmpeg 探测统一 `ARTBOARD_FFMPEG`(`WPI_FFMPEG` 兼容旧环境)
+- **B** `export.py`:解析引擎 stdout 单行 JSON,回填真实
+  `width/height/frames/engine` —— 此前恒为 `null`,`gzh_cover` 打印
+  `NonexNone` 即此因(已端到端实测:JSON 返回 `width:1240, height:1754`)
+- **C** `export.py`:`--height` 此前仅解析、从不透传,现按>0 条件透传
+- **D**(行为变更)`export.py`:`--width` 默认 `1080`→`0`(Kiln 按画板几何
+  自适应);非 1080 画幅(banner 1920 / kv 1920 / rollup 2362)必须显式传,
+  否则按 1080 视口渲染;`references/export.md` 同步(「保留但无效」说法删除)
+- **E** `ai_export.py`:相似度门禁不达标时进程退出码改 1(此前恒 0,脚本链无法拦截)
+- **F** `ai_export.py`:ai_fidelity 校验补 `timeout=300`(pypdfium2 卡死不再无限挂起)
+- **G** `preflight.py`:`VellumBench\dist\...` 非法转义路径改 `os.path.join`
+- **H** `export_local.py` / `setup_kiln.py`:超时与执行失败分报,不再宽
+  `except Exception` 静默「跳过」
+- **I** `junction.py`:PowerShell stderr 解码改 UTF-8 优先、GBK 兜底
+- **K** 依赖与文档漂移:`requirements.txt` 补 `pypdfium2`(ai_fidelity 依赖);
+  SKILL.md / docs/setup.md 删除不存在的 `requirements-vector.txt` 引用;
+  CHANGELOG 删除不存在的 `kiln_import.py` 声明
+- **L** `export.py`:降级告警协议统一(`vb_layout:` 与 DOM 路线 `domwarn`
+  双前缀都认,引擎 `degraded_artboard` 字段优先)
+- **M** `find_kiln()`(export.py / ai_export.py 同构):增加**能力探测**
+  (`--engine/--height/--vector` 参数面),优先 dev 构建 —— 此前默认选中
+  参数面滞后的 dist 旧二进制,是「技能传了新参数却一切静默」的根因
+
+### Verified · AI 可编辑交付(引擎侧 VellumBench ADR-0022 批次)
+- 7 项 AI 打开体验问题闭环:未知阴影/图像结构报错(零 Shading/零 Type3)、
+  剪切蒙版泛滥(新导出 W n=0)、逐字断字(整行 CID Tj)、强制转曲
+  (pdfium 文本抽取 delta=0,含中秋案例)、双图层(背景/内容 OCG)、
+  多画板(双 `--source` → 单 .ai 双页)、PNG 保真主路恢复(G1 99.82)
+- 交付链同步:本地 `dist/Kiln-noGUI-CLI.exe` 已更新到当前源码构建
+- AI 文件边界(PGF 私有数据无公开规范故不含、拉丁 base-14 未嵌入)不变,
+  详见 VellumBench `docs/ai-editability-checklist.md`
+
 ## v1.10.0 — Kiln v0.7.0 双车道保真导出(2026-09-19)
 
 ### Changed · 引擎升级(kiln-cli-v0.7.0 发行资产,上游 VellumBench design/19 + ADR-0020)
@@ -90,7 +152,6 @@
 - 矢量交付改 Kiln 直出(to_vector.py/ai_export.py 重写为 Kiln 薄壳);
   删除 webhtml2vectoredit.py / text_run_merger.py / vectoredit2webhtml.py /
   setup_vector.py / requirements-vector.txt(poppler/gs/pikepdf 链退役)
-- 新增 scripts/kiln_import.py 包装 kiln-cli import
 
 ### Removed
 - WPI 全链(源码 API/CLI 调用/部署脚本/错误码/文档)

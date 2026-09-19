@@ -73,6 +73,9 @@ JSONFAIL_CASES = (
     ("ai_export.py", ["__nope__"]),
     ("make_bats.py", ["__nope__"]),
     ("pack.py", ["__nope__"]),
+    ("imageops.py", ["convert", "--in", "___nonexistent___.png", "--to", "webp"]),
+    ("imageops.py", ["pipeline", "probe"]),          # P* 禁入 pipeline → exit 2
+    ("imageops.py", ["convert", "--in", "x.png"]),   # 缺 --to → exit 2
 )
 
 

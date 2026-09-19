@@ -21,7 +21,7 @@ from _config import cfg, config_error, near_workspace  # noqa: E402
 from _paths import find_chrome, find_edge  # noqa: E402
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_KILN = near_workspace("VellumBench\dist\Kiln-noGUI-CLI.exe")  # v1.9 兜底探测
+DEFAULT_KILN = near_workspace(os.path.join("VellumBench", "dist", "Kiln-noGUI-CLI.exe"))  # v1.9 兜底探测
 DEFAULT_VQA = near_workspace("VQA")
 
 FONT_EXTS = (".ttf", ".otf", ".woff", ".woff2", ".ttc", ".otc")
@@ -87,11 +87,13 @@ def main() -> int:
             "pip install playwright —— WPI 不可用时的兜底导出需要它")
 
     # 4. ffmpeg(动图)
+    # WPI 已于 artboard v1.9 退役,不再从 WPI 检出目录兜底探测;
+    # 只认配置/环境变量/PATH(A 修:此前的 `wpi` 是未定义变量,特定
+    # 环境下整个预检 NameError 崩溃),变量名统一 ARTBOARD_FFMPEG
     ffmpeg = (cfg("ffmpeg")
-              or os.environ.get("WPI_FFMPEG")      # WPI 自带的 ffmpeg(WPI 侧约定)
+              or os.environ.get("ARTBOARD_FFMPEG")
+              or os.environ.get("WPI_FFMPEG")     # 兼容旧环境变量名
               or shutil.which("ffmpeg")
-              or (wpi and os.path.isfile(os.path.join(wpi, "ffmpeg.exe"))
-                  and os.path.join(wpi, "ffmpeg.exe"))
               or None)
     if ffmpeg:
         add("ffmpeg", "PASS", str(ffmpeg))

@@ -1,7 +1,7 @@
 ---
 name: artboard
 description: 用 HTML/CSS 绘制平面设计级图片并导出成品的海报工作室。输入文案直出、给图复刻、或换风格改配色,产出海报/banner/小红书封面/主KV/信息长图(PNG/GIF/MP4/PDF),并为视频制作场景卡(口播信息卡/图解动画卡/片头尾,支持出入场动画)。风格像 Illustrator/Photoshop 做的设计图,不是网页交互风。当用户想要:做海报、出图、画封面、小红书配图、banner、KV 主视觉、信息长图、数据图、动态海报、GIF、视频信息卡、科普动画卡、把文案变成图片、复刻一张设计图、换风格重做时使用。Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.9.0
+version: 1.11.0
 ---
 
 # artboard · HTML 海报工作室
@@ -24,7 +24,7 @@ Step 2 选风格   下表 → references/styles/<slug>.md
 Step 3 选字体   fonts/README.md 两级筛查 → ≤3 款
 Step 4 写图     scripts/scaffold.py 建项目;电商/食品/吉祥物类先走 Step 4.5
 Step 4.5 素材   references/materials.md — 用户图抠图(cutout.py)/ 图库搜图(fetch_asset.py)/
-                                          图片内容拿不准 → VQA 解读(config.json vqa_path)
+                图片先体检 imageops.py probe(references/imaging.md);内容拿不准 → VQA(config.json vqa_path)
 Step 5 导出     scripts/export.py(Kiln 九格式)→ 失败走 export_fallback.py(仅 PNG)
 Step 6 自检+改稿 **6.0 机检门禁**(每次重导前必跑,3–5s、零 token):
                 scripts/check_overflow.py <proj>/src [--safe-area auto]
@@ -84,6 +84,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 一稿多尺寸重排 | references/responsive-reflow.md | 同一设计要出多个画布比例时 |
 | 品牌一致性 | references/brand-system.md | 用户给了品牌色/logo/VI,或一次做多张同品牌物料 |
 | 素材分册 | references/materials.md | 任务涉及图片素材时 |
+| **位图工序** | references/imaging.md | 拿到图片后要加工(裁/缩/压/转/水印/切片/体检)时;或判断素材能不能用(`probe`) |
 | 图片复刻协议 | references/replicate.md | 复刻/换风格任务(B/C 模式)开工时必读(一次) |
 | 需求追问 | references/intake.md | 每次新任务开工前(一次) |
 | 常用物料速查 | references/sizes-common.md | 定尺寸时先查(默认入口) |
@@ -116,6 +117,7 @@ python $S/export.py --source <proj>/src --output <proj>/export/o.png \
 python $S/export_fallback.py --source <proj>/src/index.html \
     --output <proj>/export/o.png --width 1080 --scale 2   # 兜底(仅 PNG)
 python $S/make_bats.py <项目> --embed         # 给每个 HTML 生成"导出-<名字>.bat"双击即出图
+python $S/imageops.py <子命令> …                             # 位图工序唯一入口(30 子命令,`--help` 列全)
 python $S/check_overflow.py <proj>/src        # 机检:文字越出容器边框(出图/出片前必跑)
 python $S/gzh_cover.py new <slug> --title "标题"          # 公众号双封面项目(主 900×383 + 次 383×383)
 python $S/gzh_cover.py export <slug>                      # 双封面导出:主/次/合并三图(可 --only 单出)
@@ -123,7 +125,7 @@ python $S/gzh_article.py convert 文章.md --out a.html     # 公众号正文排
 python $S/ai_export.py <项目目录> [--svg --eps --ai]      # 矢量/工程文件(用户明确要才跑)
 ```
 
-> 素材(`fetch_asset/cutout/vqa`)、复刻(`inspect_ref/compare`)、字体(`fetch_font/add_font`)、
+> 素材(`fetch_asset/cutout/vqa`)、复刻(`inspect_ref/compare`)、字体(`fetch_font/add_font`)、位图工序(`imageops`)、
 > 环境部署(`setup_*`)、二维码/打包/换算 的完整参数在 **README「脚本一览」** 与各自分册
 > (`materials.md` / `replicate.md` / `export.md`),用到时再查,不预记。
 
@@ -152,4 +154,4 @@ python $S/ai_export.py <项目目录> [--svg --eps --ai]      # 矢量/工程文
 
 路径与 key 统一在技能根目录 **`config.json`**(`config.example.json` 是全键模板);
 脚本经 `scripts/_config.py` 读取,改完即时生效。
-依赖:`pip install -r requirements.txt`,矢量交付再加 `requirements-vector.txt`。
+依赖:`pip install -r requirements.txt`(含矢量对拍门禁所需 pypdfium2)。

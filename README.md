@@ -208,6 +208,28 @@ Kiln-noGUI-CLI.exe import --source poster.svg --output <项目目录>   # SVG:�
 - v1 边界:PDF 统一近似色 + 路径盒近似;SVG 矩形/圆角/圆/椭圆/文本精确,
   自由曲线包围盒近似 + 警告,渐变取中点色。
 
+**位图工序(从图到图)**
+
+> 唯一入口 `scripts/imageops.py`;`python scripts/imageops.py --help` 列全,
+> `python scripts/imageops.py help-map` 给"场景 → 子命令"映射。细则见 [references/imaging.md](references/imaging.md)。
+
+```bash
+python scripts/imageops.py probe --in "materials/*.jpg"          # 单图/批量体检(尺寸·DPI·alpha·体积·主色·疑点)
+python scripts/imageops.py rotate --in a.jpg --exif-fix          # 手机图方向矫正(任何几何操作前先跑)
+python scripts/imageops.py fit --in a.jpg --presets xhs          # 按比例裁到小红书 1080×1440
+python scripts/imageops.py pad --in a.jpg --aspect 1:1 --bg edge # 补边到 1:1(不裁内容)
+python scripts/imageops.py convert --in a.png --to webp --profile web    # 格式转换
+python scripts/imageops.py compress --in a.jpg --target 500KB    # 压到目标体积(二分逼近)
+python scripts/imageops.py derive --in kv.png --presets square,xhs,kv --formats png,webp --matrix  # 一图多规格
+python scripts/imageops.py slice --in long.png --grid 3x3        # 九宫格切片
+python scripts/imageops.py card --in p.jpg --radius 48 --shadow 0,8,24,#00000040  # 圆角卡片化
+python scripts/imageops.py watermark --in p.jpg --text "©品牌" --position br --opacity 0.35
+python scripts/imageops.py pipeline "exif-fix; fit aspect=1:1; compress target=300KB format=webp"  # 一条链
+python scripts/imageops.py deps                                  # 位图工序族依赖状态
+```
+
+> 边界:`export.py` = 从 HTML 到图;`imageops.py` = 从图到图;抠图 = `cutout.py`;复刻测量 = `inspect_ref.py`。
+
 ## 📦 脚本一览
 
 > SKILL.md 只留主线 6 条命令(省 token),完整清单在此。

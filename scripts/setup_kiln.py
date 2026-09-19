@@ -47,7 +47,7 @@ def main() -> int:
     except Exception:
         pass
     ap = argparse.ArgumentParser(description="Kiln 引擎部署")
-    default_url = "https://github.com/GreenChennai/artboard/releases/download/kiln-cli-v0.7.0/Kiln-noGUI-CLI.exe"
+    default_url = "https://github.com/GreenChennai/artboard/releases/download/kiln-cli-v0.8.0/Kiln-noGUI-CLI.exe"
     ap.add_argument("--from", dest="from_url", default=default_url,
                     help="从 URL 下载 Kiln-noGUI-CLI.exe(默认 artboard 发行页最新资产)")
     ap.add_argument("--exe", dest="exe", default="",
@@ -85,11 +85,15 @@ def main() -> int:
     write_config({"kiln_cli_exe": found})
     print(f"[OK] Kiln 引擎:{found}")
     print("[OK] 已写入 config.json:kiln_cli_exe")
+    # H 修:超时/执行失败分报,不再宽 except 一律「跳过」
+    import subprocess as _sp
     try:
         r = subprocess_run([found, "selfcheck"])
         print(f"[OK] 引擎自检:{r}")
-    except Exception as exc:  # noqa: BLE001
-        print(f"△ 引擎自检跳过({exc})")
+    except _sp.TimeoutExpired:
+        print("△ 引擎自检超时(120s),已跳过:引擎通常仍可导出,建议人工跑一次 selfcheck")
+    except OSError as exc:
+        print(f"△ 引擎自检执行失败({exc}):检查 {found} 是否完整,必要时重跑 setup_kiln.py")
     return 0
 
 

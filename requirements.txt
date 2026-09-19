@@ -2,8 +2,19 @@
 #   pip install -r requirements.txt
 Pillow>=10.0
 playwright>=1.40
+pypdfium2>=4.0
+
 
 # 说明:
 # - v1.9 起导出主路径为 Kiln 原生引擎(单文件,零 Python 依赖),本清单仅供
 #   兜底路径(export_fallback.py)与机检(check_overflow.py)使用 playwright
 # - Pillow 用于 CMYK 打印交付、公众号封面合并等纯像素工序
+
+# ---- 按需安装(不在主线,但对应脚本会用到)----
+# rembg[cpu]  >=2.0   cutout.py 抠图(未装则报 NO_REMBG)
+# qrcode      >=7.4   qr.py 生成
+# zxing-cpp   >=2.2   qr.py 本地识别
+# ---- 位图工序可选增强(references/imaging.md,缺则自动降级)----
+# smartcrop   >=0.5   imageops.py smartcrop(智能裁切;MIT)
+# numpy       >=1.26  imageops.py probe/histogram 统计加速
+# opencv-python-headless >=4.9  imageops.py probe 清晰度 / smartcrop 降级

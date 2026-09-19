@@ -15,6 +15,12 @@ python scripts/ai_export.py <项目目录>
 # 追加其他格式
 python scripts/ai_export.py <项目目录> --eps --ai --pptx
 
+# 双面 A4：一个 AI 文件内两个画板（按参数顺序排列）
+python scripts/ai_export.py --source front/index.html --source back/index.html --ai
+
+# 对照参考 PNG，未达到 97 分直接失败
+python scripts/ai_export.py poster --ai --reference poster.png --similarity 97
+
 # 细粒度控制(指定输出目录与格式清单)
 python scripts/to_vector.py --source <项目>/src --outdir <项目>/export --formats svg,pdf,eps
 ```
@@ -28,12 +34,12 @@ python scripts/to_vector.py --source <项目>/src --outdir <项目>/export --for
 |---|---|---|---|---|
 | SVG | 真文本 `<text>`/`<tspan>` | 分组 | ✅ | 网页/设计工具复用 |
 | PDF | 真文本(CIDFontType2/Identity-H) | OCG | ✅ 可选中复制 | 打印/交付 |
-| Ai | 同 PDF(PDF 兼容流,ADR-0008) | 同 PDF | ✅ | Illustrator 打开 |
+| Ai | 同 PDF(PDF 兼容流,ADR-0008) | **背景 / 内容两层** | ✅ | Illustrator 打开；多源为多画板 |
 | EPS | Latin 真文本;中文轮廓 | 无 | 轮廓化 | 老印厂 |
 | PPTX | 真文本 shape | shape 树 | ✅ | 汇报/二次编辑 |
 
-已知边界:中文在 EPS 中轮廓化(不可改字);渐变高亮等填充装饰在 PDF/EPS
-按中值色降级;`@property` 数字滚动为静态终值。
+已知边界:中文在 EPS 中仍可能轮廓化(不可改字);可编辑交付请使用 AI/PDF，
+AI 路线保留 CID 真文本、避免 Type3/逐元素剪切蒙版；`@property` 数字滚动为静态终值。
 
 ## 2. 与 v1.8 的差异
 
@@ -73,5 +79,8 @@ Kiln-noGUI-CLI.exe import --source poster.svg --output <项目目录>   # SVG:�
 
 - [ ] SVG 在浏览器/设计工具打开,文字可选中、中文无豆腐块
 - [ ] PDF 文本可选中复制(中文逐字正确)
-- [ ] .ai 在 Illustrator 打开不报错、图层可辨
+- [ ] .ai 在 Illustrator 打开不报错（无未知阴影/图像结构提示）、图层仅「背景/内容」
+- [ ] 文本以单个 Text 对象保存，可整句编辑，不逐字断裂、不强制转曲
+- [ ] 双面输入导出为单个 `.ai`，页数/画板数为 2
+- [ ] AI 栅格化回 PNG 与参考图相似度 ≥ 97（运行 `scripts/ai_fidelity.py`）
 - [ ] 与 PNG 导出视觉一致(排版无漂移)

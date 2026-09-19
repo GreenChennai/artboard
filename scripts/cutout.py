@@ -14,6 +14,7 @@
 
 import argparse
 import json
+import pathlib
 import os
 import sys
 
@@ -119,9 +120,34 @@ def main() -> int:
         return 2
 
     if args.prefetch is not None:
+        # materials.md 记录的坑:本机 requests/pooch 走 GitHub 会 SSL 失败。
+        # 先试 pooch(rembg new_session 自带下载),失败改 curl 直拉 release
+        # .onnx 放进 ~/.rembg/models/<模型>/(pooch 校验 hash 通过不重下)。
         for m in args.prefetch:
-            get_session(m, False)
-            emit({"ok": True, "prefetched": m})
+            try:
+                get_session(m, False)
+                emit({"ok": True, "prefetched": m, "engine": "pooch"})
+                continue
+            except Exception as exc:  # noqa: BLE001
+                pooch_err = f"{type(exc).__name__}: {exc}"
+            home = pathlib.Path.home() / ".rembg" / "models" / m
+            home.mkdir(parents=True, exist_ok=True)
+            url = f"https://github.com/danielgatis/rembg/releases/download/v0.0.0/{m}.onnx"
+            dst = home / f"{m}.onnx"
+            r = subprocess.run(["curl", "-L", "-o", str(dst), url],
+                               capture_output=True, text=True, timeout=1800)
+            if r.returncode != 0 or not dst.exists() or dst.stat().st_size < 1024:
+                emit({"ok": False, "error": "PREFETCH_FAILED",
+                      "detail": f"pooch: {pooch_err[:160]} | curl: {(r.stderr or '')[-160:]}",
+                      "hint": f"手动下载 {url} 放到 {dst}"})
+                return 1
+            try:
+                get_session(m, False)
+                emit({"ok": True, "prefetched": m, "engine": "curl"})
+            except Exception as exc:  # noqa: BLE001
+                emit({"ok": False, "error": "PREFETCH_VERIFY_FAILED",
+                      "detail": f"{type(exc).__name__}: {exc}", "hint": str(dst)})
+                return 1
         return 0
 
     if not args.inputs:

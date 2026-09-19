@@ -93,10 +93,8 @@ python fetch_model.py vqa
 
 ```
 
-> 要出 SVG / EPS / AI 可编辑 PDF 等矢量产物时,再装按需依赖:
-> `pip install -r ..\requirements-vector.txt`
-> (缺 pikepdf / scikit-image 时 `to_vector.py` 会给出明确提示,不会只抛
-> `ModuleNotFoundError`。)
+> 矢量产物(SVG / EPS / AI)由 Kiln 单文件直出,无需额外 Python 依赖;
+> 仅 `--reference` 相似度门禁(ai_fidelity.py)需要 `pypdfium2`,已列入 requirements.txt。
 >
 > 所有下载都带 300s 超时、失败自动重试 2 次、临时文件必清理;
 > 跨境网络卡住时可在 `config.json` 填 `proxy` 后重跑。

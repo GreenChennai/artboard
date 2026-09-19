@@ -157,8 +157,12 @@ def main() -> int:
                     err = r.stderr.decode("utf-8", errors="replace")
                     print(f"  [FAIL] {tag}(rc={r.returncode}): {err[:300]}")
                     failures.append(f"{fn}:{tag}")
-            except Exception as exc:
-                print(f"  [FAIL] {tag}: {exc}")
+            except subprocess.TimeoutExpired as exc:
+                # H 修:超时与一般失败分报,不再混入宽 except 静默「跳过」
+                print(f"  [FAIL] {tag}: 超时(600s,{exc})")
+                failures.append(f"{fn}:{tag}:TIMEOUT")
+            except Exception as exc:  # noqa: BLE001
+                print(f"  [FAIL] {tag}: {type(exc).__name__}: {exc}")
                 failures.append(f"{fn}:{tag}")
 
     # CMYK(打印项目)

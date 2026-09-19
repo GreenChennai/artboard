@@ -33,8 +33,10 @@ Kiln 对无 `vb-artboard` 标记的普通 HTML **合成画板**,尺寸按以下�
 3. 回填发生时 Kiln 结果 JSON 带 **`degraded_artboard: true`** 字段
    (stderr 同时有 `vb_layout:合成画板尺寸回填` warn)——批量重跑脚本
    应检查该字段,`true` 说明画布尺寸由内容推导而非显式声明,需人工核对;
-4. `--width` 为 WPI 兼容参数,**保留但无效**(Kiln 以画板几何为准);
-   `--height` 已不支持。画布尺寸改 HTML 里的容器声明,不改命令行。
+4. `--width`/`--height` 是**采集视口口径**(CSS px):`0`(默认)= Kiln
+   按画板几何自适应;**非 1080 画幅(banner 1920 / kv 1920 / rollup 2362)
+   必须显式传入**,否则浏览器车道按 1080 视口渲染(D 修:曾恒传 1080)。
+   画布真值仍在 HTML 容器声明里,命令行只影响采集视口。
 
 ## 尺寸与倍率预设
 
@@ -81,7 +83,7 @@ python scripts/calc_size.py dpi --px 2480 3508 --mm 210 297    # 反推 DPI
 ## 命令速查
 
 ```bash
-# 静态 PNG(最常用;尺寸以画板为准,--width 仅兼容保留)
+# 静态 PNG(最常用;--width/--height 缺省自适应,非 1080 画幅显式传视口)
 python scripts/export.py --source "<project>/src" --output "<project>/export/out.png" \
   --width 1080 --scale 2 --height 1440
 

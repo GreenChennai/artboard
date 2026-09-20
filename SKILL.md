@@ -1,7 +1,7 @@
 ---
 name: artboard
 description: 用 HTML/CSS 绘制平面设计级图片并导出成品的海报工作室。输入文案直出、给图复刻、或换风格改配色,产出海报/banner/小红书封面/主KV/信息长图(PNG/GIF/MP4/PDF),并为视频制作场景卡(口播信息卡/图解动画卡/片头尾,支持出入场动画)。风格像 Illustrator/Photoshop 做的设计图,不是网页交互风。当用户想要:做海报、出图、画封面、小红书配图、banner、KV 主视觉、信息长图、数据图、动态海报、GIF、视频信息卡、科普动画卡、把文案变成图片、复刻一张设计图、换风格重做时使用。Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.11.0
+version: 1.12.0
 ---
 
 # artboard · HTML 海报工作室
@@ -20,6 +20,8 @@ Step 1 追问+路由 references/intake.md   — 五问(用途/尺寸/风格/配�
                                           B/C 模式只问用途+尺寸;用户明说「直接做」才可跳过
 Step 1.5 设计简报  输出「生图式提示词」(画面 + 风格/配色/字体/素材);
                                           用户确认或说「直接做」即出图;此后改稿不重跑,见 Step 6
+                (brief 平/要"设计感"/要记忆点 → 先读 references/design-thinking.md 想概念,再选风格)
+                (多稿同出 = 备选模式:仅用户要求/说指令时启用 → references/multi-draft.md;默认单稿)
 Step 2 选风格   下表 → references/styles/<slug>.md
 Step 3 选字体   fonts/README.md 两级筛查 → ≤3 款
 Step 4 写图     scripts/scaffold.py 建项目;电商/食品/吉祥物类先走 Step 4.5
@@ -29,7 +31,8 @@ Step 5 导出     scripts/export.py(Kiln 九格式)→ 失败走 export_fallback
 Step 6 自检+改稿 **6.0 机检门禁**(每次重导前必跑,3–5s、零 token):
                 scripts/check_overflow.py <proj>/src [--safe-area auto]
                 → 6.1 Read 导出图 + 过自检清单 → 修复重导(≤2 轮);
-                用户不满意 → **不重新生成**:按用户指定部位改现有 HTML(同 AI 生图的局部重绘)
+                用户不满意 → **不重新生成**:按用户指定部位改现有 HTML(同 AI 生图的局部重绘);
+                说不清哪里不满意的「模糊愿望」走 references/revision-protocol.md(诊断→翻译→减法阶梯)
 Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材并提醒更换
 ```
 
@@ -68,29 +71,38 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 |---|---|---|
 | 设计护栏(硬规则) | references/guardrails.md | **每次出图必读**(一次) |
 | 流水线细则 | references/pipeline.md | 流程不确定时 |
+| **改稿决策(模糊愿望)** | references/revision-protocol.md | 用户说"不够高级/太乱/做减法/说不出但不满"时(必读) |
+| **多稿同出(备选模式)** | references/multi-draft.md | 用户要"多出几版/给几个方案/一次出4稿让我选"时(默认单稿,勿主动触发) |
 | 风格分册 | references/styles/<命中项>.md | 选定该风格时,只读命中的 1 份 |
 | 风格系统 | references/style-system.md | 需要布局原型/配色 tokens 时 |
+| **设计思维(概念/主导动作)** | references/design-thinking.md | 需求本身很平/要"设计感"/想要记忆点时(选骨架之前) |
 | **构图与版式骨架** | references/composition.md | 选完风格之后、写 HTML 之前;或画面"看着散/没重点"时 |
 | **卡片与容器布局** | references/card-layout.md | 写任何带背景/边框的文字容器(卡片/要点框/条目)时;或文字越出边框时 |
 | **视频安全区** | references/video-safe-area.md | 做视频场景卡(模式 S)、口播桥/图解卡、会被叠字幕的动图时(**必读**) |
 | 视觉特效 43 式 | references/effects.md | 需要特效配方时(通常写 HTML 时) |
+| **伪3D与空间感** | references/depth-3d.md | 标题要立体/画面要前后空间/要厚度时 |
 | 标题手法库 | references/title-fx.md | 标题需要描边/蒙版/错位等处理时 |
 | 物料尺寸总表 | references/material-catalog.md | 需要非常规物料尺寸/平台规范时(40+ 物料) |
 | 排版细则 | references/typography-rules.md | 自检发现断行/层级/留白问题时 |
+| **排版表达(语气/尺度/字体即图形)** | references/typographic-expression.md | 要"排出语气/有冲击力/超大标题"时(排版硬规则之外的表达层) |
 | 中文排版 CSS 落地 | references/cjk-typography-css.md | 写中文正文/标题时(标点挤压/中西文间距/断行的实现) |
+| **中西文结合(搭配/密度/双语层级)** | references/bilingual-typography.md | 版面有英文/中英并置/双语标题时 |
 | 数字·单位·日期 | references/numeric-typography.md | 版面出现价格/百分比/统计/日期/序号时 |
 | 数据可视化规范 | references/dataviz.md | 版面出现图表/数据卡/排行榜时 |
 | **对比度与色彩工程** | references/color-contrast.md | 定配色 tokens、文字压图、自检"看不清"时(WCAG 定义 + 遮罩数值 + 色盲) |
 | 一稿多尺寸重排 | references/responsive-reflow.md | 同一设计要出多个画布比例时 |
 | 品牌一致性 | references/brand-system.md | 用户给了品牌色/logo/VI,或一次做多张同品牌物料 |
 | 素材分册 | references/materials.md | 任务涉及图片素材时 |
+| **材质语言(纸/金属/玻璃/布/木/塑料)** | references/material-language.md | 需要"材质感"(金属字/玻璃卡/纸纹底)时(配方总表) |
 | **位图工序** | references/imaging.md | 拿到图片后要加工(裁/缩/压/转/水印/切片/体检)时;或判断素材能不能用(`probe`) |
+| **位图语言(角色/分级/裁切/景深)** | references/image-language.md | 任务里要用照片/图做背景·主体·纹理,或要统一多图色调时 |
 | 图片复刻协议 | references/replicate.md | 复刻/换风格任务(B/C 模式)开工时必读(一次) |
 | 需求追问 | references/intake.md | 每次新任务开工前(一次) |
 | 常用物料速查 | references/sizes-common.md | 定尺寸时先查(默认入口) |
 | 动效分册 | references/animation.md | 动图任务(GIF/MP4)或**视频桥场景卡**(口播信息卡/图解卡)时 |
 | 导出手册 | references/export.md | 导出参数/故障不确定时 |
 | 矢量交付手册 | references/vector-export.md | 用户要 SVG/EPS/AI 可编辑 PDF/.ai/可编辑矢量时(必读) |
+| **矢量绘制(几何/图标/插画语言)** | references/vector-drawing.md | 要画图标/几何图形/极简插画,或想好"怎么画"时(导出见 vector-export) |
 | 公众号排版规范 | references/gzh-typography.md | 公众号正文排版任务(Markdown→内联样式 HTML / 粘贴不塌样式)时 |
 | 品类规范 | references/formats/<品类>.md | 选中印刷/PPT 品类时,只读命中 1 份(注意 slug `slide` 的文件是 `ppt.md`) |
 | 印刷 CMYK 流程 | references/print-cmyk.md | 印刷任务定色时(TAC/单色黑/安全色谱) |
@@ -117,7 +129,7 @@ python $S/export.py --source <proj>/src --output <proj>/export/o.png \
 python $S/export_fallback.py --source <proj>/src/index.html \
     --output <proj>/export/o.png --width 1080 --scale 2   # 兜底(仅 PNG)
 python $S/make_bats.py <项目> --embed         # 给每个 HTML 生成"导出-<名字>.bat"双击即出图
-python $S/imageops.py <子命令> …                             # 位图工序唯一入口(30 子命令,`--help` 列全)
+python $S/imageops.py <子命令> …                             # 位图工序唯一入口(子命令清单以 `--help` 为准,v1.12 新增 montage 网格拼图)
 python $S/check_overflow.py <proj>/src        # 机检:文字越出容器边框(出图/出片前必跑)
 python $S/gzh_cover.py new <slug> --title "标题"          # 公众号双封面项目(主 900×383 + 次 383×383)
 python $S/gzh_cover.py export <slug>                      # 双封面导出:主/次/合并三图(可 --only 单出)
@@ -140,7 +152,7 @@ python $S/ai_export.py <项目目录> [--svg --eps --ai]      # 矢量/工程文
 2. 离线渲染:HTML 零 CDN 引用;字体/vendor 一律复制进项目。
 3. 一图一个焦点、层级 ≤3 层、强调 ≤2 处、特效 ≤3 种、字体 ≤3 款。
 4. 文案逐字来自用户,不编造数据与条款。
-5. **自检只在两个时机触发**:①首版 HTML 完成时;②用户要求检查时。之后的用户改稿一律定点修改,不自动自检不派子代理(省时省 token)。**机检 `check_overflow.py` 不受此限**——每次重导前都跑(零 token 成本,3–5s,改文案最易引入溢出)。
+5. **自检只在两个时机触发**:①首版 HTML 完成时;②用户要求检查时。之后的用户改稿一律定点修改,不自动自检不派子代理(省时省 token)。**机检 `check_overflow.py` 不受此限**——每次重导前都跑(零 token 成本,3–5s,改文案最易引入溢出)。改稿怎么定部位:明确指令按 `pipeline.md` 改稿协议速查;说不清的模糊愿望走 `references/revision-protocol.md`。
 6. 动图**分两模式**(数值细则见 references/animation.md §〇):
    **模式 P 海报循环**——无缝循环,终态必须仍是合格静态海报;
    **模式 S 视频场景卡**(口播桥/图解卡)——五段式一次性时间轴,全 finite 禁 infinite、

@@ -225,6 +225,8 @@ html, body {{ margin: 0; background: #ffffff; }}
   --pad: 40px;           /* 卡片内边距 */
   --gap: 24px;           /* 卡片间距 */
   --radius: 20px;        /* 统一圆角(不要 8/12/16 混用) */
+  /* 统一光源 tokens(depth-3d.md §一;标题做伪3D/厚度时取消注释并按风格调值):
+  --light-deg: 135deg; --light-soft: .35; --light-blur: 24px; --extrude: 8px; */
 {font_vars}
 }}
 

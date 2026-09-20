@@ -5,6 +5,7 @@
 > 引擎:**Kiln**(VellumBench 原生,零浏览器/poppler 依赖)。
 > **触发规则:正常 artboard 流水线没有这一步——仅当用户明确要"工程文件/
 > 矢量文件/SVG/EPS/AI 可编辑"时才运行**(一键入口 scripts/ai_export.py)。
+> 绘制侧(怎么画:几何构成 / 图标语言 / 插画语言)见 `vector-drawing.md`;本册只管导出与交付安全。
 
 ## 0. 快速上手
 

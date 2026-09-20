@@ -1,5 +1,39 @@
 # Changelog
 
+## v1.12.0 — 设计维度迭代:生成层/表达层/纵深/混排/改稿决策/多稿同出(2026-09-21)
+
+> 依据《artboard-设计维度迭代文档-20260921》(00 主文档 + 9 份任务书)。本轮为**设计知识分册轮**:
+> references 顶层分册 30→39(route 40→49)、案例 +10、术语 +43;脚本仅新增 `montage`,不动既有行为。
+
+### Added · 九份新分册
+- `revision-protocol.md` 改稿决策:模糊愿望→rubric 五维诊断;翻译表 13 条;减法阶梯 L1删–L5点;
+  引导式提问;反驳公式;高级感清单 10 条(与反 AI 味防守清单分立)
+- `depth-3d.md` 伪3D与空间感:统一光源 tokens + 四级高程;六手法;标题三配方;剪切蒙版造空间 4 写法;
+  景深;**Kiln 双车道支持矩阵 7 项实测**(真3D=浏览器道可用/自研道静默丢失/矢量道全丢);体积增量 ≈23KB
+- `typographic-expression.md` 排版表达:语气 4 种;尺度地板/天窗;节奏/张力;字体即图形;编辑母版 7 法;实验四问
+- `vector-drawing.md` 矢量绘制:CSS vs SVG 判据;构成四法;图标 7 规范 + 24px 校验;
+  矢量道几何边界实测(内联图标会栅格化)
+- `image-language.md` 位图语言:图像角色 5 类;色调分级 5 法;裁切 5 式 4 红线;景深;主体分离;处理链①–⑥
+- `design-thinking.md` 设计思维/生成层:四段翻译模型;主导动作 8 类;概念生成 5 法;卖点映射 10 组;
+  反套路 8 类;复杂度预算;三方向
+- `bilingual-typography.md` 中西文结合:关系四分;搭配矩阵 8 组;密度匹配三招;基线对齐;
+  引号按风格分派;双语 vs 装饰小字一句判据
+- `multi-draft.md` 多稿同出:**备选模式,默认单稿**,仅指令/用户要求触发;受控轴 4 维;联络表;
+  转正/归档;计时实测 4 稿 = 单稿 ×1.27(≤ ×2 达标)
+- `material-language.md` 材质语言:纸/金属/玻璃/布/木/塑料 → 配方总表
+
+### Added · 脚本 / 案例 / 台账
+- `imageops.py montage`(C5 网格拼图;--grid/--gap/--margin/--bg/--label;过 smoke/jsonfail)
+- `assets/cases/` +10(全部机检 ok + rubric 自评 ≥3.5;**独立视觉裁决 9/9 pass,4.0–4.8**)
+- `docs/failures.md` 失效案例库新建(6 条既有脚本缺陷"已探明未修",走 ITERATION 代码迭代环)
+- `docs/glossary.md` +43 词条;`docs/adr/0019–0026`(本地)记录本轮八项决策
+- `pipeline/SKILL/intake/guardrails/effects/title-fx` 等既有分册共 17 处指针接线(双向互指)
+
+### Upstream 发现(未修,记录在案)
+- Kiln 浏览道对 `src/fonts` 目录联接 canonicalize 判越界 → webfont 静默回退系统字体
+  (绕行 `scaffold --embed-fonts`;根修在上游 staticsrv)
+- Kiln 自研道(native)对伪3D 原语静默降级无告警(上游告警通道建议)
+
 ## v1.11.0 — 位图工序族 + Kiln v0.8.0(2026-09-20)
 
 ### Added · 位图工序唯一入口(依据《artboard-位图脚本库扩充-迭代指导书》批次一+批次二核心)

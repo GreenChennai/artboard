@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>revision-case-before · 改稿教学反例(堆特效 = 更土)</title>
+<!--
+  改稿决策协议教学反例(revision-protocol.md §8 / guardrails 反味 12 条的集大成反例)。
+  场景:同一个「山雾手冲」需求,执行者把「高级」理解成「多加东西」,产出这张;
+  用户反馈正是「不够高级」。对照 revision-case-after.html 看减法阶梯怎么修。
+  故意命中:反味 1(紫蓝渐变)/ 5(嵌套卡片)/ 7(强调 ≥5 处)/ 8(装饰英文眉题)/
+  10(卡片阵列)/ 11(无留白)+ 特效三件套(渐变字+发光+描边)+ 双落点(主标 vs 价格)+ 高饱和底。
+  本图仅供对照教学,禁止当作任何风格基准。
+-->
+<style>
+@font-face { font-family:'SmileySans'; src:url('fonts/SmileySans-Oblique.ttf') format('truetype'); font-display:block; }
+@font-face { font-family:'SourceHanSans'; src:url('fonts/NotoSansSC-VF.ttf') format('truetype');
+  font-weight:100 900; font-display:block; }
+@font-face { font-family:'Sigmar'; src:url('fonts/Sigmar-Regular.ttf') format('truetype'); font-display:block; }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#111; }
+.poster { position:relative; width:1080px; height:1440px; overflow:hidden;
+  background:linear-gradient(160deg,#ff2d55 0%,#ff7a00 55%,#ffb800 100%); }
+
+/* 装饰英文眉题(反味 8)+ 四边均匀贴满(反味 11:无留白) */
+.marquee-top { position:absolute; top:26px; left:24px; right:24px; text-align:center;
+  font:400 34px/1 'Sigmar'; color:#fff; letter-spacing:.12em;
+  text-shadow:0 0 14px rgba(255,255,255,.9), 0 3px 0 rgba(0,0,0,.25); }
+
+/* 主标:紫蓝渐变 + 发光 + 白描边三件套(反味 1 + 特效堆叠) */
+.hero { position:absolute; top:96px; left:24px; right:24px; text-align:center; }
+.hero h1 { font:400 128px/1.06 'SmileySans'; letter-spacing:.02em;
+  background:linear-gradient(135deg,#7b2ff7 8%,#2f6bff 48%,#00c3ff 92%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+  -webkit-text-stroke:3px #fff;
+  filter:drop-shadow(0 0 22px rgba(123,47,247,.85)) drop-shadow(0 8px 0 rgba(0,0,0,.28)); }
+.hero .sub { margin-top:10px; font:700 44px/1.3 'SourceHanSans'; color:#fff;
+  text-shadow:0 0 12px rgba(255,255,255,.95), 0 2px 6px rgba(0,0,0,.4); }
+
+/* 徽章贴纸:旋转远超 ±3°,五枚强调色(反味 7) */
+.chips { position:absolute; top:396px; left:24px; right:24px; display:flex; gap:14px; justify-content:center; }
+.chip { padding:12px 22px; border-radius:999px; font:900 30px/1 'SourceHanSans'; color:#fff; }
+.c1 { background:#7b2ff7; transform:rotate(-11deg); }
+.c2 { background:#00c3ff; transform:rotate(8deg); }
+.c3 { background:#ff00d4; transform:rotate(-6deg); }
+.c4 { background:#00e676; transform:rotate(12deg); }
+.c5 { background:#ffe600; color:#d50000; transform:rotate(-9deg);
+  box-shadow:0 0 18px rgba(255,230,0,.95); }
+
+/* 价格:第二落点,与主标打架(A 维 1 分)+ 爆炸星底 */
+.price-wrap { position:absolute; top:492px; left:50%; transform:translateX(-50%); width:460px; height:300px; }
+.burst { position:absolute; inset:0; background:#ffe600;
+  clip-path:polygon(50% 0%,61% 18%,82% 8%,82% 30%,100% 38%,86% 54%,100% 72%,80% 74%,74% 96%,54% 84%,36% 100%,28% 78%,6% 78%,14% 56%,0% 40%,20% 30%,16% 8%,38% 18%);
+  filter:drop-shadow(0 0 24px rgba(255,230,0,.9)); }
+.price { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.price b { font:400 132px/1 'Sigmar'; color:#ff2d55; -webkit-text-stroke:4px #fff;
+  text-shadow:0 6px 0 rgba(0,0,0,.3); }
+.price span { margin-top:6px; font:900 34px/1 'SourceHanSans'; color:#d50000; letter-spacing:.2em; }
+
+/* 嵌套卡片(反味 5)+ 三种圆角 + 阴影无理由(反味 10 / 高级感 7 反例) */
+.card-outer { position:absolute; top:836px; left:40px; right:40px; background:#fff;
+  border-radius:36px; padding:26px; box-shadow:0 18px 48px rgba(88,0,0,.55); }
+.card-mid { background:#fff8e1; border:4px dashed #ff9100; border-radius:26px; padding:24px; }
+.card-inner { background:#fff; border:3px solid #ff2d55; border-radius:14px; padding:20px; }
+.card-inner h3 { font:900 40px/1.2 'SourceHanSans'; color:#ff2d55;
+  background:linear-gradient(90deg,#ffe600,transparent); }
+.card-inner li { margin:14px 0 0 34px; font:500 30px/1.5 'SourceHanSans'; color:#3e2723; }
+.card-inner li b { color:#ff00d4; }
+
+/* 底部重复英文条 + 二维码位塞角落(无净空) */
+.marquee-bottom { position:absolute; bottom:96px; left:0; right:0; overflow:hidden;
+  background:#7b2ff7; padding:16px 0; }
+.marquee-bottom p { white-space:nowrap; font:400 40px/1 'Sigmar'; color:#ffe600; letter-spacing:.28em; }
+.qr-note { position:absolute; bottom:20px; right:20px; font:700 26px/1.3 'SourceHanSans';
+  color:#fff; text-align:right; text-shadow:0 0 8px rgba(0,0,0,.8); }
+</style>
+</head>
+<body>
+<div class="poster">
+  <p class="marquee-top">PREMIUM COFFEE ART DESIGN 2026</p>
+
+  <div class="hero">
+    <h1>冰爆冷萃 LTD</h1>
+    <p class="sub">全场 1 元秒杀!手慢无!!</p>
+  </div>
+
+  <div class="chips">
+    <span class="chip c1">新品</span><span class="chip c2">限量</span><span class="chip c3">买一送一</span>
+    <span class="chip c4">第二杯半价</span><span class="chip c5">会员日</span>
+  </div>
+
+  <div class="price-wrap">
+    <div class="burst"></div>
+    <div class="price"><b>¥39.9</b><span>限时抢购</span></div>
+  </div>
+
+  <div class="card-outer">
+    <div class="card-mid">
+      <div class="card-inner">
+        <h3>为什么选择冰爆冷萃?</h3>
+        <ul>
+          <li><b>真·冷萃</b>:12 小时低温慢萃,不苦不涩(自封称号)</li>
+          <li><b>超·划算</b>:第二杯半价,等于 5 折再 9 折再叠加会员折扣</li>
+          <li><b>高·品质</b>:精选上等优质咖啡豆,香浓顺滑丝滑入口</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="marquee-bottom"><p>COFFEE COFFEE COFFEE COFFEE COFFEE COFFEE COFFEE</p></div>
+  <p class="qr-note">扫码进群<br>立即抢购 →</p>
+</div>
+</body>
+</html>

@@ -35,6 +35,7 @@ HELP_MAP = {
     "圆角卡片化": "card --radius ... --shadow ...",
     "加水印": "watermark --text ... --position br",
     "纵向拼接": "stitch --direction v",
+    "多稿对比选一版": "montage --grid 2x2 --gap 24 --bg '#e8e8e6' --label",
     "统一多图色调": "tone --duotone/--saturation/--temp",
     "模糊铺底转竖版": "blur-bg --aspect 3:4",
     "缩小长图": "resize --max-edge N",
@@ -171,6 +172,16 @@ def _add_compose(sub) -> None:
     g = sub.add_parser("stitch", help="C4 拼接(横/纵;公众号双封面仍走 gzh_cover.py)")
     g.add_argument("--direction", default="h"); g.add_argument("--gap", type=int, default=0)
     g.add_argument("--bg", default="#ffffff")
+    _add_global(g)
+
+    g = sub.add_parser("montage", help="C5 网格拼图(多稿联络表;格多图少留空格,图多报错并给建议网格)")
+    g.add_argument("--grid", help="行x列,如 2x2(4 稿);3 稿可 1x3")
+    g.add_argument("--gap", type=int, default=0, help="格间距(联络表规范 24)")
+    g.add_argument("--margin", type=int, default=0, help="四边外边距(联络表规范 32)")
+    g.add_argument("--bg", default="#ffffff", help="底色(联络表规范 #e8e8e6 中性灰)")
+    g.add_argument("--label", action="store_true", help="每格左上角叠 A/B/C/D… 索引字母")
+    g.add_argument("--label-size", dest="label_size", type=int, default=0,
+                   help="标签字号,缺省随格子高自适应")
     _add_global(g)
 
     g = sub.add_parser("blur-bg", help="C6 模糊铺底")
@@ -459,7 +470,8 @@ def build_parser() -> argparse.ArgumentParser:
                      ("convert", encode.cmd_convert), ("compress", encode.cmd_compress),
                      ("optimize", encode.cmd_optimize), ("strip-meta", encode.cmd_strip_meta),
                      ("card", compose.cmd_card), ("watermark", compose.cmd_watermark),
-                     ("stitch", compose.cmd_stitch), ("tone", compose.cmd_tone),
+                     ("stitch", compose.cmd_stitch), ("montage", compose.cmd_montage),
+                     ("tone", compose.cmd_tone),
                      ("probe", probe.cmd_probe), ("palette", probe.cmd_palette),
                      ("contrast-check", probe.cmd_contrast_check),
                      ("dpi-check", probe.cmd_dpi_check)):

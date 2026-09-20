@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>image-language-case · 山谷晨碗(位图语言参考案例:主体+背景+统一色调)</title>
+<!-- image-language.md 参考案例:主体(照片卡化 card+投影)/ 背景(自制底图 预虚化+压暗)/ 统一色调(同一组 tone 参数管全图)
+     底图全部离线自制(docs/samples/xhs-cover.png 裁切 + PIL 合成),imageops 处理链:
+       ① rotate --exif-fix → ② crop --pct "5,48,47,70" + fit --aspect 4:3
+       ④ tone --temp 12 --saturation 0.92(主体与背景同一组参数)→ card --radius 36 --border 2:#ffffff
+       背景:bg-base(PIL 合成 1080x1440)→ tone --temp 12 --saturation 0.92
+            → resize --max-edge 160 → resize --width 1080 --height 1440(预虚化)→ tone --gamma 0.82(压暗)
+     统一光源:背景太阳在右上 → 主体投影朝左下(drop-shadow dx=-14 dy=18),与 depth-3d.md §一 一致
+     特效计数:噪点 1(≤3 达标);字体 2 款;层级 3 层 -->
+<style>
+@font-face { font-family:'SmileySans'; src:url('fonts/smiley-sans/SmileySans-Oblique.ttf') format('truetype');
+  font-weight:normal; font-display:block; }
+@font-face { font-family:'SourceHanSans'; src:url('fonts/source-han-sans/NotoSansSC-VF.ttf') format('truetype');
+  font-weight:100 900; font-display:block; }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#ffffff; }
+.poster { position:relative; width:1080px; height:1440px; overflow:hidden;
+  background:#e8c9a4; }  /* 兜底色 = 背景图主色 */
+
+:root {
+  --c-ink:#33200f;        /* 深咖文字(浅暖底上 ΔL 足够) */
+  --c-bg:#e8c9a4;
+  --c-primary:#b4552d;    /* 陶土橘:价格与徽记 */
+  --c-muted:#6e5138;
+}
+
+/* 背景角色:预虚化 + 压暗 + 降饱和(imageops 预处理成品,垫底退让) */
+.bg { position:absolute; inset:0; }
+.bg img { width:1080px; height:1440px; display:block; object-fit:cover; }
+
+/* 顶部品牌行 */
+.brand { position:absolute; top:72px; left:84px; right:84px; z-index:2;
+  display:flex; justify-content:space-between; align-items:center; }
+.brand .logo { font:700 30px/1 'SourceHanSans'; color:var(--c-ink); letter-spacing:.32em; }
+.brand .no   { font:500 24px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.18em; }
+
+/* 标题区:落在天空留白(负空间裁语法),深咖字直接压亮部 */
+.hero { position:absolute; left:84px; top:236px; width:760px; z-index:2;
+  font:400 128px/1.22 'SmileySans'; color:var(--c-ink); letter-spacing:.02em; }
+.hero .hl { color:var(--c-primary); }   /* 强调 1/2:一个词换主色 */
+.sub { position:absolute; left:84px; top:606px; z-index:2;
+  font:500 32px/1.5 'SourceHanSans'; color:var(--c-muted); letter-spacing:.06em; }
+
+/* 主体角色:照片卡(card 圆角+白描边),投影朝左下 = 背景光源右上(depth-3d.md §一) */
+.subject { position:absolute; right:96px; top:742px; z-index:2;
+  filter:drop-shadow(-14px 18px 30px rgba(38,22,10,.40)); }
+.subject img { width:560px; display:block; }
+
+/* 信息层:价格签(强调 2/2)+ 元信息 */
+.price { position:absolute; left:84px; top:968px; z-index:2;
+  background:var(--c-primary); color:#fff7ee;
+  font:400 88px/1 'SmileySans'; padding:26px 38px 30px; letter-spacing:.02em; }
+.price small { font:500 30px/1 'SourceHanSans'; letter-spacing:.14em; margin-left:14px; }
+.meta { position:absolute; left:84px; right:84px; bottom:78px; z-index:2;
+  display:flex; justify-content:space-between; align-items:center; }
+.meta .where { font:500 28px/1 'SourceHanSans'; color:#f7e7cf; letter-spacing:.12em; }  /* 深色前景山上用米白 */
+.meta .badge { font:700 28px/1 'SourceHanSans'; color:var(--c-ink);
+  border:3px solid var(--c-ink); padding:14px 24px; letter-spacing:.1em; }
+
+/* 质感层:胶片颗粒压数字平底(fx-noise,特效 1/1;最上层 + pointer-events:none) */
+.fx-noise { position:absolute; inset:0; z-index:3; opacity:.05; mix-blend-mode:multiply; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"); }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="bg"><img src="img/bg-morning-valley.png" alt=""></div>
+
+  <div class="brand">
+    <span class="logo">山谷晨碗</span>
+    <span class="no">VALLEY BOWL · No.07</span>
+  </div>
+
+  <h1 class="hero">一碗装下<br>整个<span class="hl">早晨</span></h1>
+  <p class="sub">慢烘格兰诺拉 · 冷冻莓果 · 无添加糖</p>
+
+  <div class="subject"><img src="img/bowl-card.png" alt=""></div>
+
+  <div class="price">¥19<small>/ 碗 · 首单立减 6 元</small></div>
+
+  <div class="meta">
+    <span class="where">每周三 · 山谷市集东棚</span>
+    <span class="badge">晨间 7:00 前出炉</span>
+  </div>
+
+  <div class="fx-noise"></div>
+</div>
+</body>
+</html>

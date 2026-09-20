@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>bilingual-case · 街道的表情(中西文结合参考案例:主从关系 + 密度匹配)</title>
+<!-- bilingual-typography.md 参考案例
+     关系 = 主从(全图仅此一种):中文主标 + 英文译名/品牌名,英文均"有信息量"(§七 判据过)
+     密度匹配(§三 算例):英文 = 中文 ×41%(0.4 起点 ×1.03 补偿)= 170px/70px;字重轻一档(900→400);字距 +.06em
+     字体 2 款(思源黑体 × EB Garamond,合计 ≤3 达标);特效 0 种;引号默认弯引号(§六)
+     间距:手写 &thinsp;(§二 二选一,全图不开 text-autospace,不双倍);行高取中文口径 1.75(§四) -->
+<style>
+@font-face { font-family:'SourceHanSans'; src:url('fonts/source-han-sans/NotoSansSC-VF.ttf') format('truetype');
+  font-weight:100 900; font-display:block; }
+@font-face { font-family:'EBGaramond'; src:url('fonts/english-eb-garamond/EBGaramond-Regular.ttf') format('truetype');
+  font-weight:400; font-display:block; }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#ffffff; }
+
+:root {
+  --c-ink:#191c1e; --c-bg:#f4f1ea; --c-primary:#31465a; --c-accent:#c2571f; --c-muted:#6d6a60;
+}
+
+.poster {
+  position:relative; width:1080px; height:1440px; overflow:hidden;
+  background:var(--c-bg); color:var(--c-ink);
+  padding:72px 96px 64px;
+  display:flex; flex-direction:column;
+  font-family:'SourceHanSans', sans-serif;
+  /* 禁则免费必开;正文不用 keep-all(typography-rules §一 既有硬条) */
+  line-break:strict; overflow-wrap:break-word; text-wrap:pretty;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+.tl { display:block; }
+.nowrap { white-space:nowrap; }
+
+/* 页眉:馆名 + 档期(同级元素,参数一致) */
+.masthead { display:flex; justify-content:space-between; align-items:baseline;
+  border-bottom:3px solid var(--c-ink); padding-bottom:16px; }
+.masthead .org { font-weight:700; font-size:28px; letter-spacing:.22em; }
+.masthead .season { font-weight:400; font-size:20px; color:var(--c-muted); letter-spacing:.14em; }
+
+/* 讲座眉题(中文;强调 1/2:色块) */
+.kicker { margin-top:92px; display:flex; align-items:center; gap:16px;
+  font-weight:600; font-size:24px; letter-spacing:.3em; color:var(--c-primary); }
+.kicker i { width:14px; height:14px; background:var(--c-accent); }
+
+/* 主标:中文 170px / 900(§三 算例基准);keep-all 只给标题短句(正文禁用,typography-rules §一) */
+h1.title { margin-top:34px; word-break:keep-all;
+  font-weight:900; font-size:170px; line-height:1.06; letter-spacing:.02em; }
+
+/* 英文译名:主从 = 中文 ×41%(§三 算例:0.4 起点 ×1.03 密度补偿);轻一档;+.06em */
+.subtitle-en { margin-top:10px;
+  font-family:'EBGaramond', serif; font-weight:400;
+  font-size:70px; line-height:1.15; letter-spacing:.06em; }
+
+.hairline { height:1px; background:rgba(25,28,30,.35); margin-top:56px; }
+
+/* 导语:行高取中文口径 1.75(§四);行宽 ≤22 字(max-width 620px) */
+.intro { margin-top:44px; max-width:620px;
+  font-weight:400; font-size:28px; line-height:1.75; }
+
+/* 信息块:标签 + 值(标签层,同级一致) */
+.info { margin-top:50px; }
+.info .row { display:flex; align-items:baseline; gap:36px; padding:20px 0;
+  border-top:1px solid rgba(25,28,30,.35); }
+.info .label { flex:0 0 96px; font-weight:700; font-size:20px; letter-spacing:.3em; color:var(--c-muted); }
+.info .value { font-weight:500; font-size:32px; letter-spacing:.02em; }
+.info .value .acc { color:var(--c-accent); font-weight:700; }   /* 强调 2/2:日期 */
+
+footer.colophon { margin-top:auto; display:flex; justify-content:space-between; align-items:baseline;
+  border-top:3px solid var(--c-ink); padding-top:18px; }
+footer .cn { font-weight:400; font-size:19px; color:var(--c-muted); letter-spacing:.12em; }
+footer .en { font-family:'EBGaramond', serif; font-size:19px; color:var(--c-muted);
+  letter-spacing:.18em; text-transform:uppercase; }   /* 品牌英文名:主从从属,中文口径行高下 cap-height 靠 baseline 对齐(§四) */
+</style>
+</head>
+<body>
+<div class="poster">
+  <header class="masthead">
+    <span class="org">鲸屿影像馆</span>
+    <span class="season">二〇二六 · 秋季公开讲座</span>
+  </header>
+
+  <div class="kicker"><i></i>城市影像讲座 · 第&thinsp;3&thinsp;期</div>
+
+  <h1 class="title"><span class="tl">街道的表情</span></h1>
+  <p class="subtitle-en">The Face of the Street</p>
+
+  <div class="hairline"></div>
+
+  <p class="intro">一张好的街拍,常常开始于一次停步。本期请到三位常年在街面拍摄的摄影师,聊聊他们如何等一张脸自己浮现。</p>
+
+  <div class="info">
+    <div class="row">
+      <span class="label">时间</span>
+      <span class="value"><span class="acc nowrap">10&thinsp;月&thinsp;17&thinsp;日</span>&thinsp;<span class="nowrap">19:30</span>(周六)</span>
+    </div>
+    <div class="row">
+      <span class="label">地点</span>
+      <span class="value">鲸屿影像馆 · 二层放映厅</span>
+    </div>
+    <div class="row">
+      <span class="label">主讲</span>
+      <span class="value">沈一舟(纪实摄影师)</span>
+    </div>
+  </div>
+
+  <footer class="colophon">
+    <span class="cn">鲸屿影像馆 · 城市影像讲座系列</span>
+    <span class="en">Whale Isle Image House</span>
+  </footer>
+</div>
+</body>
+</html>

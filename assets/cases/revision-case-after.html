@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>revision-case-after · 减法阶梯修正定稿</title>
+<!--
+  revision-case-before.html 的修正定稿(revision-protocol.md §3 减法阶梯的完整走法):
+  L1 删   —— 删掉英文眉题 / 爆炸星 / 五枚徽章 / 嵌套卡片 / 重复英文条 / 无理由阴影;
+  L2 减   —— 字体 3→2、强调 5→2(主标词 + 出血竖条)、层级收到 3 层、特效 3→0;
+  L3 挪   —— 左右边距统一 96px,纵向全部吸附 48px 基线单位,呼吸位留在主标旁;
+  L4 精   —— 大标题字距 .04em、数字 tabular-nums、分隔线同色同粗、标签同字距;
+  L5 点   —— 唯一主导动作 = 左缘 12px 出血竖条(装饰出血,文字全部在安全边距内)。
+  对照口诀:高级 = 少的东西 + 做到位 + 一处意外(revision-protocol.md §8)。
+-->
+<style>
+@font-face { font-family:'SmileySans'; src:url('fonts/SmileySans-Oblique.ttf') format('truetype'); font-display:block; }
+@font-face { font-family:'SourceHanSans'; src:url('fonts/NotoSansSC-VF.ttf') format('truetype');
+  font-weight:100 900; font-display:block; }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#ffffff; }
+.poster { position:relative; width:1080px; height:1440px; overflow:hidden; background:#f2ede3; }
+
+:root {
+  --c-ink:#262019; --c-bg:#f2ede3; --c-muted:#6f665a;
+  --c-accent:#b4551d; --c-line:rgba(38,32,25,.14);
+}
+
+/* L5 唯一主导动作:左缘出血竖条(装饰允许出血;文字与 logo 永远在安全边距内) */
+.spine { position:absolute; top:0; bottom:0; left:0; width:12px; background:var(--c-accent); }
+
+/* L3 吸附:内容左缘 96px,纵向节奏全部落在 48px 基线单位上 */
+.brand { position:absolute; top:96px; left:96px; right:96px;
+  display:flex; justify-content:space-between; align-items:baseline; }
+.brand .name { font:500 24px/1 'SourceHanSans'; color:var(--c-ink); letter-spacing:.3em; }
+.brand .series { font:400 24px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.18em; }
+
+.hero { position:absolute; top:336px; left:96px; right:96px; }
+.hero h1 { font:400 160px/1.1 'SmileySans'; color:var(--c-ink); letter-spacing:.04em; white-space:nowrap; }
+.hero h1 em { font-style:normal; color:var(--c-accent); }        /* L2:强调只给主标里最该看的词 */
+.hero .sub { margin-top:56px; font:300 44px/1.5 'SourceHanSans'; color:var(--c-ink); letter-spacing:.02em; }
+
+/* L4 精:三条信息同构——标签同字距、数值同字号、分隔线同色同粗 */
+.facts { position:absolute; top:864px; left:96px; right:96px; }
+.facts .row { display:flex; align-items:baseline; height:96px; border-top:1px solid var(--c-line); }
+.facts .row:first-child { border-top:none; }
+.facts .k { width:120px; font:400 24px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.3em; }
+.facts .v { font:500 28px/1 'SourceHanSans'; color:var(--c-ink); letter-spacing:.04em;
+  font-variant-numeric:tabular-nums; }
+
+.foot { position:absolute; top:1296px; left:96px; right:96px;
+  font:400 20px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.12em;
+  font-variant-numeric:tabular-nums; }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="spine" data-allow-overflow></div>
+
+  <div class="brand">
+    <span class="name">山雾手冲</span>
+    <span class="series">夏季限定 · 冷萃系列</span>
+  </div>
+
+  <div class="hero">
+    <h1>冷萃<em>山雾</em></h1>
+    <p class="sub">把山里的雾气,萃进一杯冷咖啡。</p>
+  </div>
+
+  <div class="facts">
+    <div class="row"><span class="k">产地</span><span class="v">云南保山 · 高黎贡山</span></div>
+    <div class="row"><span class="k">风味</span><span class="v">话梅 / 滇红 / 蔗糖</span></div>
+    <div class="row"><span class="k">发售</span><span class="v">09.28 起,全门店与小程序同步</span></div>
+  </div>
+
+  <p class="foot">山雾手冲工作室 · 每日 10:00–20:00</p>
+</div>
+</body>
+</html>

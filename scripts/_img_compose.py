@@ -1,5 +1,6 @@
 """C 组(合成层)实现(指导书 §5.4,批次二核心项提前落地):
-card(圆角+描边+阴影)/ watermark(文字·平铺)/ stitch(纵·横拼接)/ tone(色调统一)。
+card(圆角+描边+阴影)/ watermark(文字·平铺)/ stitch(纵·横拼接)/
+montage(网格拼图·多稿联络表)/ tone(色调统一)。
 混合模式矩阵与 PROFILES 禁止在本模块重建(唯一真源 _img_core)。"""
 
 from __future__ import annotations
@@ -167,6 +168,105 @@ def cmd_stitch(args) -> int:
     from _img_core import result_item
     results = [result_item(src0, out, src0.stat().st_size, data, engine=meta["engine"])]
     return ok_envelope("stitch", results)
+
+
+def _label_font(size: int):
+    """montage 标签字体:优先 load_default(size)(Pillow ≥10.1 矢量默认字),
+    旧 Pillow 退回位图默认字(小,但不崩)。不依赖 fonts/ 目录。"""
+    from PIL import ImageFont
+    try:
+        return ImageFont.load_default(size=size)
+    except TypeError:
+        return ImageFont.load_default()
+
+
+def _suggest_grid(n: int) -> str:
+    """给 n 张图推荐浪费格最少、行列最方正的网格(3 图 → 1x3)。"""
+    best_key, best = None, "1x1"
+    for cols in range(1, n + 1):
+        rows = -(-n // cols)  # ceil(n/cols)
+        key = (rows * cols - n, abs(cols - rows), rows, cols)
+        if best_key is None or key < best_key:
+            best_key, best = key, f"{rows}x{cols}"
+    return best
+
+
+def cmd_montage(args) -> int:
+    """C5:网格拼图(多稿联络表 contact sheet;与 stitch 同族,一表看全 N 稿)。
+    行为契约:图数 < 格数 → 空格留底色(warn 不报错);图数 > 格数 → 报错并给建议网格;
+    各图等比缩进格子居中(不裁内容——联络表要"看全");--label 在每格左上角叠 A/B/C/D…。"""
+    from PIL import Image, ImageDraw
+    try:
+        paths = input_expand(args)
+    except NotImplementedError:
+        # --in 收到绝对路径时 pathlib.glob 会抛此异常(input_expand 既有边界,全族共有):
+        # montage 自身守住 JSON 契约——绝对路径请用位置参数直给
+        raise SystemExit(fail("montage", "USAGE", "--in 不支持绝对路径(既有限制)",
+                              hint="把绝对路径直接写作位置参数:montage C:\\a.png C:\\b.png --grid 2x2"))
+    if len(paths) < 1:
+        raise SystemExit(fail("montage", "USAGE", "至少一张图(多稿联络表通常 4 张)",
+                              hint="montage --in a.png b.png c.png d.png --grid 2x2 --gap 24 --label"))
+    if not args.grid:
+        raise SystemExit(fail("montage", "USAGE", "需要 --grid 行x列,如 2x2",
+                              hint="4 稿 → 2x2;3 稿 → 1x3;6 稿 → 2x3"))
+    try:
+        rows, cols = (int(v) for v in str(args.grid).lower().split("x"))
+    except ValueError:
+        raise SystemExit(fail("montage", "USAGE", f"--grid 形如 行x列(如 2x2),收到: {args.grid}",
+                              hint="4 稿 → 2x2;3 稿 → 1x3;6 稿 → 2x3"))
+    if rows < 1 or cols < 1:
+        raise SystemExit(fail("montage", "USAGE", "--grid 行与列都必须 ≥1"))
+    cells = rows * cols
+    if len(paths) > cells:
+        raise SystemExit(fail("montage", "GRID_OVERFLOW",
+                              f"{len(paths)} 张图放不进 {rows}x{cols}={cells} 格",
+                              hint=f"{len(paths)} 图建议 --grid {_suggest_grid(len(paths))}"
+                                   f";或加大网格留空格"))
+    imgs = [_open(p).convert("RGB") for p in paths]
+    gap = int(args.gap or 0)
+    margin = int(getattr(args, "margin", 0) or 0)
+    cw = max(i.width for i in imgs)
+    ch = max(i.height for i in imgs)
+    W = margin * 2 + cols * cw + gap * (cols - 1)
+    H = margin * 2 + rows * ch + gap * (rows - 1)
+    canvas = Image.new("RGB", (W, H), parse_color(args.bg or "#ffffff")[:3])
+    warnings = []
+    if len(paths) < cells:
+        warnings.append(f"GRID_EMPTY_CELLS: {cells - len(paths)} 格留底色"
+                        f"(3 稿也可改 --grid {_suggest_grid(len(paths))})")
+    d = ImageDraw.Draw(canvas)
+    label_size = int(getattr(args, "label_size", 0) or 0) or max(28, ch // 24)
+    font = _label_font(label_size) if args.label else None
+    stroke = max(2, label_size // 12)
+    for idx, img in enumerate(imgs):
+        r, c = divmod(idx, cols)
+        s = min(cw / img.width, ch / img.height)  # cw/ch 是全图最大值,故 s ≤ 1,只缩不放
+        if s < 1.0:
+            img = img.resize((max(1, round(img.width * s)), max(1, round(img.height * s))),
+                             resample_of(None, False))
+        ox = margin + c * (cw + gap) + (cw - img.width) // 2
+        oy = margin + r * (ch + gap) + (ch - img.height) // 2
+        canvas.paste(img, (ox, oy))
+        if args.label:
+            letter = chr(ord("A") + idx) if idx < 26 else f"#{idx + 1}"
+            d.text((ox + label_size // 2, oy + label_size // 2), letter, font=font,
+                   fill=(255, 255, 255), stroke_width=stroke, stroke_fill=(0, 0, 0))
+    src0 = paths[0]
+    out = pathlib.Path(args.out) if args.out else out_path_for(src0, args, "montage", "png")
+    data, meta = encode_image(canvas, "png", 95)
+    try:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(data)
+    except OSError as e:
+        return fail("montage", "WRITE_FAILED", detail=f"{out}: {e}",
+                    hint="检查输出路径与权限,或改用 --out 指定可写位置")
+    item = result_item(src0, out, src0.stat().st_size, data, engine=meta["engine"])
+    item["grid"] = f"{rows}x{cols}"
+    item["inputs"] = len(paths)
+    item["cell"] = [cw, ch]
+    item["labels"] = [chr(ord("A") + i) if i < 26 else f"#{i + 1}"
+                      for i in range(len(paths))] if args.label else []
+    return ok_envelope("montage", [item], warnings=warnings)
 
 
 def cmd_tone(args) -> int:

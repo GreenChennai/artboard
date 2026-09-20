@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>material-case · 麦芒面包冬至礼盒(材质语言参考案例)</title>
+<!-- material-language.md 参考案例:纸感暖底(fx-paper + fx-noise)+ 深色带上的烫金主标(fx-foil)
+     主材质 2 种:纸 + 金属(点缀);特效计数 3(fx-paper / fx-noise / fx-foil),≤3 达标;
+     高光与反光方向统一(金属字无方向性反光,不与光源冲突) -->
+<style>
+@font-face { font-family:'SourceHanSerif'; src:url('fonts/source-han-serif/NotoSerifSC-VF.ttf') format('truetype');
+  font-weight:200 900; font-display:block; }
+@font-face { font-family:'SourceHanSans'; src:url('fonts/source-han-sans/NotoSansSC-VF.ttf') format('truetype');
+  font-weight:100 900; font-display:block; }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#ffffff; }
+.poster { position:relative; width:1080px; height:1440px; overflow:hidden; }
+
+:root {
+  --c-bg:#f6f1e6; --c-ink:#33261a; --c-muted:#6f604c;
+  --c-gold:#c9973f; --c-cream:#e9dfc9; --c-band:#22312a;
+  --radius:14px;
+}
+
+/* 纸(材质 1/2):fx-paper 暖纸底(effects.md §一,值代入本图 tokens) */
+.fx-paper { position:absolute; inset:0;
+  background: radial-gradient(120% 90% at 20% 10%, #fffdf8 0%, var(--c-bg) 55%, #ece2cf 100%); }
+
+/* 细噪:fx-noise 压住数字平底(特效 2/3;叠最上层,pointer-events:none) */
+.fx-noise { position:absolute; inset:0; opacity:.06; mix-blend-mode:multiply; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+/* 顶部品牌行:平贴纸面 */
+.brand { position:absolute; top:76px; left:80px; right:80px;
+  display:flex; justify-content:space-between; align-items:center; }
+.brand .logo { font:700 30px/1 'SourceHanSans'; color:var(--c-ink); letter-spacing:.3em; }
+.brand .tag  { font:500 22px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.22em; }
+
+/* 纸面中段:一句氛围 + 三行礼单(编辑式行卡,细线分隔) */
+.kick { position:absolute; top:212px; left:80px;
+  font:500 28px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.3em; }
+.mood { position:absolute; top:286px; left:80px; right:80px;
+  font:600 66px/1.42 'SourceHanSerif'; color:var(--c-ink); }
+
+.rows { position:absolute; top:648px; left:80px; right:80px; }
+.row { display:flex; justify-content:space-between; align-items:center;
+  border-top:1px solid rgba(51,38,26,.18); padding:24px 0 22px; }
+.row .name { font:500 32px/1 'SourceHanSans'; color:var(--c-ink); letter-spacing:.08em; }
+.row .note { font:400 24px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.12em; }
+
+/* 深色带:墨绿实体色块(非特效),承载金属字 */
+.band { position:absolute; left:0; right:0; bottom:0; height:470px; background:var(--c-band); }
+
+/* 金属(材质 2/2,点缀):fx-foil 烫金主标(effects.md §二,只做标题一处,特效 3/3) */
+.title { position:absolute; top:54px; left:80px;
+  font:900 200px/1.06 'SourceHanSerif'; letter-spacing:.02em;
+  background:linear-gradient(100deg, #7a5a1e 0%, #d8b45a 22%, #fff0c2 38%,
+                  #c9992e 55%, #8a6a24 72%, #e8c96a 100%);
+  -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+.sub { position:absolute; top:312px; left:80px;
+  font:400 32px/1 'SourceHanSans'; color:var(--c-cream); letter-spacing:.14em; }
+
+.meta { position:absolute; left:80px; right:80px; bottom:58px;
+  display:flex; justify-content:space-between; align-items:center; }
+.meta .date { font:400 26px/1 'SourceHanSans'; color:#cfc4ae; letter-spacing:.16em; }
+.badge { border:2px solid var(--c-gold); color:var(--c-gold);
+  font:500 26px/1 'SourceHanSans'; padding:12px 22px; letter-spacing:.14em; border-radius:var(--radius); }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="fx-paper"></div>
+
+  <div class="brand">
+    <span class="logo">麦芒面包</span>
+    <span class="tag">冬季限定</span>
+  </div>
+
+  <div class="kick">冬至 · 一年只烤一次</div>
+  <div class="mood">面粉、黄油与时间,<br>慢一点,更香一点。</div>
+
+  <div class="rows">
+    <div class="row"><span class="name">雪顶曲奇 ×2</span><span class="note">低糖法式</span></div>
+    <div class="row"><span class="name">焦糖核桃塔 ×1</span><span class="note">当日现烤</span></div>
+    <div class="row"><span class="name">手写贺卡 ×1</span><span class="note">免费代写</span></div>
+  </div>
+
+  <div class="band">
+    <div class="title">冬至礼盒</div>
+    <div class="sub">法式低糖 · 五款年礼 · 附手写贺卡</div>
+    <div class="meta">
+      <span class="date">2026.12.19 预售开启</span>
+      <span class="badge">限量 300 盒</span>
+    </div>
+  </div>
+
+  <div class="fx-noise"></div>
+</div>
+</body>
+</html>

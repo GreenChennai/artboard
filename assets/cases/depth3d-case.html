@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>depth3d-case · 山雾夜市(伪3D 与空间感参考案例)</title>
+<!-- depth-3d.md 参考案例:标题块状挤出(手法 5)+ 主视觉穿出色块(写法 A 前后遮挡)
+     光源:左上(全部投影朝右下);特效计数:伪3D 1 + 噪点 1 = 2(≤3 达标) -->
+<style>
+@font-face { font-family:'SmileySans'; src:url('fonts/SmileySans-Oblique.ttf') format('truetype');
+  font-weight:normal; font-display:block; }
+@font-face { font-family:'SourceHanSans'; src:url('fonts/NotoSansSC-VF.ttf') format('truetype');
+  font-weight:100 900; font-display:block; }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#ffffff; }
+.poster { position:relative; width:1080px; height:1440px; overflow:hidden; background:#f3ede2; }
+
+:root {
+  --c-ink:#1d1712; --c-bg:#f3ede2; --c-primary:#e8432e;
+  --c-accent:#ffc300; --c-muted:#8a7f70;
+  /* 统一光源(轻启用):全图阴影共享方向与软硬(depth-3d.md §一) */
+  --light-deg:135deg; --light-soft:.35; --light-blur:24px;
+}
+
+/* 噪点:压住数字味的平底(fx-noise,特效 2/2) */
+.fx-noise { position:absolute; inset:0; opacity:.06; mix-blend-mode:multiply; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+/* 顶部品牌行:平贴,不做伪3D(纪律:只做标题一处) */
+.brand { position:absolute; top:64px; left:80px; right:80px;
+  display:flex; justify-content:space-between; align-items:center; }
+.brand .logo { font:700 30px/1 'SourceHanSans'; color:var(--c-ink); letter-spacing:.3em; }
+.brand .tag  { font:500 24px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.18em; }
+
+/* 主视觉:两行大字标题,块状挤出(depth-3d.md 手法 5)
+   z-index:1 —— 在前景色块(z-index:2)后面,下半被盖住 = 写法 A 前后遮挡 */
+.hero { position:absolute; left:80px; top:380px; z-index:1;
+  font:400 330px/1.08 'SmileySans'; color:#fff; letter-spacing:.02em;
+  -webkit-text-stroke:7px var(--c-ink); paint-order:stroke fill;
+  text-shadow:
+    2px 2px 0 var(--c-ink),  4px 4px 0 var(--c-ink),  6px 6px 0 var(--c-ink),
+    8px 8px 0 var(--c-ink), 10px 10px 0 var(--c-ink), 12px 12px 0 var(--c-ink),
+   14px 14px 0 var(--c-ink), 16px 16px 0 var(--c-ink), 18px 18px 0 var(--c-ink),
+    0 30px 44px rgba(29,23,18,.35); }
+.hero .tl { display:block; }
+
+/* 前景色块:不透明实体,盖住标题第二行下半(露出约 40%) */
+.plate { position:absolute; left:0; right:0; bottom:0; height:490px; z-index:2;
+  background:var(--c-primary); }
+
+/* 色块上的信息层:白色平贴字 + 一枚黄色徽章(强调 1/2) */
+.plate .kick { position:absolute; left:80px; top:64px;
+  font:500 34px/1 'SourceHanSans'; color:#ffe9d8; letter-spacing:.34em; }
+.plate .line { position:absolute; left:80px; right:80px; top:130px; height:2px;
+  background:rgba(255,255,255,.35); }
+.plate .big { position:absolute; left:80px; right:80px; top:170px;
+  font:400 84px/1.16 'SmileySans'; color:#fff; }
+.plate .big b { color:#fff; font-weight:normal; }
+.plate .meta { position:absolute; left:80px; right:80px; bottom:70px;
+  display:flex; justify-content:space-between; align-items:center; }
+.plate .meta .where { font:500 30px/1 'SourceHanSans'; color:#ffe9d8; letter-spacing:.12em; }
+.plate .badge { background:var(--c-accent); color:var(--c-ink);
+  font:700 30px/1 'SourceHanSans'; padding:12px 22px; letter-spacing:.08em; }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="fx-noise"></div>
+
+  <div class="brand">
+    <span class="logo">山雾夜市</span>
+    <span class="tag">第三届 · 货柜街区</span>
+  </div>
+
+  <h1 class="hero"><span class="tl">夜市</span><span class="tl">开锣</span></h1>
+
+  <div class="plate">
+    <div class="kick">九月最后一个周末</div>
+    <div class="line"></div>
+    <div class="big">100+ 摊位 · 40 场演出<br><b>0 元入场</b>，晚 5 点亮灯</div>
+    <div class="meta">
+      <span class="where">9.26 — 9.28 · 滨江货柜街区</span>
+      <span class="badge">雨备改室内 · 免费入场</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

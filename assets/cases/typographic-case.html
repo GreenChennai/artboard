@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>typographic-case · 纸上植物园(排版表达参考案例:超大字体 + 编辑设计母版)</title>
+<!-- typographic-expression.md 参考案例
+     语气:Editorial(左对齐严格唯一);超大字体:实心「慢」560px + 空心「读」画布内裁切窗(data-allow-overflow)
+     编辑母版:跨栏大标 / 首字下沉 / 边注 / 引文块 / 栏线发丝线 / 页眉页脚(六之一缺基线网格,吸附见间距取值)
+     字体 2 款(思源宋 900 主标正文 + 思源黑 眉题标签);特效计数:空心描边图形字 1 种(≤3 达标) -->
+<style>
+@font-face { font-family:'SourceHanSerif'; src:url('fonts/source-han-serif/NotoSerifSC-VF.ttf') format('truetype');
+  font-weight:100 900; font-display:block; }
+@font-face { font-family:'SourceHanSans'; src:url('fonts/source-han-sans/NotoSansSC-VF.ttf') format('truetype');
+  font-weight:100 900; font-display:block; }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#ffffff; }
+
+:root {
+  --c-ink:#1c1712; --c-bg:#f6f1e7; --c-primary:#35523f; --c-accent:#b3441f; --c-muted:#6f6657;
+  --hairline:rgba(28,23,18,.5);          /* 发丝线:编辑感来源(§六 栏线与分隔) */
+}
+
+.poster {
+  position:relative; width:1080px; height:1440px; overflow:hidden;
+  background:var(--c-bg); color:var(--c-ink);
+  padding:56px 88px 50px;
+  display:flex; flex-direction:column;
+  font-family:'SourceHanSerif', serif;
+  /* 禁则免费必开;正文不用 keep-all(typography-rules §一 既有硬条) */
+  line-break:strict; overflow-wrap:break-word; text-wrap:pretty;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  text-spacing-trim:normal;
+}
+@supports (text-spacing-trim: space-first) { .poster { text-spacing-trim:space-first; } }
+
+.tl { display:block; }                     /* 一行一块:手动断行(typography-rules §一) */
+.nowrap { white-space:nowrap; }            /* 破折号/省略号一体不拆 */
+
+/* 图形化背景字:画布内裁切窗,不出画布(§八 裁决 4);data-allow-overflow 声明"故意" */
+.cropband {
+  position:absolute; top:186px; right:0; width:300px; height:690px;
+  overflow:hidden; border-left:1px solid rgba(53,82,63,.45);   /* 栏线:发丝线 */
+}
+.cropband span {
+  position:absolute; top:96px; left:-84px;
+  font:900 480px/1 'SourceHanSerif'; color:transparent;
+  -webkit-text-stroke:3px rgba(28,23,18,.16);                  /* 空心大字当图形;描边 ≤ 字号 1% */
+}
+
+/* 页眉(编辑母版:眉题 + 双细线) */
+.masthead { position:relative; z-index:1; display:flex; justify-content:space-between; align-items:baseline;
+  border-bottom:3px solid var(--c-ink); padding-bottom:13px; }
+.masthead .logo { font:700 29px/1 'SourceHanSans'; letter-spacing:.22em; }
+.masthead .issue { font:400 20px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.12em; }
+.rule-thin { height:1px; background:var(--hairline); margin-top:5px; }
+
+/* 引题(标签级,宽字距) */
+.kicker { position:relative; z-index:1; margin-top:34px; display:flex; align-items:center; gap:14px;
+  font:600 23px/1 'SourceHanSans'; letter-spacing:.28em; color:var(--c-primary); }
+.kicker i { width:13px; height:13px; background:var(--c-accent); }   /* 强调 1/2 */
+
+/* 超大主标:实心「慢」= 字体即图形(字号 560px = 画布宽 52%;行高 .95 图形层豁免见 §八) */
+.hero { position:relative; z-index:1; margin-top:6px;
+  font:900 560px/0.95 'SourceHanSerif'; letter-spacing:0; }
+
+.byline { position:relative; z-index:1; margin-top:56px;   /* 56px:给 0.95 行高下溢出的字形墨迹让位(图形字行高豁免的伴随代价) */
+  font:400 21px/1.4 'SourceHanSans'; color:var(--c-muted); letter-spacing:.1em; }
+
+/* 引文块(编辑母版:大引号「」+ 左竖线 + 缩进;中文引语不斜体) */
+.pull { position:relative; z-index:1; margin-top:34px; padding-left:34px; border-left:5px solid var(--c-primary);
+  font:600 46px/1.55 'SourceHanSerif'; }
+.pull .tl { text-indent:0; }
+
+/* 正文双栏:主栏 + 边注(编辑母版);行高 1.75 全图正文一致;组内距收紧 = 张力的"密" */
+.body { position:relative; z-index:1; margin-top:44px; display:grid; grid-template-columns:580px 1fr; gap:44px;
+  font:400 28px/1.75 'SourceHanSerif'; }
+.body p + p { margin-top:18px; }
+/* 首字下沉(编辑母版):只给首段第一个字,一图 ≤1 处 */
+.lead::first-letter { float:left; font-size:3.1em; line-height:.86; margin:.05em .12em 0 0; font-weight:900; }
+/* 边注:窄栏小型注,重顶线 + 标签 */
+.note { border-top:3px solid var(--c-ink); padding-top:14px; }
+.note .tag { font:700 20px/1 'SourceHanSans'; letter-spacing:.24em; color:var(--c-accent); }  /* 强调 2/2 */
+.note p { margin-top:12px; font:400 20px/1.75 'SourceHanSerif'; color:var(--c-muted); }
+
+/* 页脚(编辑母版:页码/落款;数字 tabular) */
+.colophon { position:relative; z-index:1; margin-top:auto; border-top:1px solid var(--hairline); padding-top:16px;
+  display:flex; justify-content:space-between; align-items:baseline;
+  font:400 20px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.08em; }
+.num { font-variant-numeric:tabular-nums; }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="cropband" data-allow-overflow><span>读</span></div>
+
+  <header class="masthead">
+    <span class="logo">纸上植物园</span>
+    <span class="issue">二〇二六年 · 秋季刊</span>
+  </header>
+  <div class="rule-thin"></div>
+
+  <div class="kicker"><i></i>卷首语 · 慢读特辑</div>
+
+  <h1 class="hero">慢</h1>
+  <div class="byline">撰文 · 本刊编辑部</div>
+
+  <blockquote class="pull">
+    <span class="tl">「把日子读慢一点,</span>
+    <span class="tl">把秋天过慢。」</span>
+  </blockquote>
+
+  <div class="body">
+    <div>
+      <p class="lead">十月的第一件事,是把手机扣在桌面上。烧一壶水,挑一本搁置很久的书,从没读完的那一页开始。阅读不必赶路<span class="nowrap">——</span>植物园这一季只谈一件事:把书读慢。</p>
+      <p>慢读不是读得少,是把时间还给自己。</p>
+    </div>
+    <aside class="note">
+      <div class="tag">边注</div>
+      <p>本栏不设进度表,不打卡。读到哪一页,哪一页就是这一季的终点。</p>
+    </aside>
+  </div>
+
+  <footer class="colophon">
+    <span>纸上植物园 · 城市慢读特辑</span>
+    <span>第 <span class="num">12</span> 期 · 十月刊</span>
+  </footer>
+</div>
+</body>
+</html>

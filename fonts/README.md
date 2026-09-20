@@ -6,6 +6,7 @@
 > 网盘字体需按 manual 链接手动下载后 add_font 登记)。
 
 > 两级筛查法:先按「分类」选定大类 → 点进对应 `<目录>/INTRO.md` 细读气质与适用场景 → 定稿 ≤3 款(标题/正文/数字各司其职)。
+> 中西文搭配矩阵见 `references/bilingual-typography.md`(中西文各算一款,合计仍 ≤3 款)。
 > 新增字体:建目录放字体文件 + INTRO.md,然后跑 `scripts/add_font.py <目录名> --name 显示名 --category 分类 --tags 关键词`。
 
 | 目录 | 字体 | 分类 | 气质关键词 | 字重/变体 |

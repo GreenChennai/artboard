@@ -77,6 +77,7 @@ python $S/cutout.py hero.jpg --quality high --dml
 | unDraw | 扁平插画,官网色即主题色 | 科技/互联网场景;SVG 改主色 hex 即全套换装 |
 
 - 用法:直接内联 SVG 进 HTML(改 fill 为 tokens 色);或转 PNG 进 `src/img/`。
+- 自绘插画(素材缺元素时按同一语言补画)的语言规范见 `vector-drawing.md §4.4`(五种手法与素材包的关系)。
 - 手账/可爱风格注意:插画人物配 [霞鹜文楷](../fonts/lxgw-wenkai/INTRO.md)/[站酷快乐体](../fonts/zcool-kuaile/INTRO.md) 才不违和。
 
 ## 5. 素材在版式里的纪律(补 guardrails)
@@ -86,3 +87,4 @@ python $S/cutout.py hero.jpg --quality high --dml
 - 照片做背景时压暗/降饱和后文字才能立住(对比度 ≥4.5:1)。
 - 食品图选图标准:特写、暖光、有蒸汽/光泽/颗粒感——"能闻到味道"的图才配卖它。
 - 一张海报最多 2 张照片;产品图(主体)+氛围图(背景)各一,再多就乱。
+- 图像角色与处理链(先定"这张当主体还是背景"再处理,处理顺序模型)见 `image-language.md`。

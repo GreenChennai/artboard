@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>vector-case · 构成实验室(矢量绘制参考案例)</title>
+<!-- vector-drawing.md 参考案例:几何构成四法(等分/栅格/黄金比/负形)+ 统一语言图标组
+     (Tabler 七项:线宽2/round/currentColor,48px 使用 + 24px 并排校验)。
+     矢量交付安全(§4.5 实测边界):几何全部用轴对齐 DOM 盒子——圆=border-radius:50%、
+     等分=点环、挖孔=四边拼框(负空间)、负形=空格十字;不用内联 SVG 画几何(矢量道会
+     栅格化)、不用 transform/clip-path。图标内联 Tabler(矢量道栅格化为小图 = 已知边界)。
+     纪律:特效 0 种(几何本身就是主视觉)/ 字体 2 款 / 强调 2 处(主标「理由」+ 孔内 accent 点)。 -->
+<style>
+@font-face { font-family:'SmileySans'; src:url('fonts/SmileySans-Oblique.ttf') format('truetype');
+  font-weight:normal; font-display:block; }
+@font-face { font-family:'SourceHanSans'; src:url('fonts/NotoSansSC-VF.ttf') format('truetype');
+  font-weight:100 900; font-display:block; }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+:root { /* style-system「紫夜」tokens:全案例零裸 hex,几何/图标一律 var(--c-*) / currentColor */
+  --c-bg:#0e0b1e; --c-ink:#f2eeff; --c-primary:#7c5cff; --c-accent:#2ee6a8; --c-muted:#9a93c2;
+}
+html, body { background:var(--c-bg); }
+.poster { position:relative; width:1080px; height:1440px; overflow:hidden; background:var(--c-bg); }
+
+/* ---- 顶部品牌行 ---- */
+.brand { position:absolute; top:64px; left:72px; right:72px;
+  display:flex; justify-content:space-between; align-items:baseline; }
+.brand .logo { font:700 30px/1 'SourceHanSans'; color:var(--c-ink); letter-spacing:.28em; }
+.brand .no   { font:500 24px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.14em; }
+
+/* ---- 主标(焦点;accent 只给「理由」二字,强调 1/2)---- */
+.hero { position:absolute; left:72px; top:150px;
+  font:400 150px/1.12 'SmileySans'; color:var(--c-ink); letter-spacing:.01em; }
+.hero .acc { color:var(--c-accent); }
+.sub { position:absolute; left:72px; top:508px;
+  font:400 30px/1.5 'SourceHanSans'; color:var(--c-muted); letter-spacing:.06em; }
+
+/* ---- 主视觉:几何构成区(内部 48px 栅格;全部轴对齐盒子,矢量道逐形可辨)----
+   等分:12 枚 20px 点环(圆心间距半径 228,每 30° 一枚,坐标取整 px,≤24);
+   黄金比:孔 96 : 点 60 = 1.6(φ);挖孔:四条边盒子拼出 192 方框,中空 96×96 = 孔;
+   负形:3×3 块只填四角与中心,空格读作十字(右列越出画框 = 出血,故意打破)。 */
+.visual { position:absolute; left:60px; top:588px; width:960px; height:576px; }
+.geo      { position:absolute; background:var(--c-primary); }
+.geo-dot  { position:absolute; background:var(--c-primary); border-radius:50%; }
+.geo-acc  { position:absolute; background:var(--c-accent); border-radius:50%; }
+.geo-void { position:absolute; background:var(--c-bg); }
+
+/* ---- 图标实验区:同组图标 48px 使用 + 24px 并排校验(currentColor 上色)---- */
+.iconlab { position:absolute; left:72px; right:72px; top:1204px; }
+.lab-right { position:absolute; right:0; top:26px; text-align:right; }
+.lab-label { font:500 24px/1 'SourceHanSans'; color:var(--c-muted);
+  letter-spacing:.12em; margin-bottom:18px; }
+.icon-row { display:flex; gap:20px; align-items:center; color:var(--c-ink); }
+.icon-row + .icon-row { margin-top:14px; }
+.icon-row svg { display:block; flex:none; }
+.lab-cap { display:block; font:400 20px/1.4 'SourceHanSans'; color:var(--c-muted); margin-top:10px; }
+.when  { font:400 44px/1.2 'SmileySans'; color:var(--c-ink); }
+.where { font:400 24px/1.6 'SourceHanSans'; color:var(--c-muted); letter-spacing:.08em; }
+.fee   { font:500 24px/1 'SourceHanSans'; color:var(--c-ink); letter-spacing:.1em;
+  border:2px solid var(--c-primary); padding:10px 18px; display:inline-block; margin-top:16px; }
+</style>
+</head>
+<body>
+<div class="poster">
+
+  <div class="brand">
+    <span class="logo">构成实验室</span>
+    <span class="no">矢量绘制工作坊 · 第 04 期</span>
+  </div>
+
+  <h1 class="hero">每一根线,<br>都有<span class="acc">理由</span>。</h1>
+  <p class="sub">等分 · 栅格 · 黄金比 · 负形,以及一套统一语言的图标</p>
+
+  <!-- 主视觉:几何构成(vector-drawing.md §4.2;全部盒子几何,SVG 导出逐形可辨) -->
+  <div class="visual">
+    <!-- 黄金比焦点:主圆 384px(=border-radius:50%),圆心 (528,240) 落 24px 节点栅格 -->
+    <div class="geo-dot" style="left:336px;top:48px;width:384px;height:384px;"></div>
+    <div class="geo-void" style="left:520px;top:239px;width:16px;height:2px;"></div>
+    <div class="geo-void" style="left:527px;top:232px;width:2px;height:16px;"></div>
+    <!-- 等分:12 枚点环,每 30° 一枚(≤24) -->
+    <div class="geo-dot" style="left:746px;top:230px;width:20px;height:20px;"></div>
+    <div class="geo-dot" style="left:715px;top:344px;width:20px;height:20px;"></div>
+    <div class="geo-dot" style="left:632px;top:427px;width:20px;height:20px;"></div>
+    <div class="geo-dot" style="left:518px;top:458px;width:20px;height:20px;"></div>
+    <div class="geo-dot" style="left:404px;top:427px;width:20px;height:20px;"></div>
+    <div class="geo-dot" style="left:321px;top:344px;width:20px;height:20px;"></div>
+    <div class="geo-dot" style="left:290px;top:230px;width:20px;height:20px;"></div>
+    <div class="geo-dot" style="left:321px;top:116px;width:20px;height:20px;"></div>
+    <div class="geo-dot" style="left:404px;top:33px;width:20px;height:20px;"></div>
+    <div class="geo-dot" style="left:518px;top:2px;width:20px;height:20px;"></div>
+    <div class="geo-dot" style="left:632px;top:33px;width:20px;height:20px;"></div>
+    <div class="geo-dot" style="left:715px;top:116px;width:20px;height:20px;"></div>
+    <!-- 挖孔(负空间拼法):四条边拼出 192 方框,中空 96×96;孔内 accent 点 60px(强调 2/2,96:60=φ) -->
+    <div class="geo" style="left:96px;top:336px;width:192px;height:48px;"></div>
+    <div class="geo" style="left:96px;top:480px;width:192px;height:48px;"></div>
+    <div class="geo" style="left:96px;top:384px;width:48px;height:96px;"></div>
+    <div class="geo" style="left:240px;top:384px;width:48px;height:96px;"></div>
+    <div class="geo-acc" style="left:162px;top:402px;width:60px;height:60px;"></div>
+    <!-- 负形:3×3 块(96px 格)只填四角与中心,空格读作十字;右列 x≥984 越出画框 = 出血 -->
+    <div class="geo" style="left:792px;top:336px;width:96px;height:96px;"></div>
+    <div class="geo" style="left:984px;top:336px;width:96px;height:96px;"></div>
+    <div class="geo" style="left:888px;top:432px;width:96px;height:96px;"></div>
+    <div class="geo" style="left:792px;top:528px;width:96px;height:96px;"></div>
+    <div class="geo" style="left:984px;top:528px;width:96px;height:96px;"></div>
+  </div>
+
+  <!-- 图标语言:assets/icons/ 的 Tabler 原样内联,统一线宽2 + round + currentColor -->
+  <div class="iconlab">
+    <div>
+      <div class="lab-label">图标语言 · Tabler 七项统一 · currentColor 上色</div>
+      <div class="icon-row">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 0 1 0 -18c4.97 0 9 3.582 9 8c0 1.06 -.474 2.078 -1.318 2.828c-.844 .75 -1.989 1.172 -3.182 1.172h-2.5a2 2 0 0 0 -1 3.75a1.3 1.3 0 0 1 -1 2.25" /><path d="M7.5 10.5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M11.5 7.5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M15.5 10.5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /></svg>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21v-4a4 4 0 1 1 4 4h-4" /><path d="M21 3a16 16 0 0 0 -12.8 10.2" /><path d="M21 3a16 16 0 0 1 -10.2 12.8" /><path d="M10.6 9a9 9 0 0 1 4.4 4.4" /></svg>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M7 12a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" /><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /></svg>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2m0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2m-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6" /></svg>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11" /></svg>
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873l-6.158 -3.245" /></svg>
+      </div>
+      <div class="icon-row">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 0 1 0 -18c4.97 0 9 3.582 9 8c0 1.06 -.474 2.078 -1.318 2.828c-.844 .75 -1.989 1.172 -3.182 1.172h-2.5a2 2 0 0 0 -1 3.75a1.3 1.3 0 0 1 -1 2.25" /><path d="M7.5 10.5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M11.5 7.5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M15.5 10.5a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21v-4a4 4 0 1 1 4 4h-4" /><path d="M21 3a16 16 0 0 0 -12.8 10.2" /><path d="M21 3a16 16 0 0 1 -10.2 12.8" /><path d="M10.6 9a9 9 0 0 1 4.4 4.4" /></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" /><path d="M7 12a5 5 0 1 0 10 0a5 5 0 1 0 -10 0" /><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" /></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 18a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2m0 -12a2 2 0 0 1 2 2a2 2 0 0 1 2 -2a2 2 0 0 1 -2 -2a2 2 0 0 1 -2 2m-7 12a6 6 0 0 1 6 -6a6 6 0 0 1 -6 -6a6 6 0 0 1 -6 6a6 6 0 0 1 6 6" /></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3l0 7l6 0l-8 11l0 -7l-6 0l8 -11" /></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17.75l-6.172 3.245l1.179 -6.873l-5 -4.867l6.9 -1l3.086 -6.253l3.086 6.253l6.9 1l-5 4.867l1.179 6.873l-6.158 -3.245" /></svg>
+      </div>
+      <span class="lab-cap">↑ 同组缩到 24px 并排校验:线宽一致 · 视觉大小一致 · 无一枚偏重</span>
+    </div>
+    <div class="lab-right">
+      <div class="when">9.30 周三 20:00</div>
+      <div class="where">线上直播 · 全程回放</div>
+      <div class="fee">免费报名</div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

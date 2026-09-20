@@ -13,7 +13,25 @@
 
 ---
 
-## 🆕 v1.9.0 · 导出引擎全面换血
+## 🆕 v1.12.0 · 设计维度跃迁:会想、会改、能出多稿
+
+> 不止"排得对",还要"想得深、改得准"。九份新设计分册 + 多稿同出,
+> 全部经机检门禁、渲染验收与独立视觉裁决(9 案例裁决 9 过)。
+
+- **说不出要什么也能改**:「不够高级 / 太乱 / 做减法」→ 五维诊断 + 13 条模糊话术
+  翻译表 + 减法阶梯(L1 删 → L5 点),**定点修改、不重跑**——
+  见 [references/revision-protocol.md](references/revision-protocol.md);
+- **多稿同出(备选模式)**:一句「多稿 4 / 出 4 版让我选」即触发,一次出 4 个方向 +
+  一张 2×2 联络表,指一个字母即转正;实测 4 稿总耗时仅单稿 **×1.27**;
+- **伪3D 与空间感**:统一光源 + 六手法(长阴影 / 分层克隆 / 透视 / 等距 / 块状挤出 /
+  浮雕)+ 剪切蒙版造前后遮挡;经 **Kiln 双车道实测**给出「哪条道能用什么」的支持矩阵;
+- **设计思维(生成层)**:brief → 概念 → 视觉装置 → 版式的四段翻译,主导动作、
+  反套路清单、五种概念生成法——见 [references/design-thinking.md](references/design-thinking.md);
+- **排版表达 / 中西文结合 / 矢量绘制 / 位图语言 / 材质语言**:语气四分与尺度天窗、
+  中西文字体搭配矩阵与视觉密度补偿、几何构成与图标语言、图像角色与处理链、
+  六类材质配方总表。
+
+## 🏗️ v1.9.0 · 导出引擎全面换血(Kiln)
 
 > 渲染引擎从浏览器方案(WPI/Playwright)整体切换为 **Kiln**——
 > VellumBench 出品的 Rust 原生导出核心,单文件零依赖,平均提速 **20×+**。
@@ -76,10 +94,26 @@ AI 生图工具做海报的三座大山:**文字必糊、配色看运气、改�
 - **开工先追问**:内置五问协议(用途/尺寸/风格/配色/素材),拒绝拿到文案就盲做;
 - **单文件原生导出**:Kiln 引擎九格式零浏览器依赖,独立 Playwright 脚本兜底(可选);
 - **出图自检闭环**:渲染后自动看图检查溢出/对比度/字体加载,修复重导,2 轮上限;
+- **说不清也能改**:改稿协议内置「模糊愿望诊断」——五维定位 + 减法阶梯,
+  定点修改不重跑;引导式提问替代开放式追问;
+- **多稿同出(可选)**:用户一句「多稿 4」才触发,4 方向 + 联络表选稿,默认永远单稿;
 - **动图**:CSS `@keyframes` 逐帧求值直出 GIF/MP4,迪士尼十二法则 + Material 缓动
   token,无缝循环经帧差校验;双模式:**海报循环**(模式 P)/ **视频场景卡**
   (模式 S,口播信息卡五段式出入场,ADR-0012);
 - **物料尺寸总表**:社媒/电商/印刷/办公/广告 40+ 物料的尺寸、安全区与设计法则。
+
+## 🎲 多稿同出(备选模式:默认单稿)
+
+<p align="center">
+  <img src="./docs/samples/multi-draft-sheet.png" width="70%" alt="多稿联络表:A 稳 / B 雅 / C 冲 / D 巧,四稿 2×2 对比选稿">
+</p>
+
+像 AI 绘图一样「出 4 张挑 1 张」:用户说「多稿」「出 4 版让我选」**才**触发
+(默认永远单稿,不打乱交付节奏)。4 稿共享同一份文案与字体,只沿**受控轴**
+各变一维——**A 稳 / B 雅 / C 冲 / D 巧**;`imageops montage` 拼一张带标签的
+2×2 联络表,用户指一个字母即转正,落选稿归档不参与迭代。实测 4 稿总耗时
+≈ 单稿 ×1.27(预算 ≤ ×2)。协议与成本纪律见
+[references/multi-draft.md](references/multi-draft.md)。
 
 ## 🚀 快速开始
 
@@ -90,6 +124,8 @@ AI 生图工具做海报的三座大山:**文字必糊、配色看运气、改�
 「按这张图复刻内容,换成我们的品牌色」
 「做一份三折页,A4 横,正面背面都要」
 「这张 GIF 动图,循环 3 秒」
+「多稿 4,出 4 版让我选」
+「这版不够高级,但我说不出哪里不对——帮我诊断」
 ```
 
 **第 2 步 · 拿两把免费图库 Key(各 5 分钟)**
@@ -222,6 +258,7 @@ python scripts/imageops.py convert --in a.png --to webp --profile web    # 格�
 python scripts/imageops.py compress --in a.jpg --target 500KB    # 压到目标体积(二分逼近)
 python scripts/imageops.py derive --in kv.png --presets square,xhs,kv --formats png,webp --matrix  # 一图多规格
 python scripts/imageops.py slice --in long.png --grid 3x3        # 九宫格切片
+python scripts/imageops.py montage --in a.png b.png c.png d.png --grid 2x2 --gap 24 --bg '#e8e8e6' --label  # 多稿网格拼一张联络表
 python scripts/imageops.py card --in p.jpg --radius 48 --shadow 0,8,24,#00000040  # 圆角卡片化
 python scripts/imageops.py watermark --in p.jpg --text "©品牌" --position br --opacity 0.35
 python scripts/imageops.py pipeline "exif-fix; fit aspect=1:1; compress target=300KB format=webp"  # 一条链
@@ -301,7 +338,7 @@ python scripts/inspect_ref.py crop 参考图 --box x0,y0,x1,y1 -o img/p.png  # �
 **维护(仓库自检,开发/改文档后跑)**
 
 ```bash
-python scripts/selfcheck.py                 # 全部 7 项,人类可读
+python scripts/selfcheck.py                 # 全部 9 项,人类可读
 python scripts/selfcheck.py --only build    # 只跑一项
 python scripts/selfcheck.py --json          # 单行 JSON,给 CI
 ```
@@ -315,8 +352,10 @@ python scripts/selfcheck.py --json          # 单行 JSON,给 CI
 | `build` | **被跟踪的 exe 是否比源码旧**(源与产物同仓的维护陷阱) |
 | `smoke` | 每个脚本能 import、CLI 能装配 |
 | `jsonfail` | 关键脚本喂必失败输入,最后一行 stdout 必须是合法 JSON |
+| `deploy` | 投放脚本名称解析 + WPI 残留扫描 |
+| `stale` | 过期引用扫描(文档提及但已失效的内容) |
 
-> 这 7 项各自对应一次真实发生过的缺陷:`make_bats` 断链、rollup 11811/11812 打架、
+> 这些检查各自对应真实发生过的缺陷:`make_bats` 断链、rollup 11811/11812 打架、
 > `ocr_path` 死配置、`print-cmyk.md` 孤儿、配置编辑器 exe 过期、
 > `vectoredit2webhtml.py` 异常分支缺 `import json`。
 
@@ -367,6 +406,15 @@ artboard/
 │   ├── vector-export.md     #   矢量交付手册(v1.9:Kiln 原生直出)
 │   ├── style-guide.md       #   新增风格指南
 │   ├── styles-catalog.md    #   123 风格方向速查
+│   ├── revision-protocol.md #   改稿决策(模糊愿望→五维诊断→减法阶梯)
+│   ├── design-thinking.md   #   设计思维/生成层(brief→概念→视觉装置→版式)
+│   ├── depth-3d.md          #   伪3D 与空间感(统一光源/六手法/蒙版造空间/景深)
+│   ├── typographic-expression.md # 排版表达(语气/尺度天窗/字体即图形/编辑母版)
+│   ├── bilingual-typography.md # 中西文结合(搭配矩阵/密度补偿/双语层级)
+│   ├── vector-drawing.md    #   矢量绘制语言(几何构成/图标规范/矢量道边界)
+│   ├── image-language.md    #   位图语言(图像角色/色调分级/裁切/处理链)
+│   ├── material-language.md #   材质语言(纸/金属/玻璃/布/木/塑料→配方)
+│   ├── multi-draft.md       #   多稿同出协议(备选模式,默认单稿)
 │   ├── styles/              #   4 个视觉风格分册(+参考案例)
 │   └── formats/             #   名片/A4/三折页/易拉宝/PPT 品类规范
 ├── scripts/                 # preflight/scaffold/export/cutout/fetch_asset
@@ -377,13 +425,14 @@ artboard/
 │   ├── vendor/              # ECharts / GSAP
 │   ├── icons/               # Tabler SVG 精选
 │   ├── illustrations/       # Open Doodles(CC0)
-│   └── cases/               # 各风格"及格线"参考案例 HTML
+│   └── cases/               # 各风格"及格线"参考案例 HTML(32 例)
 ├── tools/
 │   ├── cookie-extension/    # 素材站 Cookie 助手(MV3)
 │   └── config-editor/       # 图形配置编辑器(exe)
 └── docs/
     ├── setup.md             # 新手部署教程
     ├── glossary.md          # 词汇表 + 术语消歧
+    ├── failures.md          # 失效案例库(真实翻车→复现→根因,迭代环 Gate 0 入口)
     ├── samples/             # 成品展示图
     └── references/          # 风格参考图
 ```

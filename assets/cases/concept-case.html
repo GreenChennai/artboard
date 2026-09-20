@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>concept-case · 拾光自习室(设计思维参考案例:负空间叙事主导动作)</title>
+<!-- design-thinking.md 参考案例 · 四段翻译模型(design-thinking.md §一):
+     brief     :深夜自习室会员招募,受众学生与备考上班族,人格"安静 / 器物感 / 深夜"
+     概念      :安静,是可以租借的
+     视觉装置  :一束灯光切开暗场照亮书桌——黑暗本身是主角,光是全图唯一例外(主导动作:负空间叙事)
+     版式      :主标坐在光带里左对齐,信息退到底部桌面色带,呼吸位在焦点旁,暗场过半
+     反套路    :避开了"咖啡蒸汽 / 木桌俯拍 / 荧光色",改用单点光带 + 器物感排版(design-thinking.md §五)
+     硬约束    :层级 3 层;强调 1 处(CTA 徽章);字体 2 款;特效 2 种(光带渐变 + 噪点);文字全在安全边距内 -->
+<style>
+@font-face { font-family:'SourceHanSerif'; src:url('fonts/source-han-serif/NotoSerifSC-VF.ttf') format('truetype');
+  font-weight:200 900; font-display:block; }
+@font-face { font-family:'SourceHanSans'; src:url('fonts/source-han-sans/NotoSansSC-VF.ttf') format('truetype');
+  font-weight:100 900; font-display:block; }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#ffffff; }
+.poster { position:relative; width:1080px; height:1920px; overflow:hidden; background:#17191c; }
+
+:root {
+  --c-ink:#f2e9d8; --c-bg:#17191c; --c-desk:#202329;
+  --c-primary:#e8b04a; --c-muted:#a89c86;
+}
+
+/* 主导动作:一束光切开暗场(特效 1/2,纯渐变、双导出车道安全) */
+.beam { position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(880px 640px at 40% 56%, rgba(232,176,74,.20), rgba(232,176,74,0) 70%),
+    radial-gradient(760px 420px at 36% 77%, rgba(232,176,74,.14), rgba(232,176,74,0) 72%),
+    linear-gradient(158deg, rgba(232,176,74,.32) 0%, rgba(232,176,74,.18) 34%,
+                    rgba(232,176,74,.02) 58%, rgba(232,176,74,0) 66%); }
+
+/* 噪点:压住数字味的平底(特效 2/2) */
+.fx-noise { position:absolute; inset:0; opacity:.04; mix-blend-mode:screen; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+/* 品牌行:左上,平贴 */
+.brand { position:absolute; left:72px; top:76px; display:flex; align-items:baseline; gap:28px; }
+.brand .name { font:500 26px/1 'SourceHanSans'; color:var(--c-ink); letter-spacing:.3em; }
+.brand .tag  { font:400 22px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.22em; }
+
+/* 光带里的标题组(第一落点) */
+.kicker { position:absolute; left:96px; top:660px;
+  font:500 30px/1 'SourceHanSans'; color:#cbb98f; letter-spacing:.3em; }
+.title  { position:absolute; left:96px; top:724px;
+  font:600 106px/1.22 'SourceHanSerif'; color:var(--c-ink); }
+.title .tl { display:block; }
+.sub    { position:absolute; left:96px; top:1064px;
+  font:400 30px/1 'SourceHanSans'; color:#d9cdb5; letter-spacing:.06em; }
+.rule   { position:absolute; left:96px; top:1146px; width:72px; height:3px;
+  background:rgba(242,233,216,.28); }
+
+/* 桌面色带:信息全部退到这里,守安全边距 */
+.desk { position:absolute; left:0; right:0; top:1440px; bottom:0; background:var(--c-desk); }
+.desk::before { content:""; position:absolute; left:0; right:0; top:0; height:2px;
+  background:linear-gradient(90deg, rgba(232,176,74,.45), rgba(242,233,216,.14) 55%, rgba(242,233,216,.05)); }
+
+/* 桌上两册书:器物感的小笔触(装饰,线稿;坐标相对 .desk) */
+.books { position:absolute; left:96px; top:16px; display:flex; gap:12px; align-items:flex-end; }
+.books i { display:block; width:58px; height:16px; border:2px solid rgba(242,233,216,.55); }
+.books .b1 { transform:rotate(-2deg); }
+.books .b2 { width:46px; height:13px; transform:rotate(1.4deg); }
+
+.info { position:absolute; left:72px; right:72px; top:1544px;
+  display:flex; justify-content:space-between; }
+.info .lb { font:400 22px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.22em; margin-bottom:20px; }
+.info .vl { font:500 38px/1 'SourceHanSans'; color:var(--c-ink); letter-spacing:.02em;
+  font-variant-numeric:tabular-nums; }
+
+.cta  { position:absolute; right:72px; top:1698px; background:var(--c-primary); color:#191919;
+  font:700 30px/1 'SourceHanSans'; padding:16px 28px; letter-spacing:.08em; }
+.foot { position:absolute; left:72px; top:1714px;
+  font:400 20px/1 'SourceHanSans'; color:var(--c-muted); letter-spacing:.18em; }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="beam"></div>
+  <div class="fx-noise"></div>
+
+  <div class="brand">
+    <span class="name">拾光自习室</span>
+    <span class="tag">24 小时自习空间</span>
+  </div>
+
+  <div class="kicker">深夜自习室 · 会员招募</div>
+  <h1 class="title"><span class="tl">安静，</span><span class="tl">是可以租借的</span></h1>
+  <div class="sub">每人一盏灯 · 一格桌 · 一副耳塞</div>
+  <div class="rule"></div>
+
+  <div class="desk">
+    <div class="books"><i class="b1"></i><i class="b2"></i></div>
+  </div>
+
+  <div class="info">
+    <div class="g"><div class="lb">营业</div><div class="vl">24 小时</div></div>
+    <div class="g"><div class="lb">首月价</div><div class="vl">¥199 / 月</div></div>
+    <div class="g"><div class="lb">地址</div><div class="vl">南山巷 12 号</div></div>
+  </div>
+
+  <div class="cta">九月试坐 · 免费三晚</div>
+  <div class="foot">拾光自习室 · 凌晨两点也亮着的那盏灯</div>
+</div>
+</body>
+</html>

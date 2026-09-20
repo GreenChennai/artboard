@@ -182,7 +182,6 @@ python $S/imageops.py montage --in <proj>/export/demo-a.png <proj>/export/demo-b
 
 ---
 
-## §11 对照案例与示例产物
+## §11 对照案例
 
-- `../../assets/cases/multi-draft-case.html` —— 及格线案例:同一份文案 4 变体中「B 雅」的转正形态;
-- `../../docs/samples/multi-draft-sheet.png` —— **示例联络表**(A稳/B雅/C冲/D巧 4 稿 montage 拼合;**示例产物,非渲染基线**):先看它再读本册,比重读一遍更直观。
+- `../../assets/cases/multi-draft-case.html` —— 及格线案例:同一份文案 4 变体中「B 雅」的转正形态。

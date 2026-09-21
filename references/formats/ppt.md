@@ -9,9 +9,39 @@
 - 多页工作流:`scaffold.py <slug> --size slide` 后,每页一个 HTML
   (`slide-01.html` 封面 / `slide-02.html`…),逐页:
   `python scripts/export.py --source <proj>/src/slide-01.html --output export/slide-01.png --width 1280 --scale 2 --height 720`
+- **固定尺寸品类优先锁 --height**:画板尺寸一律显式声明
+  (`.poster{width:1280px;height:720px;overflow:hidden}`)+ 导出带
+  `--width 1280 --height 720`,别让引擎「按内容回填」——绝对定位元素一多,
+  回填出来的画板会比 720 高一截,同组页面尺寸就不齐了。批量脚本必须检查
+  结果 JSON 的 `degraded_artboard`;为 `true` 说明尺寸是内容推导值,要人工核对。
 - 合 PDF(全页导入 PowerPoint 亦可):
   `python -c "from PIL import Image; Image.init(); import glob; pages=[Image.open(p) for p in sorted(glob.glob('export/slide-*.png')); pages[0].save('export/<slug>.pdf', save_all=True, append_images=pages[1:], resolution=192)"`
+- **合 PPTX(交付 PPTX 时)**:本机无 Office/LibreOffice 也能做——安装
+  `pip install python-pptx`,按 16:9 版式(13.333×7.5 in)逐页满幅贴 PNG:
+  ```python
+  from pptx import Presentation; from pptx.util import Inches
+  prs = Presentation(); prs.slide_width, prs.slide_height = Inches(13.333), Inches(7.5)
+  for p in sorted(glob.glob("export/slide-*.png")):
+      prs.slides.add_slide(prs.slide_layouts[6]).shapes.add_picture(p, 0, 0, prs.slide_width, prs.slide_height)
+  prs.save("export/<slug>.pptx")
+  ```
+  贴图版不可编辑,但版式零漂移;要可编辑文字改走 `ai_export.py --pptx`(真文本 shape)。
 - 最小字号 **18px**(1280 画布;投影场景正文 ≥22px)。内容放不下:**先删文案/拆两页,不许压字号**。
+
+## 多页共享样式(>8 页必读)
+
+一页一个 HTML 没有共享 CSS 文件机制,页面一多就会**样式漂移**:某个共享类
+(如 `.navy{background:…}`)写在了某一页的专属 `<style>` 里,别的页加了类名却没规则
+——于是「深底页配白字」变成「浅底配白字」,主标几乎不可见。
+
+做法:**用生成器脚本统一注入**,不要在每页手抄:
+
+1. 把 tokens + 共享类 + 页眉页脚写在一个 `gen.py` 里(一份字符串模板);
+2. 每页只写"本页独有的内容与版式",由 `gen.py` 循环渲染成 `slide-XX.html`;
+3. 改 tokens / 改页脚改一处,全部页面同步——也就不会漏定义。
+
+验收:导出前用 `python scripts/check_overflow.py <proj>/src`(传**目录**,
+逐页查),再用同一份 `gen.py` 重生成一次,确认无 diff。
 
 ## 字号阶(1280×720 画布;中文标题长度分档)
 

@@ -42,7 +42,7 @@ def create_junction(link: str, target: str) -> None:
         ["powershell", "-NoProfile", "-NonInteractive", "-Command", script],
         capture_output=True, env=env, timeout=120)
     if r.returncode != 0 or not probe(link):
-        # I 修:PowerShell 输出按 UTF-8 优先、GBK 兜底(固定 GBK 在
+        # PowerShell 输出按 UTF-8 优先、GBK 兜底(固定 GBK 在
         # UTF-8 代码页的机器上必乱码)
         raw = r.stderr or b""
         try:

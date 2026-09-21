@@ -8,7 +8,9 @@
 
 用法:
   python setup_kiln.py                # 探测 + 写 config.json + 自检
-  python setup_kiln.py --from <url>   # 从指定 URL 下载 exe 后再探测写入
+  python setup_kiln.py --from <url>   # 首次部署:从指定 URL 下载后写入
+  python setup_kiln.py --force        # 升级:忽略已装引擎,重新下载覆盖
+  python setup_kiln.py --exe <路径>   # 用手动下载的 exe(可与 --force 并用)
 """
 
 import argparse
@@ -46,23 +48,32 @@ def main() -> int:
         sys.stdout.reconfigure(encoding="utf-8")
     except Exception:
         pass
-    ap = argparse.ArgumentParser(description="Kiln 引擎部署")
-    default_url = "https://github.com/GreenChennai/artboard/releases/download/kiln-cli-v0.8.0/Kiln-noGUI-CLI.exe"
+    ap = argparse.ArgumentParser(description="Kiln 引擎部署 / 升级")
+    default_url = "https://github.com/GreenChennai/artboard/releases/download/kiln-cli-v0.9.0/Kiln-noGUI-CLI.exe"
     ap.add_argument("--from", dest="from_url", default=default_url,
                     help="从 URL 下载 Kiln-noGUI-CLI.exe(默认 artboard 发行页最新资产)")
     ap.add_argument("--exe", dest="exe", default="",
                     help="指向已手动下载的 Kiln-noGUI-CLI.exe(跳过下载,写 config 并自检)")
+    ap.add_argument("--force", action="store_true",
+                    help="已装可用引擎时也重新下载/覆盖(升级路径)")
     args = ap.parse_args()
 
-    found = probe()
-    if not found and args.exe:
+    # probe() 命中即返回,会让 --from 下载分支被短路,于是永远只能首次部署、
+    # 升不上去。--force 时直接跳过探测走覆盖路径。
+    found = "" if args.force else probe()
+    if args.force:
+        print("[i] --force:忽略已装引擎,按 --exe / --from 重新部署")
+    if args.exe:
         if os.path.isfile(args.exe):
             found = os.path.abspath(args.exe)
         else:
             print(f"[X] --exe 指向的文件不存在: {args.exe}")
             return 2
-    if not found and args.from_url:
-        dest = near_workspace(os.path.join("artboard-tools", "Kiln-noGUI-CLI.exe"))
+    elif not found and args.from_url:
+        # 升级就地覆盖已配置的那份;首次部署落默认 artboard-tools
+        dest = cfg("kiln_cli_exe") or ""
+        if not (dest and os.path.isfile(dest)):
+            dest = near_workspace(os.path.join("artboard-tools", "Kiln-noGUI-CLI.exe"))
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         print(f"下载 {args.from_url} → {dest}")
         try:
@@ -79,14 +90,18 @@ def main() -> int:
         print("       cd VellumBench && cargo build -p vb_kiln --release --bin kiln-cli")
         print("       产物:target/release/kiln-cli.exe(复制到 dist/Kiln-noGUI-CLI.exe)")
         print("    2) 从 artboard 发行页下载 Kiln-noGUI-CLI.exe 后:")
-        print("       python setup_kiln.py --from <exe 直链>")
+        print("       python setup_kiln.py --force --from <exe 直链>")
         return 1
 
     write_config({"kiln_cli_exe": found})
     print(f"[OK] Kiln 引擎:{found}")
     print("[OK] 已写入 config.json:kiln_cli_exe")
-    # H 修:超时/执行失败分报,不再宽 except 一律「跳过」
+    # 超时/执行失败分报,不再宽 except 一律「跳过」
     import subprocess as _sp
+    try:
+        print(f"[OK] 引擎版本:{subprocess_run([found, '--version'])}")
+    except (_sp.TimeoutExpired, OSError) as exc:
+        print(f"△ 版本探测失败({exc}),继续自检")
     try:
         r = subprocess_run([found, "selfcheck"])
         print(f"[OK] 引擎自检:{r}")

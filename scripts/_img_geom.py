@@ -526,14 +526,16 @@ def cmd_thumb(args) -> int:
     import base64
     import io
     results = []
-    fmt = (args.format or "webp").lower()
+    # dest 是 format_out(与其它子命令同名),读 args.format 会 AttributeError
+    fmt = (getattr(args, "format_out", None) or "webp").lower()
     for src in input_expand(args):
         try:
             img = _open(src)
             s = args.max_edge / max(img.width, img.height)
             th = img.resize((max(1, round(img.width * s)), max(1, round(img.height * s))),
                             resample_of(None, False))
-            out = out_path_for(src, args, f"th{args.max_edge}", fmt)
+            out = (pathlib.Path(args.out) if getattr(args, "out", None)
+                   else out_path_for(src, args, f"th{args.max_edge}", fmt))
             data, meta = encode_image(th, fmt, 80)
             out.write_bytes(data)
             item = result_item(src, out, src.stat().st_size, data, engine=meta["engine"])

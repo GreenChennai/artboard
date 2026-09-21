@@ -1,6 +1,6 @@
 """artboard 共享路径探测:浏览器内核 / 7-Zip 的候选路径单点定义。
 
-背景:此前 EDGE/CHROME 候选路径在 export_fallback.py、preflight.py、
+背景:EDGE/CHROME 候选路径原先散落在 export_fallback.py、preflight.py、
 webhtml2vectoredit.py 各写一份,且 webhtml2vectoredit.py 那份**漏了**
 `%LOCALAPPDATA%\\Google\\Chrome\\...`(用户级安装的 Chrome),导致矢量导出
 探测不到浏览器。这里统一定义,三处引用。

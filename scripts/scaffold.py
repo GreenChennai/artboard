@@ -54,12 +54,82 @@ SIZES = {
 # 字重轴:可变字体声明 100-900;单字重字体用具体值
 VF_HINT = {"NotoSansSC-VF": True, "NotoSerifSC-VF": True}
 
+# 显示名 → fonts/ 目录名。fonts/README.md 的表头写显示名、目录用 slug,
+# 用户照 README 的显示名传「思源宋体」会静默落空;此处给别名表兜住常见叫法。
+FONT_ALIASES = {
+    "思源黑体": "source-han-sans",
+    "思源宋体": "source-han-serif",
+    "得意黑": "smiley-sans",
+    "霞鹜文楷": "lxgw-wenkai",
+    "站酷快乐体": "zcool-kuaile",
+    "小米": "misans",
+    "阿里巴巴普惠体": "alibaba-puhuiti",
+    "鸿蒙": "harmonyos-sans",
+    "芝士奶盖乌龙宋": "cheese-oolong-song",
+    "寒蝉拙楷": "chill-zhuo-kai",
+    "耀圆体": "yao-yuan-ti",
+    "纳挼崩音黑": "nano-tik-baz-hei",
+    "繁梅黑体": "fanmei",
+    "繁梅明体": "fanmei",
+    "嗷呜等高体": "eqhi-sans",
+    "不寐仿宋": "insomnia-fangsong",
+    "新黑": "yshi-new-hei",
+    "黑糖话梅": "black-sugar-plum",
+    "漓雨手书": "liyu-shoushu",
+    "roboto flex": "english-roboto-flex",
+    "shantell sans": "english-shantell",
+    "eb garamond": "english-eb-garamond",
+    "rozha one": "english-rozha-one",
+    "sigmar": "english-sigmar",
+    "chewy": "english-chewy",
+    "ranchers": "english-ranchers",
+    "frijole": "english-frijole",
+    "trochut": "english-trochut",
+    "miss fajardose": "english-miss-fajardose",
+}
+
 
 WEIGHT_BY_FILE = {
     "Thin": "200", "Light": "300", "Regular": "400", "Medium": "500",
     "Semibold": "600", "Bold": "700", "ExtraBold": "800", "Heavy": "900",
     "Black": "900",
 }
+
+
+def available_font_dirs() -> list[str]:
+    """fonts/ 下真实存在的字体目录名(报错时给用户照抄)。"""
+    if not os.path.isdir(FONTS_DIR):
+        return []
+    return sorted(d for d in os.listdir(FONTS_DIR)
+                  if os.path.isdir(os.path.join(FONTS_DIR, d)))
+
+
+def resolve_font_dir(raw: str) -> tuple[str, str]:
+    """把用户填的字体名解析成 fonts/ 下的目录名。
+
+    返回 (目录名, 未解析原因);目录名为空即解析失败。
+    依次尝试:目录名原样 → 规范化(空格/下划线→连字符、小写)→ 显示名别名 → 唯一子串命中。
+    """
+    key = raw.strip()
+    if not key:
+        return "", ""
+    if os.path.isdir(os.path.join(FONTS_DIR, key)):
+        return key, ""
+    norm = key.lower().replace(" ", "-").replace("_", "-")
+    if os.path.isdir(os.path.join(FONTS_DIR, norm)):
+        return norm, ""
+    alias = FONT_ALIASES.get(key) or FONT_ALIASES.get(key.lower())
+    if alias:
+        if os.path.isdir(os.path.join(FONTS_DIR, alias)):
+            return alias, ""
+        return "", f"对应目录 {alias} 本地缺失,先跑 scripts/fetch_font.py {alias} 取回"
+    cands = [d for d in available_font_dirs()
+             if norm and (norm in d.lower() or d.lower() in norm)]
+    if len(cands) == 1:
+        return cands[0], ""
+    if len(cands) > 1:
+        return "", f"匹配到多个目录,请写全:{','.join(cands)}"
+    return "", ""
 
 
 def font_face_block(family: str, files: list[str], url_base: str = "fonts/") -> str:
@@ -87,7 +157,9 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("slug")
     p.add_argument("--size", default="xhs", choices=list(SIZES))
-    p.add_argument("--fonts", default="source-han-sans", help="逗号分隔的 fonts/ 目录名")
+    p.add_argument("--fonts", default="source-han-sans",
+                   help="逗号分隔的 fonts/ 目录名(如 source-han-sans);"
+                        "也接受显示名(如 思源黑体);传空串 = 不装字体走系统字体")
     p.add_argument("--force", action="store_true", help="允许写入已存在项目")
     p.add_argument("--embed-fonts", action="store_true", dest="embed_fonts",
                    help="字体/vendor 拷贝进项目(自包含);默认目录联接指向 Skill 字体库(零拷贝)")
@@ -109,24 +181,36 @@ def main() -> int:
         os.makedirs(os.path.join(proj, "src", "vendor"), exist_ok=True)
 
     faces, font_vars = [], []
-    for fam_dir in [s.strip() for s in args.fonts.split(",") if s.strip()]:
-        src_dir = os.path.join(FONTS_DIR, fam_dir)
-        if not os.path.isdir(src_dir):
-            print(f"△ 字体目录不存在,跳过: {fam_dir}", file=sys.stderr)
+    font_dirs, unresolved = [], []
+    for raw in [s.strip() for s in args.fonts.split(",") if s.strip()]:
+        fam_dir, why = resolve_font_dir(raw)
+        if not fam_dir:
+            unresolved.append({"input": raw, "reason": why or "目录名/显示名都对不上"})
             continue
+        font_dirs.append(fam_dir)
+        src_dir = os.path.join(FONTS_DIR, fam_dir)
         files = sorted(f for f in os.listdir(src_dir) if f.lower().endswith(FONT_EXTS))
         family = fam_dir.replace("-", " ").title().replace(" ", "")
         faces.append(font_face_block(family, files, f"fonts/{fam_dir}/"))
-        font_vars.append(f"  --font-{fam_dir.replace('-', '-')}: '{family}';")
+        font_vars.append(f"  --font-{fam_dir}: '{family}';")
+
+    # 字体解析失败必须报错并列出可用目录:静默回退系统字体会让用户以为
+    # 选上了,导出才发现中文是系统字。
+    if unresolved:
+        print(json.dumps({"ok": False, "error": "FONT_NOT_FOUND",
+                          "detail": unresolved,
+                          "available": available_font_dirs(),
+                          "hint": "用 fonts/ 下的目录名(如 source-han-sans)或显示名"
+                                  "(如 思源黑体);缺失的字体先跑 "
+                                  "scripts/fetch_font.py <目录名> 取回;"
+                                  "确实要用系统字体就传 --fonts \"\""},
+                         ensure_ascii=False))
+        return 1
 
     if embed:
-        # 自包含:字体/vendor 真拷贝进项目
-        os.makedirs(os.path.join(proj, "src", "fonts"), exist_ok=True)
-        os.makedirs(os.path.join(proj, "src", "vendor"), exist_ok=True)
-        for fam_dir in [s.strip() for s in args.fonts.split(",") if s.strip()]:
+        # 自包含:解析后的字体目录真拷贝进项目(迁移不依赖 Skill 字体库)
+        for fam_dir in font_dirs:
             src_dir = os.path.join(FONTS_DIR, fam_dir)
-            if not os.path.isdir(src_dir):
-                continue
             for f in os.listdir(src_dir):
                 if f.lower().endswith(FONT_EXTS):
                     shutil.copy2(os.path.join(src_dir, f),
@@ -173,7 +257,8 @@ def main() -> int:
 
     # skill_dir:投放出去的 src/导出.py 靠它 import _config 读 config.json
     meta = {"slug": args.slug, "size": args.size, "width": size["w"],
-            "height": size["h"], "fonts": args.fonts,
+            "height": size["h"], "fonts": ",".join(font_dirs),
+            "fonts_input": args.fonts,
             "embed_fonts": embed, "skill_dir": SKILL_DIR,
             "created_by": "artboard.scaffold"}
     with open(os.path.join(proj, "project.json"), "w", encoding="utf-8") as f:
@@ -192,7 +277,7 @@ def main() -> int:
             print(f"△ 一键导出器投放失败: {exc}", file=sys.stderr)
 
     print(json.dumps({"ok": True, "project": proj, "size": args.size,
-                      "fonts": args.fonts, "exporter": deployed},
+                      "fonts": ",".join(font_dirs), "exporter": deployed},
                      ensure_ascii=False))
     return 0
 
@@ -263,6 +348,8 @@ html, body {{ margin: 0; background: #ffffff; }}
 .ellip {{ min-width: 0; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }}
 /* 装饰越界必须显式声明豁免,否则 check_overflow.py 会报 */
 .allow-ovf {{ pointer-events: none; }}
+/* 有意的图层叠加(标题压图等)可加 data-allow-overlap,豁免 D 类重叠告警
+   (只有跑 check_overflow.py --overlap 时才会报重叠) */
 
 /* ===== 视频卡安全区(video-safe-area.md,做动图/场景卡时用)=====
    9:16 内容可用区:左右 184 / 顶 230 / 底 576;装饰可越界但要 data-allow-overflow。

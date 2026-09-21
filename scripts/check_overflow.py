@@ -10,24 +10,33 @@
   python check_overflow.py src --width 1080 --height 1440 --tol 2
   python check_overflow.py src --all                 # 连"已设 overflow 收口"的也报(clamp 体检)
 
+  传**目录**时会逐页查该目录下所有 HTML(多页 PPT/三折页不再只查第一页);
+  传单个文件只查该文件。
+
   # 视频卡:再加查内容是否越出安全区(字幕带 / 平台按钮列)
   python check_overflow.py src --safe-area 9x16                    # 标准档(保守交集)
   python check_overflow.py src --safe-area 9x16 --safe-tier tight  # 内容多时的紧凑档
   python check_overflow.py src --safe-area 9x16 --safe-tier extreme # 极限档(四边 2.5%)
   python check_overflow.py src --safe-inset 48,27,48,27            # 直接给 px(上右下左)
 
+  # 版面复核:查内容元素互相重叠(吸底块顶穿页脚这类,A/B 都看不见)
+  python check_overflow.py src --overlap
+
 输出:stdout 单行 JSON;人类可读清单走 stderr。退出码 0=无问题 / 1=有越界 / 2=用法错
 
-三类检测:
+四类检测:
   A 内容溢出自身盒:scrollHeight > clientHeight + tol 且**未设 overflow 收口**
     —— 真问题(定高卡片 + 长文案,内容会画到盒外)
   B 越出绘制的祖先:文字盒超出最近"有背景色或可见边框"的祖先的 border-box
     —— 更贴近"文字突破底层边框"
   C 越出安全区(需 --safe-area):内容盒超出视频安全区矩形
     —— 字幕带 / 平台 UI 遮挡带,细则见 references/video-safe-area.md
+  D 元素互相重叠(需 --overlap):两个内容元素的盒实叠 ≥20%
+    —— 各自都没越界但版面已经叠了;有意的图层叠压加 data-allow-overlap
 
 豁免:
   - 任何 `data-allow-overflow` 元素及其子树(装饰:光晕/放射线/水印)
+  - `data-allow-overlap` 元素及其子树只豁免 D 类
   - 画布级容器(.poster/.stage/.bg)不算"卡片祖先",也不算安全区违规的主体
   - A 类中已设 overflow:hidden|clip|auto|scroll 的盒默认跳过(那是有意收口)
   - C 类只报**最外层**越界的元素(父子重复不刷屏)
@@ -305,6 +314,48 @@ DETECT_JS = r"""
         hint: '越出安全区(' + label + '):' + dirs });
     }
   }
+
+  // ---- D 类:内容元素互相重叠(需 --overlap;绝对定位吸底块顶穿页脚等高发)----
+  // A/B 都只问「谁越出了谁」,两个各自安分的元素叠在一起谁都查不出来
+  // (margin-top:auto 的统计卡顶穿绝对定位页脚就是这类)。默认关:图层
+  // 叠压是有意设计,只有明确怀疑版面时才开。
+  if (payload.overlap) {
+    const items = [];
+    let scanned = 0;
+    for (const el of document.querySelectorAll('body *')) {
+      if (scanned++ > 2000) break;
+      if (isCanvas(el) || !hasDirectText(el)) continue;
+      if (el.closest('[data-allow-overflow], [data-allow-overlap]')) continue;
+      const s = getComputedStyle(el);
+      if (s.display === 'none' || s.visibility === 'hidden') continue;
+      if (parseFloat(s.opacity) < 0.05) continue;
+      const r = R(el);
+      if (r.width < 2 || r.height < 2) continue;
+      items.push({ el: el, r: r });
+    }
+    const seen = {};
+    for (let i = 0; i < items.length; i++) {
+      for (let j = i + 1; j < items.length; j++) {
+        const a = items[i], b = items[j];
+        if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
+        const ox = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
+        const oy = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
+        if (ox <= TOL || oy <= TOL) continue;
+        const area = ox * oy;
+        const smaller = Math.min(a.r.width * a.r.height, b.r.width * b.r.height);
+        if (smaller <= 0 || area / smaller < 0.2) continue;   // 轻擦不算,只报实叠
+        const key = SEL(a.el) + '|' + SEL(b.el);
+        if (seen[key]) continue;
+        seen[key] = 1;
+        issues.push({ type: 'D', selector: SEL(a.el), other: SEL(b.el),
+          overlapX: Math.round(ox), overlapY: Math.round(oy),
+          ratio: Math.round(area / smaller * 100) / 100,
+          hint: '与 ' + SEL(b.el) + ' 重叠 ' + Math.round(ox) + '×' + Math.round(oy) +
+                'px(占较小者 ' + Math.round(area / smaller * 100) + '%;' +
+                '有意的图层叠压请加 data-allow-overlap)' });
+      }
+    }
+  }
   return { issues: issues.slice(0, 300), safe: safeInfo };
 }
 """
@@ -328,21 +379,31 @@ def serve(directory: str) -> tuple[http.server.ThreadingHTTPServer, str]:
     return srv, f"http://127.0.0.1:{port}"
 
 
-def resolve_source(source: str) -> tuple[str, str, str]:
-    """返回 (类型, 路径, URL 或待建服务目录)。"""
+def resolve_source(source: str) -> tuple[str, str, list[str]]:
+    """返回 (类型, 目录/文件路径, 待检 HTML 列表)。
+
+    dir  : 列表为目录下的 HTML 文件名,`index.html` 排最前
+    file : 列表为单个绝对路径
+
+    目录模式**不再只挑一个文件**:PPT/三折页等多页品类每页一个 HTML,
+    只取 `index.html` 或 `sorted()[0]` 会让其余页面全部漏检——机检「通过」
+    其实一页都没查。
+    """
     src = os.path.abspath(source)
     if os.path.isdir(src):
         if os.path.isfile(os.path.join(src, "src", "index.html")):
             src = os.path.join(src, "src")          # 项目目录
-        if not os.path.isfile(os.path.join(src, "index.html")):
-            htmls = [f for f in os.listdir(src) if f.lower().endswith((".html", ".htm"))]
-            if not htmls:
-                return "missing", src, ""
-            return "dir", src, sorted(htmls)[0]
-        return "dir", src, "index.html"
+        htmls = sorted(f for f in os.listdir(src)
+                       if f.lower().endswith((".html", ".htm")))
+        if not htmls:
+            return "missing", src, []
+        if "index.html" in htmls:
+            htmls.remove("index.html")
+            htmls.insert(0, "index.html")
+        return "dir", src, htmls
     if os.path.isfile(src):
-        return "file", src, ""
-    return "missing", src, ""
+        return "file", src, [src]
+    return "missing", src, []
 
 
 def canvas_size(source_dir: str, arg_w: int, arg_h: int) -> tuple[int, int]:
@@ -361,10 +422,11 @@ def canvas_size(source_dir: str, arg_w: int, arg_h: int) -> tuple[int, int]:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
 
     p = argparse.ArgumentParser(
         description="artboard 溢出与安全区机检(文字越出容器边框 / 内容进字幕带)")
@@ -385,6 +447,9 @@ def main() -> int:
     p.add_argument("--safe-inset", default="",
                    help="直接给四边保留量,如 48,27,48,27(上,右,下,左)或 2.5%%,"
                         "或单个值表示四边相同;优先级高于 --safe-area")
+    p.add_argument("--overlap", action="store_true",
+                   help="追加 D 类:内容元素互相重叠(绝对定位吸底块顶穿页脚等高发);"
+                        "有意的图层叠压加 data-allow-overlap 豁免")
     args = p.parse_args()
 
     safe = resolve_safe(args)
@@ -392,10 +457,11 @@ def main() -> int:
         emit({"ok": False, "error": "BAD_SAFE_ARGS", "detail": safe["error"]})
         return 2
 
-    kind, path, index = resolve_source(args.source)
+    kind, path, targets = resolve_source(args.source)
     if kind == "missing":
         emit({"ok": False, "error": "NO_HTML", "detail": path,
-              "hint": "--source 应是项目目录(内含 src/index.html)、src/ 或 HTML 文件"})
+              "hint": "--source 应是项目目录(内含 src/index.html 或若干 .html)、"
+                      "src/ 或 HTML 文件"})
         return 2
 
     channel = pick_channel()
@@ -415,11 +481,14 @@ def main() -> int:
     srv = None
     if kind == "dir":
         srv, base = serve(path)
-        url = f"{base}/{urllib.parse.quote(index)}"
+        # 目录模式下**逐页查**:每页一个 HTML 的多页品类(PPT/三折页)全都在列
+        plan = [(name, f"{base}/{urllib.parse.quote(name)}") for name in targets]
     else:
-        url = "file:///" + urllib.parse.quote(path.replace("\\", "/"))
+        plan = [(os.path.basename(path),
+                 "file:///" + urllib.parse.quote(path.replace("\\", "/")))]
 
     issues: list[dict] = []
+    files: list[dict] = []
     safe_used: dict | None = None
     try:
         with sync_playwright() as pw:
@@ -429,35 +498,46 @@ def main() -> int:
                     viewport={"width": w or 1080, "height": h or 1440},
                     device_scale_factor=1)
                 page.emulate_media(reduced_motion="reduce")
-                page.goto(url, wait_until="load", timeout=30000)
-                try:
-                    page.wait_for_load_state("networkidle", timeout=3000)
-                except Exception:  # noqa: BLE001
-                    pass
-                page.evaluate("() => document.fonts ? document.fonts.ready : true")
-                page.wait_for_timeout(500)          # 字体落位后再量,防假报
-                res = page.evaluate(DETECT_JS, {
-                    "tol": args.tol, "all": args.all, "safe": safe,
-                    "safeTiers": SAFE_TIERS,
-                    "canvasClasses": list(CANVAS_CLASSES)})
-                issues = res.get("issues", [])
-                safe_used = res.get("safe")
+                for name, url in plan:
+                    page.goto(url, wait_until="load", timeout=30000)
+                    try:
+                        page.wait_for_load_state("networkidle", timeout=3000)
+                    except Exception:  # noqa: BLE001
+                        pass
+                    page.evaluate("() => document.fonts ? document.fonts.ready : true")
+                    page.wait_for_timeout(500)      # 字体落位后再量,防假报
+                    res = page.evaluate(DETECT_JS, {
+                        "tol": args.tol, "all": args.all, "safe": safe,
+                        "overlap": args.overlap,
+                        "safeTiers": SAFE_TIERS,
+                        "canvasClasses": list(CANVAS_CLASSES)})
+                    page_issues = res.get("issues", [])
+                    for it in page_issues:
+                        it["file"] = name
+                    issues.extend(page_issues)
+                    safe_used = res.get("safe") or safe_used
+                    files.append({"file": name, "url": url,
+                                  "count": len(page_issues), "ok": not page_issues})
             finally:
                 browser.close()
     except Exception as exc:  # noqa: BLE001
-        emit({"ok": False, "error": type(exc).__name__, "detail": str(exc)})
+        emit({"ok": False, "error": type(exc).__name__, "detail": str(exc),
+              "files": files})
         return 1
     finally:
         if srv:
             srv.shutdown()
 
-    out = {"ok": not issues, "source": url, "canvas": {"width": w, "height": h},
-           "count": len(issues), "issues": issues}
+    out = {"ok": not issues,
+           "source": plan[0][1] if len(plan) == 1 else path,
+           "canvas": {"width": w, "height": h},
+           "files": files, "count": len(issues), "issues": issues}
     if safe_used:
         out["safe_area"] = safe_used
     emit(out)
 
-    TAGS = {"A": "A 内容溢出自身盒", "B": "B 越出容器边框", "C": "C 越出安全区"}
+    TAGS = {"A": "A 内容溢出自身盒", "B": "B 越出容器边框", "C": "C 越出安全区",
+            "D": "D 元素互相重叠"}
     if safe_used:
         si = safe_used
         print(f"\n安全区 {si['label']}  画布 {si['canvas']['width']}×"
@@ -471,12 +551,22 @@ def main() -> int:
                   f"\n    但这通常不是你想要的。改用 --safe-area auto 让程序自己判。",
                   file=sys.stderr)
 
+    if len(files) > 1:
+        print(f"\n逐页结果({len(files)} 个页面,逐页查而非只查一个):", file=sys.stderr)
+        for f in files:
+            mark = "✓" if f["ok"] else "✗"
+            print(f"  {mark} {f['file']}" + ("" if f["ok"] else f"  {f['count']} 处"),
+                  file=sys.stderr)
+
     if issues:
         print(f"\n发现 {len(issues)} 处越界(容差 {args.tol}px):", file=sys.stderr)
+        multi = len(files) > 1
         for i in issues[:30]:
             tag = TAGS.get(i["type"], i["type"])
-            print(f"  ✗ [{tag}] {i['selector']}"
+            where = f"[{i['file']}] " if multi and i.get("file") else ""
+            print(f"  ✗ [{tag}] {where}{i['selector']}"
                   + (f"  祖先 {i['ancestor']}" if i.get("ancestor") else "")
+                  + (f"  与 {i['other']}" if i.get("other") else "")
                   + f" — {i['hint']}", file=sys.stderr)
         if len(issues) > 30:
             print(f"  … 其余 {len(issues) - 30} 处见 JSON", file=sys.stderr)
@@ -490,6 +580,11 @@ def main() -> int:
                   "\n    · 先试 content 精简 / 拆卡(比贴边更稳)"
                   "\n    · 空间确实不够 → --safe-tier tight(垂直放宽,左右不动)"
                   "\n    · 仍不够 → --safe-tier extreme(四边 2.5%,字幕/按钮会盖住边缘内容)",
+                  file=sys.stderr)
+        if "D" in kinds:
+            print("  元素重叠:改文案/换行最容易触发(吸底块变高顶穿页脚)。"
+                  "\n    · 首选让父容器 flex 消化高度,别让两块各自定位"
+                  "\n    · 有意的叠压(标题压图)加 data-allow-overlap 豁免",
                   file=sys.stderr)
     return 1 if issues else 0
 

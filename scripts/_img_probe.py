@@ -160,19 +160,21 @@ def cmd_palette(args) -> int:
 
 
 def _wcag_ratio(fg_hex: str, bg_rgb) -> float:
+    """WCAG 对比度。**入口先 float() 化**:bg 常来自 numpy 数组的均值,
+    numpy.float64 会让比值一路传播到 json.dumps(不可序列化),返回前必须转回 Python 标量。"""
     def rel(c):
-        c = c / 255
+        c = float(c) / 255
         return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
 
     def lum(rgb):
-        r, g, b = (rel(v) for v in rgb[:3])
+        r, g, b = (rel(v) for v in tuple(rgb)[:3])
         return 0.2126 * r + 0.7152 * g + 0.0722 * b
 
     from _img_core import parse_color
     l1 = lum(parse_color(fg_hex))
-    l2 = lum(tuple(bg_rgb) if not isinstance(bg_rgb, tuple) else bg_rgb)
+    l2 = lum(bg_rgb)
     lighter, darker = max(l1, l2), min(l1, l2)
-    return round((lighter + 0.05) / (darker + 0.05), 2)
+    return round(float((lighter + 0.05) / (darker + 0.05)), 2)
 
 
 def cmd_contrast_check(args) -> int:
@@ -202,8 +204,8 @@ def cmd_contrast_check(args) -> int:
             worst = _wcag_ratio(args.fg, tuple(int(hx[i:i + 2], 16) for i in (1, 3, 5)))
     emit_obj = {"ok": True, "cmd": "contrast-check", "input": str(src.resolve()),
                 "box": list(box), "fg": args.fg, "method": args.method,
-                "ratio": ratio, "worst_ratio": worst,
-                "pass_normal": worst >= 4.5, "pass_large": worst >= 3.0,
+                "ratio": float(ratio), "worst_ratio": float(worst),
+                "pass_normal": bool(worst >= 4.5), "pass_large": bool(worst >= 3.0),
                 "degraded": False, "warnings": [], "error": None}
     from _img_core import emit
     emit(emit_obj)

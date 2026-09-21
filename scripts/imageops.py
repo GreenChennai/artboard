@@ -30,7 +30,8 @@ HELP_MAP = {
     "文字发糊": "convert --subsampling 4:4:4(或转 webp)",
     "压字看不清": "contrast-check --box ... --fg ...",
     "要印刷": "dpi-check → icc → export.py --cmyk",
-    "手机图方向乱": "rotate --exif-fix",
+    "手机图方向乱(单张/整目录)": "rotate --exif-fix 或 exif-fix <目录>",
+    "几十张素材批量旋正缩放": "exif-fix <目录> 或 resize <目录> --max-edge 2200",
     "裁透明边": "trim",
     "圆角卡片化": "card --radius ... --shadow ...",
     "加水印": "watermark --text ... --position br",
@@ -45,9 +46,10 @@ HELP_MAP = {
 
 
 def _add_global(p: argparse.ArgumentParser) -> None:
-    p.add_argument("inputs", nargs="*", help="输入文件(可多个)")
+    p.add_argument("inputs", nargs="*",
+                   help="输入文件**或目录**(目录递归展开其中的图片;可多个)")
     p.add_argument("--in", dest="in_glob", action="append", help="glob,可重复")
-    p.add_argument("--in-dir", dest="in_dir", help="目录(必须配 --ext)")
+    p.add_argument("--in-dir", dest="in_dir", help="目录(单层;必须配 --ext)")
     p.add_argument("--ext", help="--in-dir 扩展名白名单,如 jpg,png")
     p.add_argument("--from-list", dest="from_list", help="清单文件,每行一路径")
     p.add_argument("--out", "-o", help="单文件输出")
@@ -357,7 +359,9 @@ def _cmd_exif_fix(args) -> int:
             before = src.stat().st_size
             out = args.out or core.out_path_for(src, args, "exif", "jpg" if fmt == "jpeg" else fmt)
             fixed.save(out)
-            results.append(core.result_item(src, out, before, out.stat().st_size))
+            # result_item 第 4 位是**编码后的字节**(内部要 len),此前直接塞
+            # out.stat().st_size(int)→ TypeError,整条 exif-fix 全失败
+            results.append(core.result_item(src, out, before, out.read_bytes()))
         except SystemExit:
             raise
         except Exception as exc:  # noqa: BLE001

@@ -145,7 +145,7 @@ def main() -> int:
             result["ok"] = False
     print(json.dumps(result, ensure_ascii=False))
     # 产出成功 ≠ 门禁通过:--reference 相似度不达标必须让进程失败,
-    # 否则脚本链无法拦截(E 修:此前只看是否产出文件)
+    # 否则脚本链无法拦截(只看是否产出文件拦不住)
     ok = bool(made) and bool(result.get("ok", True))
     return 0 if ok else 1
 

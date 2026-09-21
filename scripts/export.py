@@ -86,10 +86,10 @@ def export_via_kiln(cli: str, args) -> tuple[int, dict, dict]:
            "--max-wait", str(args.max_wait)]
     if args.width > 0:
         # 0 = 交由 Kiln 按画板几何自适应(非 1080 画幅必须显式传,
-        # 否则浏览器车道按 1080 视口渲染;D 修:此前恒传 1080)
+        # 否则浏览器车道按 1080 视口渲染)
         cmd += ["--width", str(args.width)]
     if getattr(args, "height", 0) and args.height > 0:
-        # 此前仅解析、从不透传(C 修:与 SKILL.md「固定尺寸必带 --height」对齐)
+        # 与 SKILL.md「固定尺寸必带 --height」对齐
         cmd += ["--height", str(args.height)]
     if args.format in ("GIF", "MP4"):
         cmd += ["--fps", str(args.fps)]
@@ -106,7 +106,7 @@ def export_via_kiln(cli: str, args) -> tuple[int, dict, dict]:
     global kiln_layout_notes
     kiln_layout_notes = []
     # 两条子路线告警前缀不同:自研布局 vb_layout:、DOM 路线 domwarn
-    # (L 修:曾只认前者 → DOM 路线的降级被静默吞掉)
+    # (只认前者会让 DOM 路线的降级被静默吞掉)
     for line in r.stderr.decode("utf-8", errors="replace").splitlines():
         line = line.strip()
         for key, field in (("vb_layout:", "warn"), ("domwarn:", "domwarn")):
@@ -120,8 +120,7 @@ def export_via_kiln(cli: str, args) -> tuple[int, dict, dict]:
                     pass
             kiln_layout_notes.append(note)
             break
-    # 解析 stdout 单行 JSON(Kiln 契约;B 修:此前只读 stderr,
-    # width/height/frames 恒 None,gzh_cover 打印 NonexNone 即此因)
+    # 解析 stdout 单行 JSON(Kiln 契约;width/height/frames 只能从这条取)
     engine_out: dict = {}
     for line in reversed(r.stdout.decode("utf-8", errors="replace").splitlines()):
         line = line.strip()
@@ -144,6 +143,40 @@ def export_via_kiln(cli: str, args) -> tuple[int, dict, dict]:
     return 0, {}, engine_out
 
 
+def run_playwright_fallback(args) -> tuple[int, dict]:
+    """调 export_fallback.py 重出同一路径(浏览器车道降级时的自动兜底)。
+
+    返回 (退出码, 失败时的 error dict / 成功时的结果 dict)。
+    """
+    script = os.path.join(_SCRIPTS, "export_fallback.py")
+    if not os.path.isfile(script):
+        return 1, {"ok": False, "error": "FALLBACK_MISSING", "detail": script}
+    cmd = [sys.executable, script, "--source", args.source, "--output", args.output,
+           "--scale", str(args.scale if args.scale in (1, 2, 4) else 2)]
+    if args.width > 0:
+        cmd += ["--width", str(args.width)]
+    if getattr(args, "height", 0) and args.height > 0:
+        cmd += ["--height", str(args.height)]
+    if args.transparent:
+        cmd += ["--transparent"]
+    try:
+        r = subprocess.run(cmd, capture_output=True, timeout=600)
+    except Exception as exc:  # noqa: BLE001
+        return 1, {"ok": False, "error": "FALLBACK_FAILED", "detail": str(exc)}
+    for line in reversed(r.stdout.decode("utf-8", errors="replace").splitlines()):
+        line = line.strip()
+        if line.startswith("{"):
+            try:
+                obj = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(obj, dict) and obj.get("ok"):
+                return 0, obj
+            return 1, obj if isinstance(obj, dict) else {}
+    return 1, {"ok": False, "error": "FALLBACK_NO_JSON",
+               "detail": r.stderr.decode("utf-8", errors="replace")[:300]}
+
+
 def main() -> int:
     try:
         sys.stdout.reconfigure(encoding="utf-8")
@@ -156,8 +189,8 @@ def main() -> int:
     p.add_argument("--format", default="PNG",
                    choices=["PNG", "JPG", "GIF", "MP4", "PDF", "SVG", "EPS", "AI", "PPTX"])
     p.add_argument("--width", type=int, default=0,
-                   help="采集视口宽(CSS px);0 = Kiln 按画板几何自适应(D 修:"
-                        "曾恒传 1080,非 1080 画幅被按 1080 视口渲染)")
+                   help="采集视口宽(CSS px);0 = Kiln 按画板几何自适应。"
+                        "非 1080 画幅必须显式传,否则按 1080 视口渲染")
     p.add_argument("--scale", type=int, default=1, choices=[1, 2, 4, 8])
     p.add_argument("--height", type=int, default=0,
                    help="采集视口高(CSS px);0 = 自适应;动画卡 100vh 型必须显式锁定")
@@ -167,6 +200,9 @@ def main() -> int:
                    help="打印交付:追加导出 CMYK PDF + TIFF(印刷流程见 print-cmyk.md)")
     p.add_argument("--max-wait", type=float, default=15.0, dest="max_wait",
                    help="GIF/MP4 时作为动画总时长(秒),其余格式忽略")
+    p.add_argument("--no-auto-fallback", action="store_true", dest="no_auto_fallback",
+                   help="Kiln 浏览器车道不可用(engine_fallback)时,不自动改走 "
+                        "export_fallback.py(PNG/JPG 默认自动兜底)")
     args = p.parse_args()
 
     kiln = find_kiln()
@@ -184,18 +220,47 @@ def main() -> int:
             err["engine"] = engine_out
         emit(err)
         return rc
+
+    warnings: list[str] = []
+    # 浏览器车道失败 → Kiln 降级自研引擎,结果带 engine_fallback:true。
+    # 自研引擎对真实海报页是废图(丢照片/遮罩/绝对定位,只剩系统字体堆叠),
+    # 光栅格式直接改走 Playwright 兜底重出;其余格式至少把降级讲清楚。
+    if engine_out.get("engine_fallback"):
+        if args.format.upper() in ("PNG", "JPG") and not args.no_auto_fallback:
+            fb_rc, fb = run_playwright_fallback(args)
+            if fb_rc == 0:
+                emit({"ok": True, "format": args.format,
+                      "path": os.path.abspath(args.output),
+                      "engine": fb.get("engine") or "fallback",
+                      "auto_fallback_from": "kiln-native",
+                      "warnings": ["Kiln 浏览器车道不可用(engine_fallback=true),"
+                                   "自研引擎输出不可信 → 已自动改用 export_fallback.py"]})
+                return 0
+            emit({"ok": False, "error": "KILN_DEGRADED_AND_FALLBACK_FAILED",
+                  "detail": fb.get("detail") or fb.get("error") or str(fb_rc),
+                  "hint": "设 VB_BROWSER_PATH 指向 Chrome/Edge;或 pip install playwright;"
+                          "或人工核对 Kiln 自研引擎输出后再交付"})
+            return 1
+        warnings.append("Kiln 浏览器车道不可用,已降级自研引擎(engine_fallback=true);"
+                        "该输出可能丢失照片/渐变/绝对定位,交付前必须人工核对")
+
     result = {"path": os.path.abspath(args.output), "format": args.format,
               "engine": str(engine_out.get("engine") or "kiln")}
-    # 引擎自报字段回填(B 修):width/height/frames 来自引擎单行 JSON
+    # 引擎自报字段回填:width/height/frames 来自引擎单行 JSON。
+    # warnings 例外 —— 引擎侧是**计数**(int),直接回填会污染下方的字符串
+    # 列表拼接(`2 + [...]` 抛 TypeError);改在下方转成一条可读告警。
     for k in FIELDS:
+        if k == "warnings":
+            continue
         if engine_out.get(k) is not None:
             result[k] = engine_out[k]
     if engine_out.get("vector"):
         result["vector"] = engine_out["vector"]
+    eng_warn = engine_out.get("warnings")
+    if isinstance(eng_warn, int) and eng_warn > 0:
+        warnings.append(f"Kiln 引擎自报 {eng_warn} 条告警(细节见引擎 stderr)")
 
-    warnings: list[str] = []
     # 布局告警透传:画板尺寸被内容回填/裁剪/grid 降级时,调用方必须可见
-    # (此前静默 ok:true,存量项目失真无从判定——部署报告 Issue 2/6.3)
     if kiln_layout_notes:
         result["degraded_artboard"] = any(
             ("尺寸回填" in w) or ("裁剪" in w) or ("grid" in w)
@@ -219,16 +284,17 @@ def main() -> int:
         else:
             warnings.append(f"未找到 PNG({png_path}),跳过 CMYK 交付")
 
-    payload = {k: result.get(k) for k in FIELDS} if result else {}
+    payload = {k: result.get(k) for k in FIELDS
+               if k != "warnings" and result.get(k) is not None}
     payload["ok"] = True
     payload["engine"] = result.get("engine", "kiln")
-    # 引擎自报的降级标志优先于 stderr 文本推断(L 修的一半;另一半在上面的双前缀解析)
+    # 引擎自报的降级标志优先于 stderr 文本推断(另一半在上面的双前缀解析)
     if engine_out.get("degraded_artboard") or engine_out.get("degraded"):
         payload["degraded_artboard"] = True
     if result.get("degraded_artboard"):
         payload["degraded_artboard"] = True
     if warnings:
-        payload["warnings"] = (result.get("warnings") or []) + warnings
+        payload["warnings"] = warnings
     emit(payload)
     return 0
 

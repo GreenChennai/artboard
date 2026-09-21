@@ -154,13 +154,49 @@ def ffmpeg_caps() -> dict:
                          "libaom-av1": has("libaom-av1"), "libjxl": has("libjxl"),
                          "png": has(" png")}}
 
+# 位置参数直接给目录时展开的默认扩展名(可用 --ext 覆盖)
+DEFAULT_INPUT_EXTS = ("jpg", "jpeg", "png", "webp", "avif", "bmp", "tif", "tiff", "gif")
+
+
+def _glob(pattern: str) -> list[pathlib.Path]:
+    """glob,且支持**绝对模式**。
+
+    `Path.glob()` 对绝对模式直接 `NotImplementedError`,而 `--in "E:/x/*.png"`
+    是最自然的写法。绝对模式拆成「盘根 + 相对模式」两段再拼。
+    """
+    pat = pathlib.Path(pattern)
+    if pat.is_absolute():
+        anchor = pathlib.Path(pat.anchor)
+        return list(anchor.glob(str(pat.relative_to(anchor))))
+    return list(pathlib.Path().glob(pattern))
+
+
 def input_expand(args) -> list[pathlib.Path]:
-    """§4.8 输入展开:位置参数 / --in(glob)/ --in-dir / --from-list。"""
+    """§4.8 输入展开:位置参数 / --in(glob)/ --in-dir / --from-list。
+
+    位置参数**可以是目录**:给定目录时递归展开其中的图片文件(此前直接把
+    目录当文件交给 PIL,`PermissionError: '.'`)。扩展名默认取常见
+    图片集,可用 `--ext jpg,png` 收窄。
+    """
     paths: list[pathlib.Path] = []
+    exts = [e.strip().lstrip('.').lower()
+            for e in (getattr(args, "ext", None) or "").split(',') if e.strip()]
+    allow = set(exts) if exts else set(DEFAULT_INPUT_EXTS)
     for raw in list(getattr(args, "inputs", []) or []):
-        paths.append(pathlib.Path(raw))
+        p = pathlib.Path(raw)
+        if p.is_dir():
+            hits = sorted(q for q in p.rglob("*")
+                          if q.is_file() and q.suffix.lower().lstrip('.') in allow)
+            if not hits:
+                raise SystemExit(fail(args.cmd, "INPUT_NOT_FOUND",
+                                      f"目录下没有图片: {raw}",
+                                      hint="白名单:" + ",".join(sorted(allow))
+                                           + "(用 --ext 覆盖)"))
+            paths.extend(hits)
+        else:
+            paths.append(p)
     for raw in list(getattr(args, "in_glob", []) or []):
-        hits = sorted(pathlib.Path().glob(raw))
+        hits = sorted(_glob(raw))
         if not hits:
             raise SystemExit(fail(args.cmd, "INPUT_NOT_FOUND", f"glob 无命中: {raw}"))
         paths.extend(hits)

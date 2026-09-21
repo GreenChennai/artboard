@@ -1,15 +1,20 @@
 ---
 name: artboard
-description: 用 HTML/CSS 绘制平面设计级图片并导出成品的海报工作室。输入文案直出、给图复刻、或换风格改配色,产出海报/banner/小红书封面/主KV/信息长图(PNG/GIF/MP4/PDF),并为视频制作场景卡(口播信息卡/图解动画卡/片头尾,支持出入场动画)。风格像 Illustrator/Photoshop 做的设计图,不是网页交互风。当用户想要:做海报、出图、画封面、小红书配图、banner、KV 主视觉、信息长图、数据图、动态海报、GIF、视频信息卡、科普动画卡、把文案变成图片、复刻一张设计图、换风格重做时使用。Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.12.0
+description: Use when the user wants a finished graphic produced from copy or a reference image, or wants an existing design revised — 海报、banner、小红书封面、公众号封面、主 KV、信息长图、数据图、名片、A4 海报、三折页、易拉宝、PPT 页、二维码物料; 动态海报、GIF、MP4、口播信息卡、图解动画卡、科普动画卡等视频场景卡; 把文案变成图片、复刻一张设计图、换风格重做、改稿但说不清哪里不满意. 风格像 Illustrator/Photoshop 做的设计图,不是网页交互风. Not for 网页 UI、视频剪辑、纯 AI 生图. Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
+version: 1.13.0
 ---
 
 # artboard · HTML 海报工作室
 
-**定位**:把文案/图片变成"平面设计成品图"。不调用 AI 生图,而是写 HTML/CSS
-(有护栏、风格库、字体库),经 Kiln 原生引擎渲染导出 PNG/JPG/GIF/MP4/PDF/
-SVG/EPS/AI/PPTX 九格式(v0.7.0 起双车道:浏览器在位时 PNG/PDF/AI 走系统 Edge/Chrome 高保真导出,缺席自动降级自研引擎;动画逐帧求值,中文真文本);
-用户要外部矢量稿改回 HTML 时走 kiln-cli import(**正常流水线无此步**)。
+**定位**:把文案/图片变成"平面设计成品图"。不调 AI 生图,而是写 HTML/CSS
+(护栏、风格库、字体库都在分册里),经 Kiln 单文件引擎渲染导出
+PNG/JPG/GIF/MP4/PDF/SVG/EPS/AI/PPTX 九格式。浏览器在位时 PNG/PDF/AI 走
+系统 Edge/Chrome 高保真车道,缺席自动降级自研引擎并在结果里声明;
+动画逐帧求值,中文真文本。外部矢量稿改回 HTML 走 kiln-cli import
+(**正常流水线无此步**)。
+
+**不适配,别接**:网页 UI / 交互原型、视频剪辑、纯 AI 生图、
+用户只有产品照片还没给文案(先追问,见 Step 1)。
 
 ## 流水线(Step 0–7,含 1.5/4.5 两个子步,细则见 references/pipeline.md)
 
@@ -114,7 +119,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 参考案例 | assets/cases/*.html | 写 HTML 需要参照时,只读命中风格的 1 份 |
 | vendor/图标/插画包 | assets/… | 引用具体文件时,不预读 |
 | 模型下载 | scripts/fetch_model.py | 本地 VQA 模型缺失且需要时 |
-| 环境部署 | scripts/setup_kiln.py / setup_ffmpeg.py | 预检报缺失时 |
+| 环境部署 | scripts/setup_kiln.py / setup_ffmpeg.py | 预检报缺失时;升级 Kiln 加 `--force` |
 | 词汇表·术语消歧 | docs/glossary.md | 术语含义或取值口径有疑问时 |
 
 ## 脚本(主线;完整清单见 README)
@@ -130,7 +135,7 @@ python $S/export_fallback.py --source <proj>/src/index.html \
     --output <proj>/export/o.png --width 1080 --scale 2   # 兜底(仅 PNG)
 python $S/make_bats.py <项目> --embed         # 给每个 HTML 生成"导出-<名字>.bat"双击即出图
 python $S/imageops.py <子命令> …                             # 位图工序唯一入口(子命令清单以 `--help` 为准,v1.12 新增 montage 网格拼图)
-python $S/check_overflow.py <proj>/src        # 机检:文字越出容器边框(出图/出片前必跑)
+python $S/check_overflow.py <proj>/src        # 机检:越框/安全区(出图前必跑);加 --overlap 查元素重叠
 python $S/gzh_cover.py new <slug> --title "标题"          # 公众号双封面项目(主 900×383 + 次 383×383)
 python $S/gzh_cover.py export <slug>                      # 双封面导出:主/次/合并三图(可 --only 单出)
 python $S/gzh_article.py convert 文章.md --out a.html     # 公众号正文排版(Markdown→内联样式 HTML)

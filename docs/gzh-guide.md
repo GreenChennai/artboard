@@ -102,5 +102,7 @@ python $S/gzh_article.py check article.html     # 必须 ok:true
 
 ## 七、样例
 
-样例成图在 `docs/samples/`:`gzh-dual-cover-main.png`(主)、`gzh-dual-cover-sub.png`(次)、
-`gzh-dual-cover-merged.png`(合并);排版示例成文见 `docs/samples/gzh-article-demo-preview.png`。
+双封面产物是三张图,落在项目的 `export/` 里,可整包上传公众号后台:
+`cover-main-<slug>.png`(主)、`cover-sub-<slug>.png`(次)、`cover-merged-<slug>.png`(合并)。
+正文排版产物是单文件 HTML(`--out` 指定路径),`--preview` 会另出一份手机宽度的预览页;
+`demo` 子命令一键生成全组件示例,顺手跑一遍兼容性自检。

@@ -88,8 +88,8 @@ def main() -> int:
 
     # 4. ffmpeg(动图)
     # WPI 已于 artboard v1.9 退役,不再从 WPI 检出目录兜底探测;
-    # 只认配置/环境变量/PATH(A 修:此前的 `wpi` 是未定义变量,特定
-    # 环境下整个预检 NameError 崩溃),变量名统一 ARTBOARD_FFMPEG
+    # 只认配置/环境变量/PATH,变量名统一 ARTBOARD_FFMPEG
+    # (WPI_FFMPEG 仅为旧环境兼容保留)
     ffmpeg = (cfg("ffmpeg")
               or os.environ.get("ARTBOARD_FFMPEG")
               or os.environ.get("WPI_FFMPEG")     # 兼容旧环境变量名

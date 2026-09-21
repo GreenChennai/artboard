@@ -54,7 +54,7 @@ EXAMPLE = os.path.join(SKILL_DIR, "config.example.json")
 FIELDS = [
     ("kiln_cli_exe", "Kiln 渲染引擎(v1.9+)", "file",
      "Kiln-noGUI-CLI.exe 的完整路径(约 16MB 单文件引擎)。\n"
-     "跑 scripts\setup_kiln.py 自动部署;上游 VellumBench 仓库。"),
+     "跑 scripts/setup_kiln.py 一键部署;上游 VellumBench 仓库。"),
     ("studio_dir", "作品落盘目录", "dir",
      "生成的海报项目保存位置,例如 E:\\artboard-studio。\n"
      "每个海报会建一个子文件夹(src/ 源码 + export/ 成品图)。"),
@@ -113,7 +113,7 @@ class App(tk.Tk):
                         font=("Microsoft YaHei UI", 12, "bold"), anchor="w")
         head.pack(fill="x", padx=14, pady=(12, 2))
 
-        # 关键诊断:把"实际会写到哪"显示出来(旧版写错目录却毫无提示)
+        # 关键诊断:把"实际会写到哪"显示出来(写错目录时否则毫无提示)
         warn = "[!] 未定位到技能根" in LOCATE_NOTE
         path_lbl = tk.Label(
             self, text=f"写入目标:{CONFIG_PATH}", anchor="w", justify="left",

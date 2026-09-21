@@ -17,7 +17,18 @@
 |---|---|---|
 | 引擎 | Kiln 单文件(`kiln_cli_exe`) | 独立 Playwright 脚本 |
 | 格式 | PNG / JPG / GIF / MP4 / PDF / SVG / EPS / AI / PPTX | 仅 PNG |
-| 何时用 | 默认 | export.py 报 `KILN_NOT_FOUND` / `KILN_CLI_FAILED` |
+| 何时用 | 默认 | export.py 报 `KILN_NOT_FOUND` / `KILN_CLI_FAILED`,或引擎自报降级 |
+
+**降级会自动转兜底**:Kiln 的浏览器车道不可用时,`engine=auto`
+会落到自研引擎 —— 自研引擎对真实海报页会丢照片/遮罩/绝对定位,基本是废图。
+现在 Kiln 在结果 JSON 里置 `engine_fallback:true`,而 `export.py` 见到该字段
+且格式是 PNG/JPG 时,**自动改调 `export_fallback.py` 重出同一路径**
+(结果 JSON 带 `auto_fallback_from:"kiln-native"`);非光栅格式不自动转,
+但会在 `warnings` 里明确写出降级,交付前必须人工核对。
+加 `--no-auto-fallback` 可关掉这个自动切换。
+
+> 自研引擎环境里也打不开浏览器时,根治办法是让浏览器车道本身可用:
+> 设环境变量 `VB_BROWSER_PATH` 指向 Chrome/Edge 可执行文件。
 
 ## 画板合成规则(存量项目必读)
 
@@ -35,7 +46,7 @@ Kiln 对无 `vb-artboard` 标记的普通 HTML **合成画板**,尺寸按以下�
    应检查该字段,`true` 说明画布尺寸由内容推导而非显式声明,需人工核对;
 4. `--width`/`--height` 是**采集视口口径**(CSS px):`0`(默认)= Kiln
    按画板几何自适应;**非 1080 画幅(banner 1920 / kv 1920 / rollup 2362)
-   必须显式传入**,否则浏览器车道按 1080 视口渲染(D 修:曾恒传 1080)。
+   必须显式传入**,否则浏览器车道按 1080 视口渲染。
    画布真值仍在 HTML 容器声明里,命令行只影响采集视口。
 
 ## 尺寸与倍率预设
@@ -54,8 +65,8 @@ Kiln 对无 `vb-artboard` 标记的普通 HTML **合成画板**,尺寸按以下�
 | 易拉宝 80×200cm | rollup | 2362×5906 | 4724×11812(150dpi) |
 
 > 印刷品类规范(字号下限/折线/盲区/双面工作流)见 `references/formats/`。
-> 画布真值在 HTML 容器声明里(上表为 scaffold 预设);v1.8 时代
-> 「必须带 --height 否则视口高度截入」的约束随 WPI 退役消亡。
+> 画布真值在 HTML 容器声明里(上表为 scaffold 预设);`--width/--height`
+> 只决定采集视口,不决定画布。
 
 ## 尺寸换算公式与计算器
 
@@ -111,7 +122,8 @@ python scripts/export_fallback.py --source "<project>/src/index.html" \
 export.py 输出**单行 JSON**:
 - `ok: true` → `path/width/height/frames` 直接采信;
   **`degraded_artboard: true` 时画布尺寸是内容推导值**,人工核对后再交付;
-  `warnings` 数组非空时检查(资源缺失/CMYK 跳过等);
+  **`engine_fallback: true` 说明引擎降级过**(光栅格式已自动转兜底,矢量格式
+  需人工核对);`warnings` 数组非空时检查(资源缺失/CMYK 跳过/引擎告警等);
 - `ok: false` → 看 `error`:
   - `KILN_NOT_FOUND` → 跑 `scripts/setup_kiln.py`,或 config.json 填
     `kiln_cli_exe`,或设 `ARTBOARD_KILN_CLI`;

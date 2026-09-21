@@ -1,5 +1,68 @@
 # Changelog
 
+## v1.13.0 — 缺陷收口 + Kiln v0.9.0 + 仓库瘦身(2026-09-22)
+
+### Fixed · imageops 六条「已探明未修」一次收口(docs/failures.md 台账回填)
+- `card --shadow`:`_shadow_layer()` 解析即转数值(此前 `blur` 是字符串,
+  `W + blur * 4` 必 `TypeError`),并新增 `BAD_SHADOW` 参数校验;
+  顺带修好阴影位移——此前 `dx/dy` 被丢弃,阴影方向被裁
+- `thumb`:dest 与消费端字段名不一致(`format_out` vs `args.format`)→ 统一,
+  并补上此前被忽略的 `--out`
+- `contrast-check`:numpy 标量进 `json.dumps` 不可序列化 → `_wcag_ratio()`
+  入口/出口 `float()` 化,判定值 `bool()` 化
+- `--in` 绝对路径 glob:`Path.glob` 不接受绝对模式 → 新增 `_glob()`
+  拆「盘根 + 相对模式」;montage 的特例守卫随之删除
+- `watermark` 单点九锚:坐标表按 anchor 码取值(此前拿位置名索引,必 `KeyError`);
+  十种位置实测全通
+- `tone/card --out`:字符串未包 `Path()` → 三处统一
+
+### Fixed · 本轮新暴露
+- `exif-fix`:把 `st_size`(int)塞给 `result_item()` 的字节形参 → 整条命令全失败
+- **位置参数给目录**:直接当文件交给 PIL → `PermissionError`;现递归展开图片
+  (默认扩展名白名单,可 `--ext` 收窄),空目录给 `INPUT_NOT_FOUND`
+- `config_gui.py`:`scripts\setup_kiln.py` 的 `\s` 非法转义(SyntaxWarning)
+- `export.py`:引擎 `warnings` 是**计数**,回填进字符串列表会在计数 >0 时
+  `int + list` 抛 TypeError → 改转成一条可读告警
+
+### Fixed · Kiln(v0.9.0,上游 VellumBench)
+- **Edge 无头端点探测**:msedge 不往 stderr 打印 DevTools 行 → 浏览器车道在
+  只有 Edge 的机器上必失败;改为 stderr 行 + `DevToolsActivePort` 文件双路轮询
+- **降级可见**:浏览器车道失败落自研引擎时,结果 JSON 置 `engine_fallback:true`
+  并置 `degraded` ——自研引擎对真实海报页是废图,不能再 `ok:true` 静默混过去
+- **JSON 转义根修**:手拼 JSON 未转义 Windows 路径反斜杠 → 调用方
+  `json.loads` 必失败、`width/height/engine` 永远取不到;新增 `jesc()` 统一转义
+- `export --help` 补 `VB_BROWSER_PATH` / `PDFIUM_DLL` 说明
+
+### Changed · 导出链路
+- `export.py` 见 `engine_fallback` 且格式为 PNG/JPG 时**自动改走
+  `export_fallback.py` 重出同一路径**(结果带 `auto_fallback_from`),
+  `--no-auto-fallback` 可关;非光栅格式不自动转,但 warnings 明示降级
+- `setup_kiln.py` 新增 `--force`(升级路径:此前 probe 命中即返回,
+  `--from` 下载分支被短路,引擎永远升不上去);默认下载源升到 kiln-cli-v0.9.0;
+  部署后打印引擎版本
+- `scaffold.py --fonts` 接受**显示名**(思源宋体/得意黑/霞鹜文楷…),
+  解析失败改为报错并列出可用目录——静默回退系统字体会让人以为选上了
+
+### Changed · 机检
+- `check_overflow.py` 传**目录**时逐页查所有 HTML(多页 PPT/三折页此前只查
+  `index.html` 或 `sorted()[0]`,其余页面全漏检);输出新增 `files` 数组
+- 新增 **D 类:元素互相重叠**(`--overlap`,默认关):A/B 只问「谁越出了谁」,
+  两个各自安分的元素叠在一起谁都查不出来;`data-allow-overlap` 豁免
+
+### Changed · 文档与仓库
+- README 重写:极客简洁风,新头图与流水线图(纯 SVG,适配 GitHub 深浅色);
+  样例从 17 张收到 8 张,保留「小红书封面 · 轻食研究所」「电影海报 · 开票的人」
+  「数据长图 · 城市咖啡图鉴」,新增 5 张统一 1080×1440 的风格样张
+  (电商大促 / 科技 KV / 文艺海报 / 手写菜单 / 数据卡)
+- 文档与脚本注释清理:散落在交付文档、`--help` 与代码注释里的迭代补丁代号
+  (`X 修:`、`此前…`)全部改写成「讲清现状与理由」,历史沿革只留在 CHANGELOG
+
+### Verified
+- Kiln 双车道端到端:Edge 浏览器车道出图 ✓;强制浏览器失败 →
+  `engine_fallback:true` → export.py 自动转 Playwright 兜底 ✓
+- imageops 六条复现命令逐一复跑全过;`check_overflow.py` 目录逐页 + `--overlap`
+  对造出来的 A/B/D 样张全检出 ✓;`selfcheck.py` FAIL 0
+
 ## v1.12.0 — 设计维度迭代:生成层/表达层/纵深/混排/改稿决策/多稿同出(2026-09-21)
 
 > 依据《artboard-设计维度迭代文档-20260921》(00 主文档 + 9 份任务书)。本轮为**设计知识分册轮**:

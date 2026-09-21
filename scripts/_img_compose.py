@@ -16,19 +16,30 @@ def _open(p):
     return Image.open(p)
 
 
-def _shadow_layer(size, radius, shadow: str):
-    """C1 阴影:dx,dy,blur,#rrggbbaa → 独立 RGBA 层。"""
-    from PIL import Image, ImageFilter
-    dx, dy, blur, color = shadow.split(",")
+def _shadow_layer(size, radius, shadow: str) -> tuple:
+    """C1 阴影:dx,dy,blur,#rrggbbaa → (独立 RGBA 层, dx, dy, blur)。
+
+    blur **必须先转数值**再参与算术:`split(",")` 出来的是字符串,直接做
+    `W + blur * 4` 必然 `TypeError: int + str`。
+    层内图形画在 (2b, 2b),故调用方按 `pad - 2b + dx` 贴合即可对齐。
+    """
+    from PIL import Image, ImageDraw, ImageFilter
+    parts = [p.strip() for p in shadow.split(",")]
+    if len(parts) != 4:
+        raise SystemExit(fail("card", "BAD_SHADOW",
+                              f"--shadow 形如 dx,dy,blur,#rrggbbaa,收到:{shadow}"))
+    try:
+        dx, dy = int(float(parts[0])), int(float(parts[1]))
+        blur = max(0, int(float(parts[2])))
+    except ValueError:
+        raise SystemExit(fail("card", "BAD_SHADOW", f"--shadow 前三项须是数字:{shadow}"))
     W, H = size
     layer = Image.new("RGBA", (W + blur * 4, H + blur * 4), (0, 0, 0, 0))
-    from PIL import ImageDraw
     d = ImageDraw.Draw(layer)
-    c = parse_color(color)
     d.rounded_rectangle([blur * 2, blur * 2, blur * 2 + W, blur * 2 + H],
-                        radius=radius, fill=c)
-    layer = layer.filter(ImageFilter.GaussianBlur(float(blur)))
-    return layer, int(dx) + blur, int(dy) + blur
+                        radius=radius, fill=parse_color(parts[3]))
+    layer = layer.filter(ImageFilter.GaussianBlur(blur))
+    return layer, dx, dy, blur
 
 
 def cmd_card(args) -> int:
@@ -42,14 +53,15 @@ def cmd_card(args) -> int:
             radius = int(args.radius or 0)
             pad = 0
             shadow_layer = None
+            dx = dy = blur = 0
             if args.shadow:
-                shadow_layer, ox, oy = _shadow_layer(img.size, radius, args.shadow)
-                blur = int(args.shadow.split(",")[2])
-                pad = blur * 2
+                shadow_layer, dx, dy, blur = _shadow_layer(img.size, radius, args.shadow)
+                # 留出模糊半径 + 实际偏移量,偏移方向不再被裁掉
+                pad = blur * 2 + max(abs(dx), abs(dy))
             W, H = img.width + pad * 2, img.height + pad * 2
             canvas = Image.new("RGBA", (W, H), parse_color(args.bg or "transparent"))
             if shadow_layer is not None:
-                canvas.alpha_composite(shadow_layer, (max(0, pad - blur), max(0, pad - blur)))
+                canvas.alpha_composite(shadow_layer, (pad - blur * 2 + dx, pad - blur * 2 + dy))
             # 圆角蒙版裁切主体
             if radius > 0:
                 mask = Image.new("L", img.size, 0)
@@ -64,7 +76,7 @@ def cmd_card(args) -> int:
                 d = ImageDraw.Draw(canvas)
                 d.rounded_rectangle([pad, pad, pad + img.width - 1, pad + img.height - 1],
                                     radius=radius, outline=parse_color(col), width=bw)
-            out = args.out or out_path_for(src, args, "card", "png")
+            out = pathlib.Path(args.out) if args.out else out_path_for(src, args, "card", "png")
             data, meta = encode_image(canvas, "png", 95)
             out.write_bytes(data)
             results.append(result_item(src, out, before, data, engine=meta["engine"]))
@@ -106,8 +118,11 @@ def cmd_watermark(args) -> int:
                           "rm": (img.width - margin, img.height // 2),
                           "ls": (margin, img.height - margin),
                           "ms": (img.width // 2, img.height - margin),
-                          "rs": (img.width - margin, img.height - margin)}[pos]
-                    d.text(xy, args.text, font=font, fill=color, anchor=anchors[pos])
+                          "rs": (img.width - margin, img.height - margin)}
+                    # 坐标表按 anchor 码取值:位置名 → anchor 码 → 坐标。
+                    # 直接拿位置名索引坐标表必 KeyError
+                    code = anchors[pos]
+                    d.text(xy[code], args.text, font=font, fill=color, anchor=code)
             elif args.image:
                 logo = _open(args.image).convert("RGBA")
                 if args.scale and args.scale != 1:
@@ -123,7 +138,7 @@ def cmd_watermark(args) -> int:
             fmt = (src.suffix.lstrip('.') or "png").lower()
             fmt = {"jpg": "jpeg"}.get(fmt, fmt)
             ext = "jpg" if fmt == "jpeg" else fmt
-            out = args.out or out_path_for(src, args, "wm", ext)
+            out = pathlib.Path(args.out) if args.out else out_path_for(src, args, "wm", ext)
             if fmt == "jpeg":
                 out_img = out_img.convert("RGB")
             data, meta = encode_image(out_img, fmt, 92)
@@ -196,13 +211,7 @@ def cmd_montage(args) -> int:
     行为契约:图数 < 格数 → 空格留底色(warn 不报错);图数 > 格数 → 报错并给建议网格;
     各图等比缩进格子居中(不裁内容——联络表要"看全");--label 在每格左上角叠 A/B/C/D…。"""
     from PIL import Image, ImageDraw
-    try:
-        paths = input_expand(args)
-    except NotImplementedError:
-        # --in 收到绝对路径时 pathlib.glob 会抛此异常(input_expand 既有边界,全族共有):
-        # montage 自身守住 JSON 契约——绝对路径请用位置参数直给
-        raise SystemExit(fail("montage", "USAGE", "--in 不支持绝对路径(既有限制)",
-                              hint="把绝对路径直接写作位置参数:montage C:\\a.png C:\\b.png --grid 2x2"))
+    paths = input_expand(args)
     if len(paths) < 1:
         raise SystemExit(fail("montage", "USAGE", "至少一张图(多稿联络表通常 4 张)",
                               hint="montage --in a.png b.png c.png d.png --grid 2x2 --gap 24 --label"))
@@ -306,7 +315,7 @@ def cmd_tone(args) -> int:
             fmt = (src.suffix.lstrip('.') or "png").lower()
             fmt = {"jpg": "jpeg"}.get(fmt, fmt)
             ext = "jpg" if fmt == "jpeg" else fmt
-            out = args.out or out_path_for(src, args, "tone", ext)
+            out = pathlib.Path(args.out) if args.out else out_path_for(src, args, "tone", ext)
             data, meta = encode_image(img, fmt, 92)
             out.write_bytes(data)
             results.append(result_item(src, out, before, data, engine=meta["engine"]))

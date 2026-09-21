@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./docs/readme/hero.svg" width="100%" alt="artboard · HTML 海报工作室">
+  <img src="./docs/readme/hero-preview.png" width="100%" alt="artboard · HTML 海报工作室">
 </p>
 
 <h1 align="center">artboard</h1>
@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="#-成品样例"><img alt="samples" src="https://img.shields.io/badge/%E6%88%90%E5%93%81%E6%A0%B7%E4%BE%8B-8%20%E5%BC%A0-1f6feb"></a>
+  <a href="#-成品样例"><img alt="samples" src="https://img.shields.io/badge/%E6%88%90%E5%93%81%E6%A0%B7%E4%BE%8B-15%20%E5%BC%A0-1f6feb"></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-ACL--1.0-8b5cf6"></a>
   <img alt="engine" src="https://img.shields.io/badge/Kiln-v0.9.0-00a88f">
   <img alt="python" src="https://img.shields.io/badge/python-3.10%2B-3776ab">
@@ -34,25 +34,52 @@ artboard 反着来——设计 token 锁住配色，HTML 承载文字，Kiln 单
 ## 成品样例
 
 <p align="center">
-  <img src="./docs/readme/pipeline.svg" width="100%" alt="artboard 工作流水线">
+  <img src="./docs/readme/pipeline-preview.png" width="100%" alt="artboard 工作流水线">
 </p>
 
-下面每张都是本技能端到端产出：手写 CSS 排版、开源字体、机检通过后导出。
-同一组六张统一为 1080×1440（3:4），只换风格——这正是「同尺寸不同气质」的能力面。
+每张都是本技能端到端产出：Pexels 授权摄影 + 开源字体 + 手写 CSS 排版，
+机检通过后由 Kiln 导出。同一版式内尺寸严格一致，换的是题材与气质。
 
-| | | |
-|---|---|---|
-| ![小红书封面](docs/samples/xhs-cover.png) | ![电商大促](docs/samples/case-promo.jpg) | ![科技发布 KV](docs/samples/case-techkv.jpg) |
-| *小红书封面 · 轻食研究所*<br>暖底贴纸手账 | *电商大促 · 山雾茶町 88 会员日*<br>大字报 + 放射楔形 | *科技发布 KV · 青梧智联*<br>深底玻璃拟态 |
-| ![文艺海报](docs/samples/case-poster.jpg) | ![手写菜单](docs/samples/case-menu.jpg) | ![数据卡](docs/samples/case-dataviz.jpg) |
-| *文艺海报 · 城市之声室内乐*<br>宋体编辑部 + 印章 | *手写菜单 · 深夜面馆*<br>楷体 + 贴纸倾斜 | *数据卡 · 城市通勤图鉴*<br>大数字 + 纯 CSS 条形图 |
-
-另两类不是 3:4，单独摆：
+### 小红书封面 · 1080×1440（3:4）
 
 | | |
 |---|---|
-| ![电影海报](docs/samples/movie-poster.png) | ![数据长图](docs/samples/data-longform.png) |
-| *电影海报 · 开票的人*（9:16 竖版） | *数据长图 · 城市咖啡图鉴*（2400 宽长图） |
+| ![轻食研究所](docs/samples/xhs-cover.png) | ![晨间流程](docs/samples/xhs-morning.jpg) |
+| *一周午餐盒* — 暖底手账 | *5 分钟出门流程* — 清单式干货 |
+| ![咖啡地图](docs/samples/xhs-coffee.jpg) | ![书桌改造](docs/samples/xhs-desk.jpg) |
+| *反复去的 6 家* — 探店清单 | *2000 元预算* — 价格清单 |
+
+### A4 海报 · 正反面（210×297mm，300dpi）
+
+| | |
+|---|---|
+| ![音乐会正面](docs/samples/a4-concert-front.jpg) | ![音乐会反面](docs/samples/a4-concert-back.jpg) |
+| *城市之声室内乐* — 正面主视觉 | *曲目单* — 反面信息 |
+| ![设计周正面](docs/samples/a4-design-front.jpg) | ![设计周反面](docs/samples/a4-design-back.jpg) |
+| *城市设计周* — 正面主视觉 | *展区导览* — 反面导视 |
+
+### 电影 / 广告海报 · 1080×1920（9:16）
+
+| | |
+|---|---|
+| ![开票的人](docs/samples/movie-poster.png) | ![长夜将至](docs/samples/film-longnight.jpg) |
+| *开票的人* — 剧情片 | *长夜将至* — 悬疑片 |
+| ![屿](docs/samples/ad-perfume.jpg) | ![冰博客拿铁](docs/samples/ad-icedcoffee.jpg) |
+| *屿* — 木质调香水 | *冰博客拿铁* — 饮品广告 |
+
+### PPT 页 / KV · 1920×1080（16:9）
+
+| | |
+|---|---|
+| ![汇报封面](docs/samples/slide-cover.jpg) | ![会员日 KV](docs/samples/kv-memberday.jpg) |
+| *城市通勤图鉴* — 汇报封面 | *88 会员日* — 活动主视觉 |
+
+### 长图 · 2400 宽
+
+| |
+|---|
+| ![数据长图](docs/samples/data-longform.png) |
+| *城市咖啡图鉴* — 数据长图 |
 
 > 渲染引擎：[GreenChennai/VellumBench](https://github.com/GreenChennai/VellumBench) 的
 > Kiln 导出核心（Rust，自研），五用例固定基准以浏览器渲染为基线平均 **97.76/100**，

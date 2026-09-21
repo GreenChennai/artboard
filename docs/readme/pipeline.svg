@@ -18,7 +18,7 @@
   </style>
 
   <!-- 七步,单行;Step 5 是唯一带品牌色的节点(导出 = 引擎) -->
-  <g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace" text-anchor="middle">
+  <g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace,"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif" text-anchor="middle">
     <text x="86"  y="72" class="num" font-size="15">01</text>
     <rect x="24"  y="86" width="124" height="72" rx="10" class="box" stroke-width="1.2"/>
     <text x="86"  y="118" class="lab" font-size="22">追问</text>
@@ -77,5 +77,5 @@
   <path d="M916 158 V196 H584 V166" stroke="#8c959f" stroke-width="1.4" fill="none" stroke-dasharray="5 5"/>
   <path d="M584 166 l-5 9 h10 z" fill="#8c959f"/>
   <text x="750" y="216" class="sub" text-anchor="middle"
-        font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace" font-size="15">改稿:定点改 HTML,不重跑全图</text>
+        font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace,"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif" font-size="15">改稿:定点改 HTML,不重跑全图</text>
 </svg>

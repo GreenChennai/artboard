@@ -30,17 +30,17 @@
   </g>
 
   <!-- 主标 -->
-  <text x="92" y="150" class="fg" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace"
+  <text x="92" y="150" class="fg" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace,"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif"
         font-size="64" font-weight="700" letter-spacing="1">artboard</text>
   <rect x="92" y="176" width="196" height="4" rx="2" fill="url(#acc)"/>
 
-  <text x="92" y="228" class="mut" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace"
+  <text x="92" y="228" class="mut" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace,"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif"
         font-size="22">把文案和照片写进 HTML/CSS,经 Kiln 原生引擎出图</text>
-  <text x="92" y="266" class="dim" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace"
+  <text x="92" y="266" class="dim" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace,"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif"
         font-size="20">文字永远锐利 · 配色永远可控 · 结果永远可复现</text>
 
   <!-- 九格式:3×3 章子 -->
-  <g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace" font-size="19" text-anchor="middle">
+  <g font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace,"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif" font-size="19" text-anchor="middle">
     <g><rect x="712" y="106" width="128" height="46" rx="8" class="chip" stroke-width="1.2"/><text x="776" y="135" class="fg">PNG</text></g>
     <g><rect x="852" y="106" width="128" height="46" rx="8" class="chip" stroke-width="1.2"/><text x="916" y="135" class="fg">JPG</text></g>
     <g><rect x="992" y="106" width="128" height="46" rx="8" class="chip" stroke-width="1.2"/><text x="1056" y="135" class="fg">GIF</text></g>
@@ -52,7 +52,7 @@
     <g><rect x="992" y="226" width="128" height="46" rx="8" class="chip" stroke-width="1.2"/><text x="1056" y="255" class="fg">PPTX</text></g>
   </g>
   <text x="916" y="312" class="dim" text-anchor="middle"
-        font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace" font-size="17">9 formats · one render</text>
+        font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace,"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif" font-size="17">9 formats · one render</text>
 
   <!-- 底部刻度尺:呼应"尺寸可算" -->
   <g class="ln" stroke-width="1.2">
@@ -63,7 +63,7 @@
     <line x1="854" y1="330" x2="854" y2="338"/>
     <line x1="1108" y1="330" x2="1108" y2="342"/>
   </g>
-  <text x="92" y="364" class="dim" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace" font-size="16">300 dpi</text>
-  <text x="600" y="364" class="dim" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace" font-size="16">40+ 物料尺寸 · 安全区 · 折线</text>
-  <text x="1108" y="364" class="dim" text-anchor="end" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace" font-size="16">v1.13</text>
+  <text x="92" y="364" class="dim" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace,"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif" font-size="16">300 dpi</text>
+  <text x="600" y="364" class="dim" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace,"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif" font-size="16">40+ 物料尺寸 · 安全区 · 折线</text>
+  <text x="1108" y="364" class="dim" text-anchor="end" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace,"Microsoft YaHei","PingFang SC","Noto Sans SC",sans-serif" font-size="16">v1.13</text>
 </svg>

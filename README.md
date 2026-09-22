@@ -44,19 +44,19 @@ artboard 反着来——设计 token 锁住配色，HTML 承载文字，Kiln 单
 
 | | |
 |---|---|
-| ![轻食研究所](docs/samples/xhs-cover.png) | ![晨间流程](docs/samples/xhs-morning.jpg) |
-| *一周午餐盒* — 暖底手账 | *5 分钟出门流程* — 清单式干货 |
-| ![咖啡地图](docs/samples/xhs-coffee.jpg) | ![书桌改造](docs/samples/xhs-desk.jpg) |
-| *反复去的 6 家* — 探店清单 | *2000 元预算* — 价格清单 |
+| ![一周午餐盒](docs/samples/xhs-cover.png) | ![秋日野餐清单](docs/samples/xhs-morning.jpg) |
+| *一周午餐盒* — 暖底手账 | *秋日野餐* — 清单式攻略 |
+| ![存钱拆法](docs/samples/xhs-coffee.jpg) | ![i 人聚会自救](docs/samples/xhs-desk.jpg) |
+| *月薪 6000* — 存钱数据卡 | *i 人聚会自救* — 气泡话术 |
 
 ### A4 海报 · 正反面（210×297mm，300dpi）
 
 | | |
 |---|---|
 | ![音乐会正面](docs/samples/a4-concert-front.jpg) | ![音乐会反面](docs/samples/a4-concert-back.jpg) |
-| *城市之声室内乐* — 正面主视觉 | *曲目单* — 反面信息 |
-| ![设计周正面](docs/samples/a4-design-front.jpg) | ![设计周反面](docs/samples/a4-design-back.jpg) |
-| *城市设计周* — 正面主视觉 | *展区导览* — 反面导视 |
+| *城市之声室内乐* — 正面主视觉 | *曲目单 + 导赏* — 反面信息 |
+| ![旧书市集正面](docs/samples/a4-books-front.jpg) | ![旧书市集反面](docs/samples/a4-books-back.jpg) |
+| *旧书市集* — 正面主视觉 | *逛集指南* — 反面导览 |
 
 ### 电影 / 广告海报 · 1080×1920（9:16）
 
@@ -94,7 +94,9 @@ artboard 反着来——设计 token 锁住配色，HTML 承载文字，Kiln 单
   3–5 秒零 token，每次重导前都跑；
 - **说不清也能改**：「不够高级 / 太乱 / 做减法」走改稿协议——五维诊断 + 减法阶梯，定点修改不重跑；
 - **多稿同出（可选）**：用户说「多稿 4」才触发，4 方向 + 2×2 联络表，默认永远单稿；
-- **动图**：CSS `@keyframes` 逐帧求值直出 GIF/MP4，双模式——海报循环（P）/ 视频场景卡（S）。
+- **动图**：CSS `@keyframes` 逐帧求值直出 GIF/MP4，双模式——海报循环（P）/ 视频场景卡（S）；
+- **公众号图文分支（模式 W）**：交付可直接粘进微信编辑器的 HTML 长图文——内联样式 +
+  内联 SVG/SMIL 动效，双机检（白名单门禁 + 320px 窄屏门禁）守口，经 135 编辑器中转发布。
 
 ## 快速开始
 
@@ -241,6 +243,27 @@ python scripts/gzh_cover.py export <slug>                      # 主/次/合并�
 python scripts/gzh_article.py convert 文章.md --out a.html     # Markdown → 内联样式 HTML
 python scripts/gzh_article.py check a.html                     # 公众号兼容性自检
 ```
+
+**模式 W(公众号图文)机检** —— 交付能被粘进微信编辑器的 HTML 前必跑
+
+```bash
+python scripts/check_wechat_svg.py "…/公众号文章合集/2026-09-22" --exclude "_旧版"
+# 查: 微信 SVG AttributeName 白名单 / 禁用标签(*Gradient·filter·clipPath·mask·use)
+#     / id 与 url(#) / 会被剥离的 CSS(@keyframes·@media·animation:) / 标签配平
+#     / span leaf 兼容层 / animateTransform 覆盖静态 transform 的陷阱
+# 退出码 0 = 可交付 ; 1 = 有 FATAL 禁止交付
+
+python scripts/check_mobile_width.py "…/公众号文章合集/2026-09-22" --widths 300,320,360,375,414
+# 手机窄屏「横向溢出」机检。桌面预览完全正常、真机顶出屏幕右边的那类 bug 靠它抓。
+# ⚠️ 必须压到 320px 才可靠: 同一文件在 375/414px 可能全部 0 溢出, 只有 320px 才复现。
+
+python scripts/upload_imgchr.py out/*.jpg --cookie "PHPSESSID=…" --urls-out urls.json --key-prefix p
+# 图床上传(imgchr / 路过图床, Chevereto 内核)拿直链, 免去在微信编辑器里逐张插图。
+# ⚠️ 图床是公开的 —— 含人脸的照片请评估后再传, 或改用自家备案域名/CDN。
+```
+
+> 分册:`references/wechat-article.md`(微信白名单、HTML 写法、SMIL 编舞、
+> 实战问题清单、无目视验收手法、封面与素材处理、135 编辑器中转发布法)
 
 **双击即出图 / 矢量 / 素材 / 维护**
 

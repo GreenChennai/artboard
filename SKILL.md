@@ -1,7 +1,7 @@
 ---
 name: artboard
 description: Use when the user wants a finished graphic produced from copy or a reference image, or wants an existing design revised — 海报、banner、小红书封面、公众号封面、主 KV、信息长图、数据图、名片、A4 海报、三折页、易拉宝、PPT 页、二维码物料; 动态海报、GIF、MP4、口播信息卡、图解动画卡、科普动画卡等视频场景卡; 把文案变成图片、复刻一张设计图、换风格重做、改稿但说不清哪里不满意. 风格像 Illustrator/Photoshop 做的设计图,不是网页交互风. Not for 网页 UI、视频剪辑、纯 AI 生图. Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.13.0
+version: 1.14.0
 ---
 
 # artboard · HTML 海报工作室
@@ -12,6 +12,12 @@ PNG/JPG/GIF/MP4/PDF/SVG/EPS/AI/PPTX 九格式。浏览器在位时 PNG/PDF/AI �
 系统 Edge/Chrome 高保真车道,缺席自动降级自研引擎并在结果里声明;
 动画逐帧求值,中文真文本。外部矢量稿改回 HTML 走 kiln-cli import
 (**正常流水线无此步**)。
+
+> **分支:模式 W(微信公众号图文)** —— 交付物是**可直接粘进微信编辑器的 HTML**,
+> 不是图片、不走 Kiln 图片导出。约束更硬(只能内联样式、动效只能内联 SVG+SMIL、
+> 禁用渐变/滤镜/一切 `id`),写法与动效全在 **`references/wechat-article.md`**,
+> 机检用 `scripts/check_wechat_svg.py` + `scripts/check_mobile_width.py`。
+> 做"公众号文章/微信图文/秀米排版"时走这条分支。
 
 **不适配,别接**:网页 UI / 交互原型、视频剪辑、纯 AI 生图、
 用户只有产品照片还没给文案(先追问,见 Step 1)。
@@ -105,6 +111,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 需求追问 | references/intake.md | 每次新任务开工前(一次) |
 | 常用物料速查 | references/sizes-common.md | 定尺寸时先查(默认入口) |
 | 动效分册 | references/animation.md | 动图任务(GIF/MP4)或**视频桥场景卡**(口播信息卡/图解卡)时 |
+| **公众号图文(模式 W)** | references/wechat-article.md | 做微信图文/公众号 HTML/秀米排版/带 SMIL 动效的长图文时(**必读**;含微信白名单、实战问题清单、无目视验收手法、封面与素材处理、**135 编辑器中转发布法**) |
 | 导出手册 | references/export.md | 导出参数/故障不确定时 |
 | 矢量交付手册 | references/vector-export.md | 用户要 SVG/EPS/AI 可编辑 PDF/.ai/可编辑矢量时(必读) |
 | **矢量绘制(几何/图标/插画语言)** | references/vector-drawing.md | 要画图标/几何图形/极简插画,或想好"怎么画"时(导出见 vector-export) |
@@ -136,6 +143,11 @@ python $S/export_fallback.py --source <proj>/src/index.html \
 python $S/make_bats.py <项目> --embed         # 给每个 HTML 生成"导出-<名字>.bat"双击即出图
 python $S/imageops.py <子命令> …                             # 位图工序唯一入口(子命令清单以 `--help` 为准,v1.12 新增 montage 网格拼图)
 python $S/check_overflow.py <proj>/src        # 机检:越框/安全区(出图前必跑);加 --overlap 查元素重叠
+python $S/check_wechat_svg.py <文件或目录>     # 模式W机检:微信 SVG 白名单/禁用标签/id/
+                                              # 被剥离CSS/标签配平/静态降级陷阱(交付前必跑,退出码1=禁交)
+python $S/check_mobile_width.py <文件或目录>   # 模式W机检:手机窄屏横向溢出(必压到320px才复现)
+python $S/upload_imgchr.py <图片...> --cookie "…" --urls-out urls.json --key-prefix p
+                                              # 图床上传拿直链(imgchr/Chevereto), 免去在微信里逐张插图
 python $S/gzh_cover.py new <slug> --title "标题"          # 公众号双封面项目(主 900×383 + 次 383×383)
 python $S/gzh_cover.py export <slug>                      # 双封面导出:主/次/合并三图(可 --only 单出)
 python $S/gzh_article.py convert 文章.md --out a.html     # 公众号正文排版(Markdown→内联样式 HTML)

@@ -1,5 +1,36 @@
 # Changelog
 
+## v1.14.0 — 合并「模式 W」公众号图文分支 + 联网核对白名单口径(2026-09-22)
+
+来自外部交付的 `artboard-modeW` 增量包(基线 1.7.6)正式并入主线。安装器对 1.13.0 干跑校验:
+4 个新文件 sha256 一致、机检夹具双绿(bad.html→1 / good.html→0);两处旧锚点因 1.13.0 重写
+而失配,改为按现结构手工注入(SKILL.md 定位段/分册索引/脚本清单 + README 脚本一览)。
+CHANGELOG 不回填包内过时的 v1.8.x 条目,以本条目替代。
+
+### Added · 模式 W(微信公众号图文)
+- `references/wechat-article.md`:微信图文主分册(内联样式/内联 SVG+SMIL/静默降级/窄屏纪律/
+  无目视验收四法/135 中转发布法/机检门禁)
+- `scripts/check_wechat_svg.py`:微信 SVG 白名单/禁用标签/id/url(#)/被剥离 CSS/标签配平/
+  animateTransform 覆盖陷阱机检(退出码 1 = 禁交)
+- `scripts/check_mobile_width.py`:手机窄屏横向溢出机检(必须压到 320px 才可靠)
+- `scripts/upload_imgchr.py`:图床直链上传(imgchr/Chevereto 内核,纯标准库)
+
+### Added · 联网核对回填(zer0n 白名单原文 / doocs-md wechat-svg skill / Axton Liu 概览)
+- 分册新增「白名单口径备注」:`r`/`cx`/`cy` 的规范与实测口径差、`stroke-dasharray` 待真机验证、
+  `mpath` 避免使用、交互事件优先级与 **`begin="click"`+`fill="freeze"`+`restart="never"`** 统一纪律
+- §三新增坑 9:`additive="sum"` 保留静态 transform + 中心缩放「施加→缩放→抵消」三连写法
+- §八新增 8.4bis:**SVG 内图片 src 最终必须是 mmbiz 素材库链接**(外链/Base64 不显示)、
+  剪贴板直贴与官方草稿 API 两条备份通道(动态 SMIL 存活率标注未实证)、静态 SVG 直贴三坑表、
+  真机验收 4 格矩阵
+- 文末新增 §十二 参考来源(含全部 URL 与「未实证留待自测」清单)
+- SKILL.md / README.md 同步模式 W 分支说明、分册索引行与三条脚本命令
+
+### Added · card-layout.md §4.6 flex 收缩陷阱
+纵向 flex 容器里「定高 + overflow:hidden」的子项在内容总高超画布时会被压成 0 高
+(`min-height:auto` 因非 visible overflow 解析为 0)——症状是色块条整条消失、机检报
+双向对称越框。修法:定高块一律 `flex:none` + 内容总高预算 ≤ 画布高。
+(源自 a3 数据分配条渲染消失的实战案例,playwright 计算样式确诊)
+
 ## v1.13.0 — 缺陷收口 + Kiln v0.9.0 + 仓库瘦身(2026-09-22)
 
 ### Fixed · imageops 六条「已探明未修」一次收口(docs/failures.md 台账回填)

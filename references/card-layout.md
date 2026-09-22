@@ -161,6 +161,31 @@
 `.row .txt{ min-width: 0 }` 是**必需**的:flex 子项默认 `min-width:auto` 不肯收缩,
 加了它 `text-overflow:ellipsis` 才会生效。
 
+### 6 · ⚠️ 定高块在纵向 flex 容器里被压成 0 高(flex 收缩陷阱,2026-09 实战案例)
+
+**症状(极具迷惑性)**:固定 `height` 的色块条(如数据分配条)在导出图里**整个消失**,
+机检报「内容比盒大,越出盒 top/bottom 各 ~33px」——内容从 0 高的盒子里居中溢出。
+
+**真因链(三条同时满足才触发)**:
+1. 父级是**纵向 flex 容器**(整页 `.pad{display:flex;flex-direction:column}` 布局);
+2. 所有子项的**自然高度总和 > 画布高**(常见诱因:标题比预算多折了一行);
+3. 该块自身有 `overflow:hidden` —— **flex 规范里非 visible 的 overflow 会把
+   `min-height:auto` 解析成 0**,于是 `flex-shrink:1`(默认值)可以把它压扁到任意高度,
+   优先被压的恰恰是这种"有收口"的块,而没设 overflow 的兄弟块只会把内容顶出去。
+
+**修法(两层都做)**:
+
+```css
+.pad  { display: flex; flex-direction: column; }
+.bar  { height: 124px; overflow: hidden; flex: none; }   /* 定高块一律 flex:none */
+```
+加上**内容总高预算**:写完后把各块的 margin + height 手加一遍,必须 ≤ 画布高。
+标题断行是最大变量——大标题的**行数要锁死**(宽度留余量或手工 `<br>`),
+行数 ×1 就是总高爆掉的量。
+
+> 判别口诀:**「定高元素渲染成 0 高 → 先查它是不是纵向 flex 的子项」**。
+> 用 `getComputedStyle(el).height` 一秒确诊;别去调字号——字号是症状,shrink 是病根。
+
 ---
 
 ## 五、一行修复对照表

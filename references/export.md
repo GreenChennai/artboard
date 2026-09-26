@@ -137,3 +137,19 @@ export.py 输出**单行 JSON**:
 - 超大画布守门:单边 >32768px 或像素面积超限时显式报错(不静默截断);
 - MP4 无 ffmpeg 自动降级 GIF 流并告警;GIF 永远可出(内置量化器);
 - `--scale 4/8` 仅特殊需求用(印刷);常规 2。
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `export.py` | 导出主路径 | `python scripts/export.py --source … --output …` |
+| `export_fallback.py` | 无 Kiln 兜底(仅 PNG) | `python scripts/export_fallback.py --source src/index.html -o o.png` |
+| `make_bats.py` | 双击导出 bat | `python scripts/make_bats.py <项目> --embed` |
+| `export_local.py` | 本机直出变体 | `python scripts/export_local.py --help` |
+| `pack.py` | 交付自包含打包 | `python scripts/pack.py <slug>` |
+| `slim_project.py` | 项目瘦身 | `python scripts/slim_project.py --help` |
+| `setup_kiln.py` | Kiln 引擎部署 | `python scripts/setup_kiln.py` |
+| `setup_ffmpeg.py` | ffmpeg 部署 | `python scripts/setup_ffmpeg.py` |
+| `doctor.py` | 环境诊断 | `python scripts/doctor.py` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

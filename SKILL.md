@@ -1,7 +1,7 @@
 ---
 name: artboard
-description: Use when the user wants a finished graphic produced from copy or a reference image, or wants an existing design revised — 海报、banner、小红书封面、公众号封面、主 KV、信息长图、数据图、名片、A4 海报、三折页、易拉宝、PPT 页、二维码物料; 动态海报、GIF、MP4、口播信息卡、图解动画卡、科普动画卡等视频场景卡; 把文案变成图片、复刻一张设计图、换风格重做、改稿但说不清哪里不满意. 风格像 Illustrator/Photoshop 做的设计图,不是网页交互风. Not for 网页 UI、视频剪辑、纯 AI 生图. Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.14.0
+description: Use when the user wants a finished graphic produced from copy or a reference image, or wants an existing design revised — 海报、banner、小红书封面、公众号封面、主 KV、信息长图、数据图、名片、A4 海报、三折页、易拉宝、PPT 页、二维码物料; 动态海报、GIF、MP4、口播信息卡、图解动画卡、科普动画卡等视频场景卡; 片头动画、片尾动画、内容概括动画、章节卡、转场卡等视频动效件(按口播/教程/vlog/短片/MV 配动效); H5 页面、移动端落地页、互动页、邀请函 H5 等轻量交互页(模式 H); 把文案变成图片、复刻一张设计图、换风格重做、改稿但说不清哪里不满意. 风格像 Illustrator/Photoshop 做的设计图,不是网页交互风. Not for 网页 UI、视频剪辑、纯 AI 生图. Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
+version: 1.16.0
 ---
 
 # artboard · HTML 海报工作室
@@ -18,8 +18,17 @@ PNG/JPG/GIF/MP4/PDF/SVG/EPS/AI/PPTX 九格式。浏览器在位时 PNG/PDF/AI �
 > 禁用渐变/滤镜/一切 `id`),写法与动效全在 **`references/wechat-article.md`**,
 > 机检用 `scripts/check_wechat_svg.py` + `scripts/check_mobile_width.py`。
 > 做"公众号文章/微信图文/秀米排版"时走这条分支。
+> **图文必带双封面**(`gzh_article.py convert` 默认 `--with-cover`,同主题三图齐出;
+> `--no-cover` 是逃生口且交付需说明);只出封面用 `gzh_cover.py`(不产图文)。
+> 主题唯一真相源:`scripts/_gzh_theme.py`(ink/night/warm/grass/red/mono;旧名有弃用提示)。
 
-**不适配,别接**:网页 UI / 交互原型、视频剪辑、纯 AI 生图、
+> **分支:模式 H(H5 交互页)** —— 交付物是**可运行的 HTML 页面**(移动端落地页/邀请函/
+> 报名页/长滚动叙事/轻互动),**不走 Kiln 出图、不适用铁律 1**(H5 允许滚动与固定定位),
+> 遵守 H5 自有铁律集;写法与权威口径在 **`references/h5-interactive.md`**,
+> 机检用 `scripts/check_h5.py`。做"移动端落地页/互动页/邀请函 H5"时走这条分支。
+> **应用型**交互原型/SPA/小程序仍不接(边界见 h5-interactive.md §〇)。
+
+**不适配,别接**:网页 UI / 应用型交互原型(轻量 H5 走模式 H)、视频剪辑、纯 AI 生图、
 用户只有产品照片还没给文案(先追问,见 Step 1)。
 
 ## 流水线(Step 0–7,含 1.5/4.5 两个子步,细则见 references/pipeline.md)
@@ -27,8 +36,9 @@ PNG/JPG/GIF/MP4/PDF/SVG/EPS/AI/PPTX 九格式。浏览器在位时 PNG/PDF/AI �
 ```
 Step 0 预检     scripts/preflight.py   — 有 FATAL 才停(Kiln 缺失降级 WARN,可走兜底);
                                           ffmpeg 缺失且要动图 → 先问用户
-Step 1 追问+路由 references/intake.md   — 五问(用途/尺寸/风格/配色/素材)打包问完带推荐;
-                                          B/C 模式只问用途+尺寸;用户明说「直接做」才可跳过
+Step 1 追问+路由 references/intake.md   — Brief Gate 检查单(9 字段三态标注)打包问完带推荐;
+                                          缺失 ≥1 强制补齐一轮并重核;B/C 模式只问用途+尺寸;
+                                          用户明说「直接做」才可跳过(须假设清单请确认)
 Step 1.5 设计简报  输出「生图式提示词」(画面 + 风格/配色/字体/素材);
                                           用户确认或说「直接做」即出图;此后改稿不重跑,见 Step 6
                 (brief 平/要"设计感"/要记忆点 → 先读 references/design-thinking.md 想概念,再选风格)
@@ -36,8 +46,10 @@ Step 1.5 设计简报  输出「生图式提示词」(画面 + 风格/配色/字
 Step 2 选风格   下表 → references/styles/<slug>.md
 Step 3 选字体   fonts/README.md 两级筛查 → ≤3 款
 Step 4 写图     scripts/scaffold.py 建项目;电商/食品/吉祥物类先走 Step 4.5
-Step 4.5 素材   references/materials.md — 用户图抠图(cutout.py)/ 图库搜图(fetch_asset.py)/
-                图片先体检 imageops.py probe(references/imaging.md);内容拿不准 → VQA(config.json vqa_path)
+Step 4.5 素材   references/materials.md §0 判定表(要不要配图→写 image_plan;必问项先问)+
+                主动检索(fetch_asset.py / MCP 见 references/mcp-assets.md)→ probe 体检 → 上版;
+                全自动多站搜素材用 scripts/asset_hunt.py(细则 references/mcp-assets.md §5.5);
+                用户图抠图(cutout.py);图片体检 imageops.py probe;查重 dedupe + 对账 check_credits.py
 Step 5 导出     scripts/export.py(Kiln 九格式)→ 失败走 export_fallback.py(仅 PNG)
 Step 6 自检+改稿 **6.0 机检门禁**(每次重导前必跑,3–5s、零 token):
                 scripts/check_overflow.py <proj>/src [--safe-area auto]
@@ -80,6 +92,9 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 
 | 资源 | 路径 | 何时才读 |
 |---|---|---|
+| **H5 交互页(模式 H)** | references/h5-interactive.md | 做移动端落地页/互动页/邀请函 H5/长滚动叙事时(**必读**;viewport/安全区/触摸目标/CWV/微信内行为) |
+| 项目总览 / 安装 | README.md | 需要安装、依赖、目录结构等仓库级信息时 |
+| **脚本总表(生成物)** | docs/scripts.md(源:`scripts/registry.json`) | 找不到某脚本在哪册时查全表;参数权威=脚本 `--help` |
 | 设计护栏(硬规则) | references/guardrails.md | **每次出图必读**(一次) |
 | 流水线细则 | references/pipeline.md | 流程不确定时 |
 | **改稿决策(模糊愿望)** | references/revision-protocol.md | 用户说"不够高级/太乱/做减法/说不出但不满"时(必读) |
@@ -103,14 +118,17 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | **对比度与色彩工程** | references/color-contrast.md | 定配色 tokens、文字压图、自检"看不清"时(WCAG 定义 + 遮罩数值 + 色盲) |
 | 一稿多尺寸重排 | references/responsive-reflow.md | 同一设计要出多个画布比例时 |
 | 品牌一致性 | references/brand-system.md | 用户给了品牌色/logo/VI,或一次做多张同品牌物料 |
-| 素材分册 | references/materials.md | 任务涉及图片素材时 |
+| 素材分册 | references/materials.md | 任务涉及图片素材时(§0 配图判定表是 Step 4.5 第一闸门) |
+| **取图 MCP 与素材 Bridge** | references/mcp-assets.md | 要经 MCP 工具面/浏览器 Bridge 取登录态站点素材(花瓣/Pinterest 等),或配 `artboard-mcp` 客户端时(安全边界必读) |
 | **材质语言(纸/金属/玻璃/布/木/塑料)** | references/material-language.md | 需要"材质感"(金属字/玻璃卡/纸纹底)时(配方总表) |
+| **位图配方引擎(调整/滤镜/图层)** | references/pixel-pipeline.md | 要**调色/滤镜/混合模式/图层栈/蒙版局部调整**(PS 式),或写配方批量处理图片时;几何/压缩收口仍走 imaging |
 | **位图工序** | references/imaging.md | 拿到图片后要加工(裁/缩/压/转/水印/切片/体检)时;或判断素材能不能用(`probe`) |
 | **位图语言(角色/分级/裁切/景深)** | references/image-language.md | 任务里要用照片/图做背景·主体·纹理,或要统一多图色调时 |
 | 图片复刻协议 | references/replicate.md | 复刻/换风格任务(B/C 模式)开工时必读(一次) |
 | 需求追问 | references/intake.md | 每次新任务开工前(一次) |
 | 常用物料速查 | references/sizes-common.md | 定尺寸时先查(默认入口) |
 | 动效分册 | references/animation.md | 动图任务(GIF/MP4)或**视频桥场景卡**(口播信息卡/图解卡)时 |
+| **视频动效(片头/片尾/概括/章节/转场)** | references/video-motion.md | 做**一整件**片头动画/片尾动画/内容概括/章节卡/转场,或按视频类型(口播/教程/vlog/短片/MV)配动效、出分镜表/卡点表时(**必读**;模式 V) |
 | **公众号图文(模式 W)** | references/wechat-article.md | 做微信图文/公众号 HTML/秀米排版/带 SMIL 动效的长图文时(**必读**;含微信白名单、实战问题清单、无目视验收手法、封面与素材处理、**135 编辑器中转发布法**) |
 | 导出手册 | references/export.md | 导出参数/故障不确定时 |
 | 矢量交付手册 | references/vector-export.md | 用户要 SVG/EPS/AI 可编辑 PDF/.ai/可编辑矢量时(必读) |
@@ -129,34 +147,16 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 环境部署 | scripts/setup_kiln.py / setup_ffmpeg.py | 预检报缺失时;升级 Kiln 加 `--force` |
 | 词汇表·术语消歧 | docs/glossary.md | 术语含义或取值口径有疑问时 |
 
-## 脚本(主线;完整清单见 README)
+## 脚本(主线 5 条;分册末尾「本册用到的脚本」就近索引;全量见 `docs/scripts.md`)
 
 ```bash
 S="<skill 目录>/scripts"
-
 python $S/preflight.py                        # 预检(每次开工先跑)
 python $S/scaffold.py <slug> --size xhs --fonts 思源黑体,霞鹜文楷
-python $S/export.py --source <proj>/src --output <proj>/export/o.png \
-    --width 1080 --scale 2 --height 1440      # 导出主路径(固定尺寸必带 --height)
-python $S/export_fallback.py --source <proj>/src/index.html \
-    --output <proj>/export/o.png --width 1080 --scale 2   # 兜底(仅 PNG)
-python $S/make_bats.py <项目> --embed         # 给每个 HTML 生成"导出-<名字>.bat"双击即出图
-python $S/imageops.py <子命令> …                             # 位图工序唯一入口(子命令清单以 `--help` 为准,v1.12 新增 montage 网格拼图)
-python $S/check_overflow.py <proj>/src        # 机检:越框/安全区(出图前必跑);加 --overlap 查元素重叠
-python $S/check_wechat_svg.py <文件或目录>     # 模式W机检:微信 SVG 白名单/禁用标签/id/
-                                              # 被剥离CSS/标签配平/静态降级陷阱(交付前必跑,退出码1=禁交)
-python $S/check_mobile_width.py <文件或目录>   # 模式W机检:手机窄屏横向溢出(必压到320px才复现)
-python $S/upload_imgchr.py <图片...> --cookie "…" --urls-out urls.json --key-prefix p
-                                              # 图床上传拿直链(imgchr/Chevereto), 免去在微信里逐张插图
-python $S/gzh_cover.py new <slug> --title "标题"          # 公众号双封面项目(主 900×383 + 次 383×383)
-python $S/gzh_cover.py export <slug>                      # 双封面导出:主/次/合并三图(可 --only 单出)
-python $S/gzh_article.py convert 文章.md --out a.html     # 公众号正文排版(Markdown→内联样式 HTML)
-python $S/ai_export.py <项目目录> [--svg --eps --ai]      # 矢量/工程文件(用户明确要才跑)
+python $S/export.py --source <proj>/src --output <proj>/export/o.png --width 1080 --scale 2 --height 1440
+python $S/export_fallback.py --source <proj>/src/index.html --output <proj>/export/o.png --width 1080  # 兜底(仅 PNG)
+python $S/check_overflow.py <proj>/src        # 机检:越框/安全区(出图前必跑;位图工序见 imageops,调色见 pixel)
 ```
-
-> 素材(`fetch_asset/cutout/vqa`)、复刻(`inspect_ref/compare`)、字体(`fetch_font/add_font`)、位图工序(`imageops`)、
-> 环境部署(`setup_*`)、二维码/打包/换算 的完整参数在 **README「脚本一览」** 与各自分册
-> (`materials.md` / `replicate.md` / `export.md`),用到时再查,不预记。
 
 - 项目落盘:`config.json` 的 `studio_dir` 下 `<slug>/`(src/ + export/)。
 - **瘦身影子(默认)**:src/fonts、src/vendor 是指向 Skill 资产库的目录联接,零拷贝;
@@ -164,6 +164,8 @@ python $S/ai_export.py <项目目录> [--svg --eps --ai]      # 矢量/工程文
 - 环境变量 `ARTBOARD_KILN_CLI` / `ARTBOARD_FFMPEG` / `ARTBOARD_STUDIO` 可临时覆盖 config.json。
 
 ## 铁律(违反任何一条 = 重做)
+
+> **铁律 1 不适用于模式 H(H5 交互页)**——H5 允许滚动/`position:fixed`,遵守 h5-interactive.md §二 的 H5 铁律集。
 
 1. 固定画布 + `overflow:hidden`,禁滚动依赖/`100vh`/`position:fixed`。
 2. 离线渲染:HTML 零 CDN 引用;字体/vendor 一律复制进项目。
@@ -175,7 +177,7 @@ python $S/ai_export.py <项目目录> [--svg --eps --ai]      # 矢量/工程文
    **模式 S 视频场景卡**(口播桥/图解卡)——五段式一次性时间轴,全 finite 禁 infinite、
    必须有出场,导出 MP4。
 7. **电商/食品/吉祥物类海报必须有真实素材**——产品本体只能用户提供;爬虫图自动带 `版权风险-` 前缀,交付时列出并提醒更换;抠图默认模型链禁用 bria-rmbg(商用付费)。
-8. **开工前先过 intake 五问**(用途/尺寸/风格/配色/素材),用户明说「直接做/全按推荐」才可跳过;跳过也必须在开工前复述全部假设。
+8. **开工前先过 Brief Gate 检查单**(intake.md:用途/尺寸/风格/配色/素材/必含文案/交付格式等 9 字段三态标注),**缺失 ≥1 强制补齐一轮并重核**,不许用推荐值静默补齐;仅用户明说「直接做/全按推荐」可跳闸,跳闸必须输出**假设清单并请用户确认**——复述不算数,确认才开工。
 9. 二维码占位在**终稿前**用 `scripts/qr.py generate` 换成真码;成品码宽 ≥ 版面宽 8%、四周留白 ≥1 模块、纠错用 H 级(内嵌 logo 时)。
 10. **矢量/工程文件导出不在默认流水线**:仅当用户明确要 SVG/EPS/AI 可编辑 PDF/.ai/工程文件时才跑 `ai_export.py`(vector-export.md);主动出工程文件=过度交付。
 

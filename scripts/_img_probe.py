@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import pathlib
 
-from _img_core import fail, input_expand, ok_envelope, result_item
+from _img_core import emit, fail, input_expand, ok_envelope, result_item
 
 LUMA_W = (0.2126, 0.7152, 0.0722)
 
@@ -238,3 +238,56 @@ def cmd_dpi_check(args) -> int:
           "effective_dpi": effective, "pass": passed,
           "degraded": False, "warnings": [], "error": None})
     return 0 if (passed is None or passed) else 1
+
+
+# ---------------- C9 查重(pHash 感知哈希;03 迭代新增) ----------------
+
+def _phash(img, size: int = 32) -> int:
+    """64-bit 感知哈希:缩 32×32 灰度 → 2D DCT → 左上 8×8 中位数二值化。
+    纯 Python DCT(32×32 规模开销可忽略),不引 numpy。"""
+    from PIL import Image
+    import math
+    px = list(img.convert("L").resize((size, size), Image.HAMMING).getdata())
+    n = size
+    norm = [(1 / n) ** 0.5 if u == 0 else (2 / n) ** 0.5 for u in range(n)]
+    cos = [[norm[u] * math.cos((2 * x + 1) * u * math.pi / (2 * n))
+            for x in range(n)] for u in range(n)]
+    rows = [sum(cos[u][x] * px[y * n + x] for x in range(n)) for y in range(n) for u in range(n)]
+    dct = [sum(cos[v][y] * rows[y * n + u] for y in range(n)) for v in range(8) for u in range(8)]
+    med = sorted(dct)[len(dct) // 2]
+    bits = "".join("1" if v > med else "0" for v in dct)
+    return int(bits, 2)
+
+
+def cmd_dedupe(args) -> int:
+    """C9:同图/近重复检测(pHash 汉明距离 ≤ threshold 视为同图)。
+    用于素材库收敛与多来源采集后的去重;只报告不删图。"""
+    srcs = input_expand(args)
+    if len(srcs) < 2:
+        return fail("dedupe", "USAGE", "需要 ≥2 张输入(文件或 --in/--in-dir 目录)",
+                    hint='imageops dedupe --in "materials/**/*.jpg" --threshold 6')
+    hashes: dict[str, int] = {}
+    warnings: list[str] = []
+    for p in srcs:
+        try:
+            hashes[str(p)] = _phash(_open(p))
+        except Exception as exc:  # noqa: BLE001 — 坏图跳过不拦全局
+            warnings.append(f"{p.name}: 无法解码({type(exc).__name__})")
+    names = sorted(hashes)
+    dups: list[list] = []
+    dropped: set[str] = set()
+    for i, a in enumerate(names):
+        if a in dropped:
+            continue
+        for b in names[i + 1:]:
+            if b in dropped:
+                continue
+            dist = (hashes[a] ^ hashes[b]).bit_count()
+            if dist <= args.threshold:
+                dups.append([a, b, dist])
+                dropped.add(b)  # 保留字母序靠前者作 keeper
+    emit({"ok": True, "cmd": "dedupe", "count": len(names),
+          "dups": dups, "kept": [n for n in names if n not in dropped],
+          "threshold": args.threshold,
+          "degraded": False, "warnings": warnings, "error": None})
+    return 0

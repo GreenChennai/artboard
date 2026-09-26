@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>video-opener · 片头(模式 V:Logo 揭示 + 主标入场;总长 4.8s,全 finite)</title>
+<!-- video-motion.md §一 片头契约:3–5s(导出片长≈4.8−1.8=3.0s,前置静置被录制吃掉)
+     五段式:P0 2.0 → IN 0.6 → HOLD 1.4 → OUT 0.5 → P1 0.3(animation.md §八)
+     动效语法:Logo 揭示(clip-path inset)+ 主标 drop-in;全 finite;9:16 安全区内
+     验证:check_overflow --safe-area auto → ok;导出/抽帧验证记录见 video-motion.md §十 -->
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#000; }
+.poster { position:relative; width:1080px; height:1920px; overflow:hidden;
+  background:radial-gradient(120% 90% at 50% 30%, #1d2334 0%, #0d101a 62%, #07090f 100%);
+  font-family:"Microsoft YaHei UI","Microsoft YaHei",sans-serif; }
+:root { --ease-in: cubic-bezier(0.05, 0.7, 0.1, 1); /* decelerate */ }
+/* 装饰层(允许出血,透明度 ≤0.5 口径) */
+.orbit { position:absolute; border:1px solid rgba(120,160,255,.14); border-radius:50%; }
+.orbit.o1 { width:1560px; height:1560px; left:-240px; top:-420px; }
+.orbit.o2 { width:1040px; height:1040px; right:-320px; bottom:-160px; opacity:.7;
+  animation:spin 9s linear 2 both; }
+@keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(14deg); } }
+.glow { position:absolute; left:50%; top:38%; width:900px; height:900px; transform:translate(-50%,-50%);
+  background:radial-gradient(circle, rgba(64,110,255,.16) 0%, transparent 62%); }
+/* 内容全部在 9:16 安全区 x[184,896] y[230,1344] */
+.wrap { position:absolute; left:184px; top:230px; width:712px; height:1114px;
+  display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
+.logo { font:700 40px/1 "Microsoft YaHei UI"; letter-spacing:.42em; text-indent:.42em;
+  color:#7fa4ff; }
+.logo-box { padding:20px 34px; border:1.5px solid rgba(127,164,255,.5); border-radius:18px;
+  background:rgba(127,164,255,.06);
+  clip-path:inset(0 100% 0 0); animation:reveal .6s var(--ease-in) 2.0s both; }
+@keyframes reveal { from { clip-path:inset(0 100% 0 0); opacity:1; }
+                    to   { clip-path:inset(0 0 0 0);    opacity:1; } }
+h1 { margin-top:64px; font-size:104px; line-height:1.22; font-weight:900; color:#eef2ff;
+  letter-spacing:.04em; opacity:0; animation:rise .6s var(--ease-in) 2.6s both; }
+h1 em { font-style:normal; color:#7fa4ff; }
+@keyframes rise { from { transform:translateY(46px); opacity:0; }
+                  to   { transform:translateY(0);    opacity:1; } }
+.sub { margin-top:40px; font-size:34px; font-weight:400; letter-spacing:.30em; text-indent:.30em;
+  color:#8b93ab; opacity:0; animation:rise .5s var(--ease-in) 3.1s both; }
+.rule { margin-top:56px; width:0; height:4px; background:linear-gradient(90deg, transparent, #7fa4ff, transparent);
+  animation:rule .5s var(--ease-in) 3.3s both; }
+@keyframes rule { from { width:0; opacity:0; } to { width:420px; opacity:.9; } }
+/* OUT 0.5s @ 4.0s:整体上浮淡出;P1 0.3s 空卡 */
+.wrap-out { opacity:1; animation:leave .5s ease-in 4.0s both; }
+@keyframes leave { from { transform:translateY(0); opacity:1; }
+                   to   { transform:translateY(-36px); opacity:0; } }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="orbit o1"></div><div class="orbit o2"></div><div class="glow"></div>
+  <div class="wrap wrap-out">
+    <div class="logo-box"><span class="logo">STUDIO·K</span></div>
+    <h1>让每一帧<br>都有<em>目的</em></h1>
+    <div class="sub">品牌片头 · 模式 V 配方</div>
+    <div class="rule"></div>
+  </div>
+</div>
+</body>
+</html>

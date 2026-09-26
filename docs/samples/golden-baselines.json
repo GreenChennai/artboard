@@ -1,0 +1,38 @@
+{
+  "generated": "2026-09-26",
+  "note": "回归基线(06-M):机检 ok + MP4 存在 + 帧数记录;重导后帧数 ±2 内视为通过",
+  "video_cases": {
+    "video-opener": {
+      "expected_frames": 65,
+      "mp4": "assets/cases/preview/video-opener.mp4",
+      "exists": true,
+      "bytes": 513709
+    },
+    "video-outro": {
+      "expected_frames": 65,
+      "mp4": "assets/cases/preview/video-outro.mp4",
+      "exists": true,
+      "bytes": 753806
+    },
+    "video-summary": {
+      "expected_frames": 95,
+      "mp4": "assets/cases/preview/video-summary.mp4",
+      "exists": true,
+      "bytes": 629116
+    },
+    "video-chapter": {
+      "expected_frames": 52,
+      "mp4": "assets/cases/preview/video-chapter.mp4",
+      "exists": true,
+      "bytes": 161790
+    },
+    "video-transition": {
+      "expected_frames": 47,
+      "mp4": "assets/cases/preview/video-transition.mp4",
+      "exists": true,
+      "bytes": 514804
+    }
+  },
+  "svg_good": "docs/samples/svg-good(3 件必须全过 check_svg)",
+  "svg_bad": "docs/samples/svg-bad(3 件必须全报)"
+}

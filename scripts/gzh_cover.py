@@ -41,21 +41,19 @@ MAIN_W, MAIN_H = 900, 383      # 头条 2.35:1(官方口径)
 SUB_W, SUB_H = 383, 383        # 次条 1:1(官方下限 200×200,主流与头条等高)
 MERGE_GAP = 57                 # 合并图间隔(CSS px,随 scale 放大)
 
-# 主题色板:黑白 + 一抹品牌色的瑞士网格基调,主/次条共用同一套 tokens
-THEMES = {
-    "blue":  {"bg": "#0f1b3d", "bg2": "#1b2f66", "ink": "#f5f7ff",
-              "accent": "#3b82f6", "muted": "rgba(245,247,255,.72)",
-              "line": "rgba(255,255,255,.18)"},
-    "dark":  {"bg": "#16130f", "bg2": "#2c2620", "ink": "#faf7f2",
-              "accent": "#e8b04b", "muted": "rgba(250,247,242,.70)",
-              "line": "rgba(255,255,255,.18)"},
-    "warm":  {"bg": "#fdf3e7", "bg2": "#f6e3cd", "ink": "#3a2c1e",
-              "accent": "#c96f2e", "muted": "rgba(58,44,30,.62)",
-              "line": "rgba(58,44,30,.16)"},
-    "green": {"bg": "#12291c", "bg2": "#1d4029", "ink": "#f0f7f1",
-              "accent": "#4ade80", "muted": "rgba(240,247,241,.70)",
-              "line": "rgba(255,255,255,.18)"},
-}
+# 主题色板:唯一真相源 = _gzh_theme.py(图文与封面共用;一处改色两产物同变)
+import _gzh_theme as _GZT
+THEMES, _THEME_ALIAS = _GZT.cover_themes()
+
+
+def _resolve_theme(name: str) -> tuple[str, dict | None]:
+    """旧名别名(blue/dark/green)→ 新名 + 一次性弃用提示。"""
+    canonical = name
+    if name in _THEME_ALIAS:
+        canonical = _THEME_ALIAS[name]
+        note = ("色值已统一到全局主题源,与旧 green 不同" if name == "green" else f"请改用 {canonical}")
+        print(f"△ 主题名「{name}」已弃用 → 改用「{canonical}」({note})。", file=sys.stderr)
+    return canonical, THEMES.get(canonical)
 
 
 def emit(obj: dict) -> None:
@@ -300,9 +298,10 @@ def cmd_new(args) -> int:
         os.path.join(cfg("studio_dir", near_workspace("artboard-studio")), args.slug)
     if os.path.exists(proj_dir) and not args.force:
         return fail("EXISTS", "换 slug 或 --force", path=os.path.abspath(proj_dir))
-    t = THEMES.get(args.theme)
+    theme_name, t = _resolve_theme(args.theme)
     if t is None:
-        return fail("BAD_THEME", f"可选主题: {', '.join(sorted(THEMES))}")
+        return fail("BAD_THEME", f"可选主题: {', '.join(sorted(THEMES))}"
+                                  "(旧名 blue/dark/green 仍可用,见弃用提示)")
     fams = DEFAULT_FONTS if args.fonts == "auto" else \
         [s.strip() for s in args.fonts.split(",") if s.strip()]
     faces, font_vars = build_font_assets(fams)
@@ -328,7 +327,7 @@ def cmd_new(args) -> int:
         json.dump({"slug": os.path.basename(os.path.abspath(proj_dir)),
                    "kind": "gzh-cover",
                    "main": [MAIN_W, MAIN_H], "sub": [SUB_W, SUB_H],
-                   "theme": args.theme, "fonts": args.fonts,
+                   "theme": theme_name, "fonts": args.fonts,
                    "skill_dir": SKILL_DIR, "created_by": "artboard.gzh_cover"},
                   f, ensure_ascii=False, indent=2)
 
@@ -490,7 +489,9 @@ def main() -> int:
     pn.add_argument("--sub-sub", default="", help="次条副题(默认同副题)")
     pn.add_argument("--footer", default="", help="页脚(仅主封面)")
     pn.add_argument("--num", default="", help="期号/序号(仅主封面,如 02)")
-    pn.add_argument("--theme", default="blue", choices=sorted(THEMES))
+    pn.add_argument("--theme", default="ink",
+                    help="主题(统一源 _gzh_theme):ink/night/warm/grass/red/mono;"
+                         "旧名 blue/dark/green 仍可用(弃用提示)")
     pn.add_argument("--fonts", default="auto",
                     help="auto=默认双字体;或 fonts/ 目录名逗号分隔(第一款=展示体)")
     pn.add_argument("--force", action="store_true")

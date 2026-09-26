@@ -1,5 +1,8 @@
 # 位图工序(imaging)
 
+> **调色/滤镜/图层合成**走配方引擎 `scripts/pixel.py`(references/pixel-pipeline.md):
+> 本册管工序(裁/缩/压/转),调整类能力(色阶/曲线/HSL/混合模式等)一律用 pixel。
+
 ## 0. 何时读本分册 / 何时不要读
 
 - **读**:任务里有"已存在的图片文件"要被加工(裁/缩/压/转/水印/切片/体检)
@@ -70,3 +73,11 @@
 
 - 尺寸 → `scaffold.py SIZES`;体积红线 → `material-catalog.md`;DPI/LPI → `print-production.md`;对比度口径 → `color-contrast.md`。
 - 本分册只给"怎么调用",不重复数值。
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `imageops.py` | 位图工序唯一入口 | `python scripts/imageops.py --help` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

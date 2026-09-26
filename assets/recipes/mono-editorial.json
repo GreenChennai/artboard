@@ -1,0 +1,47 @@
+{
+  "_说明": "单色编辑:黑白(红权重高)+暗部沉+颗粒",
+  "version": 1,
+  "stages": [
+    {
+      "op": "auto-orient"
+    },
+    {
+      "op": "black-white",
+      "rw": 0.42,
+      "gw": 0.5,
+      "bw": 0.08,
+      "cw": 0.0,
+      "mw": 0.0,
+      "yw": 0.0
+    },
+    {
+      "op": "curves",
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0.22,
+          0.14
+        ],
+        [
+          0.78,
+          0.88
+        ],
+        [
+          1,
+          1
+        ]
+      ]
+    },
+    {
+      "op": "add-noise",
+      "amount": 0.02,
+      "monochrome": true
+    }
+  ],
+  "output": {
+    "format": "png"
+  }
+}

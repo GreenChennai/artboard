@@ -76,7 +76,103 @@ JSONFAIL_CASES = (
     ("imageops.py", ["convert", "--in", "___nonexistent___.png", "--to", "webp"]),
     ("imageops.py", ["pipeline", "probe"]),          # P* 禁入 pipeline → exit 2
     ("imageops.py", ["convert", "--in", "x.png"]),   # 缺 --to → exit 2
+    ("check_brief.py", ["__nope__.txt"]),            # 检查单文件缺失 → 全部必需字段缺失
+    ("check_credits.py", ["__nope__img"]),           # img 目录缺失 → JSON 信封
+    ("beat_sheet.py", []),                           # 缺 --bpm 与 --list → USAGE JSON
+    ("check_svg.py", []),                            # 缺路径 → USAGE JSON
+    ("fetch_svg.py", ["iconify"]),                   # 缺 --set/--query → USAGE JSON
+    ("pixel.py", []),                                # 空参 → USAGE JSON
+    ("check_h5.py", ["__nope__.html"]),              # 无 HTML → USAGE JSON
 )
+
+
+# ---------------------------------------------------------------- scriptdocs
+
+def check_scriptdocs(rep: Report) -> None:
+    """脚本文档覆盖(08 迭代 D-08-5):非 internal 脚本必须在 ≥1 处文档被提及。
+    白名单:_*.py 内部模块 + junction/config_gui/gen_script_index/selfcheck(维护工具)。"""
+    reg_path = os.path.join(SCRIPTS, "registry.json")
+    if not os.path.isfile(reg_path):
+        rep.add("scriptdocs", "FAIL", "scripts/registry.json 不存在",
+                "跑 python scripts/gen_script_index.py 重建")
+        return
+    r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "gen_script_index.py"), "--check"],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if r.returncode != 0:
+        rep.add("scriptdocs", "FAIL", "registry.json 与实际状态不一致(生成物过期)",
+                "跑 python scripts/gen_script_index.py 重建")
+        return
+    reg = json.loads(read(reg_path))
+    orphan = [e["name"] for e in reg.get("scripts", [])
+              if not e.get("internal") and not e.get("used_by")]
+    stale = [e["name"] for e in reg.get("scripts", [])
+             if not e.get("internal")
+             and any(not os.path.isfile(os.path.join(ROOT, d)) for d in e.get("used_by", []))]
+    if orphan:
+        rep.add("scriptdocs", "FAIL", f"孤儿脚本(无任何文档提及):{', '.join(orphan)}",
+                "挂到某分册末尾「本册用到的脚本」,或列入 internal 白名单(需在 07 登记理由)")
+    if stale:
+        rep.add("scriptdocs", "FAIL", f"used_by 指向不存在的文档:{', '.join(stale)}")
+    rep.add("scriptdocs", "PASS",
+            f"{len(reg.get('scripts', []))} 个脚本全部可达(生成物一致;白名单豁免 internal)")
+
+
+# ---------------------------------------------------------------- materials / golden
+
+def check_materials(rep: Report) -> None:
+    """素材声明 vs 磁盘(06-P):materials.md §4 声明"已落地"的包必须真实存在且非空;
+    图标库须 ≥150 枚(05 扩容口径)。防止再出现"声明三套、实际一套"。"""
+    # a) 插画包:open-doodles 是唯一声明"已落地"的包
+    doodles = os.path.join(ROOT, "assets", "illustrations", "open-doodles")
+    n_doodles = len(glob.glob(os.path.join(doodles, "*.svg"))) if os.path.isdir(doodles) else 0
+    materials = read(os.path.join(ROOT, "references", "materials.md"))
+    if "✅ **已落地**" not in materials and "已落地" not in materials:
+        rep.add("materials", "WARN", "materials.md §4 无'已落地'声明行(表述格式变了?核对检查器)")
+    if n_doodles == 0:
+        rep.add("materials", "FAIL", "声明'已落地'的插画包 open-doodles 磁盘为空/不存在",
+                "声明与磁盘必须一致(判据 C);包没了就改 materials.md §4 状态")
+    # b) 声明'需人工获取'的包若目录出现了,提示更新状态(诚实正向)
+    for name in ("open-peeps", "undraw"):
+        d = os.path.join(ROOT, "assets", "illustrations", name)
+        if os.path.isdir(d) and glob.glob(os.path.join(d, "*.svg")):
+            rep.add("materials", "WARN",
+                    f"{name} 已有 SVG 落盘,但 materials.md §4 仍标'需人工获取'",
+                    "更新 materials.md §4 与 assets/illustrations/README.md 状态")
+    # c) 图标库下限
+    n_icons = len(glob.glob(os.path.join(ROOT, "assets", "icons", "*.svg")))
+    if n_icons < 150:
+        rep.add("materials", "FAIL", f"图标库 {n_icons} 枚 < 150(05 扩容口径)")
+    rep.add("materials", "PASS",
+            f"插画声明一致(open-doodles {n_doodles} SVG)/ 图标 {n_icons} 枚")
+
+
+def check_golden(rep: Report) -> None:
+    """回归基线(06-M):视频动效 5 例 MP4 在位;SVG 固样例 3 好 3 坏判据不漂移。"""
+    base_path = os.path.join(ROOT, "docs", "samples", "golden-baselines.json")
+    if not os.path.isfile(base_path):
+        rep.add("golden", "WARN", "docs/samples/golden-baselines.json 不存在(基线未建)")
+        return
+    base = json.loads(read(base_path))
+    missing = [c for c, v in base.get("video_cases", {}).items()
+               if not os.path.isfile(os.path.join(ROOT, v["mp4"]))]
+    if missing:
+        rep.add("golden", "FAIL", f"基线 MP4 缺失:{', '.join(missing)}",
+                "重导 assets/cases/preview 或更新基线")
+    # SVG 固样例:check_svg 好样例必须过,坏样例必须报
+    good = sorted(glob.glob(os.path.join(ROOT, "docs", "samples", "svg-good", "*.svg")))
+    bad = sorted(glob.glob(os.path.join(ROOT, "docs", "samples", "svg-bad", "*.svg")))
+    if good:
+        r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "check_svg.py"), *good],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if r.returncode != 0:
+            rep.add("golden", "FAIL", "svg-good 固样例被 check_svg 报错(检查器或样例漂移)")
+    if bad:
+        r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "check_svg.py"), *bad],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if r.returncode == 0:
+            rep.add("golden", "FAIL", "svg-bad 固样例未被 check_svg 拦下(检查器钝化)")
+    rep.add("golden", "PASS",
+            f"基线 {len(base.get('video_cases', {}))} 例在位;SVG 固样例 {len(good)}好/{len(bad)}坏 判据稳定")
 
 
 # ---------------------------------------------------------------- helpers
@@ -506,6 +602,9 @@ CHECKS = {
     "deploy": check_deploy,
     "stale": check_stale,
     "jsonfail": check_jsonfail,
+    "materials": check_materials,
+    "golden": check_golden,
+    "scriptdocs": check_scriptdocs,
 }
 LEVEL_MARK = {"FAIL": "✗", "WARN": "△", "PASS": "✓"}
 

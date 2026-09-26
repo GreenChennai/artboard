@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>video-transition · 转场(模式 V:inset 蒙版擦除,进慢出快;总长 3.2s)</title>
+<!-- video-motion.md §一 转场契约:擦除本体 0.3–0.8s(本配方 0.45s,方向延续:自左向右);
+     独立可导版仍守五段式:P0 2.0 → IN 0.45(擦除) → HOLD 0.3 → OUT 0.3 → P1 0.3
+     挂轨用法:取 2.0s–2.45s 段落在剪辑里叠在两镜之间(CutFlow 侧操作) -->
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#000; }
+.poster { position:relative; width:1080px; height:1920px; overflow:hidden;
+  font-family:"Microsoft YaHei UI","Microsoft YaHei",sans-serif; }
+:root { --ease-in: cubic-bezier(0.3, 0.0, 0.1, 1); /* 进慢出快 */ }
+/* 镜头 A(底):冷色几何 */
+.shot-a { position:absolute; inset:0; background:linear-gradient(200deg, #20303f 0%, #14202b 100%); }
+.shot-a .bar { position:absolute; left:184px; width:220px; height:14px; border-radius:8px;
+  background:rgba(159,182,204,.4); }
+.shot-a .bar:nth-child(1) { top:760px; }
+.shot-a .bar:nth-child(2) { top:820px; width:320px; }
+.shot-a .bar:nth-child(3) { top:880px; width:280px; }
+.shot-a .cap { position:absolute; left:184px; top:560px; font-size:44px; font-weight:700;
+  color:#8ea6bd; letter-spacing:.2em; }
+/* 镜头 B(顶):暖色实底,被 inset 擦除引入 */
+.shot-b { position:absolute; inset:0; background:linear-gradient(25deg, #3a2416 0%, #57351d 100%);
+  clip-path:inset(0 100% 0 0); animation:wipe .45s var(--ease-in) 2.0s both; }
+@keyframes wipe { from { clip-path:inset(0 100% 0 0); } to { clip-path:inset(0 0 0 0); } }
+.shot-b .cap { position:absolute; left:184px; top:1120px; font-size:44px; font-weight:700;
+  color:#ffd9a8; letter-spacing:.2em; }
+.shot-b .bar { position:absolute; left:184px; width:340px; height:14px; border-radius:8px;
+  background:rgba(255,217,168,.4); top:1210px; }
+/* 前导细线:擦除前 0.12s 先扫过,给"方向预告" */
+.leader { position:absolute; top:0; bottom:0; left:-6px; width:6px; background:#ffd9a8;
+  opacity:0; animation:lead .12s linear 1.88s both; }
+@keyframes lead { from { transform:translateX(0); opacity:0; }
+                  to   { transform:translateX(1092px); opacity:.9; } }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="shot-a"><div class="cap">SHOT A</div><div class="bar"></div><div class="bar"></div><div class="bar"></div></div>
+  <div class="shot-b"><div class="cap">SHOT B</div><div class="bar"></div></div>
+  <div class="leader"></div>
+</div>
+</body>
+</html>

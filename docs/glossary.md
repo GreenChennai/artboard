@@ -7,6 +7,34 @@
 | embed-fonts | `--embed-fonts`:把字体/vendor 真拷贝进项目的自包含模式(体积大,单件交付用) |
 | pack | `scripts/pack.py`:穿透联接收集依赖 → 自包含 zip,HTML 引用自动改写 |
 | 五问 | 开工前追问协议:用途/尺寸/风格/配色/素材(intake.md) |
+| Brief Gate(开工前检查单) | 铁律 8 的落地形态:9 字段清单(用途/尺寸/风格/配色/素材/必含文案/交付格式/禁忌/期限)+ 三态标注 + 缺项补齐闸门;缺失 ≥1 强制补齐一轮,检查单写入 design-prompt.txt 可机检(check_brief.py)(intake.md) |
+| 三态标注 | Brief Gate 的字段状态三档:已给 / 可推定(必须带依据,防"我以为")/ 缺失;❌ 项逐条编号一次问完,补齐后重核(intake.md) |
+| 假设清单 | 「直接做」跳闸路径的强制输出:把全部推定值显式列出并请用户确认——复述不算数,确认才开工;用户不回复则按假设开工、交付首行再列留痕(intake.md) |
+| 配图判定(Image Plan) | Step 4.5 第一闸门:按 materials.md §0 判定表给"要不要配图 + 谁提供 + 预算"并写入 project.json.image_plan;可执行形态为 artboard-mcp 的 assets_plan(materials.md §0) |
+| 主动取图(Proactive Sourcing) | 判定为"必须/建议"且 must_ask=false 时,**不等用户点出即执行检索**;not_needed 则不检索并在交付说明理由(materials.md §0) |
+| 专用素材浏览器 | asset_hunt 启动的独立 Chrome/Edge 实例(独立 profile 装 asset-bridge):首次可见登录绑定,日常 --headless=new 后台采集,不抢用户浏览器(0927 迭代) |
+| asset_hunt | scripts/asset_hunt.py:一条命令全自动搜素材(多站编排/花瓣去水印自动化/筛透明横竖颜色/原图升级/查重/关页/JSON 报告) |
+| 素材 Bridge | tools/asset-bridge 浏览器扩展 + bridge.py 本地服务的升级形态:在用户登录态下采集白名单站点页面素材,仅 127.0.0.1 + 一次性 token + 显式授权,被 artboard-mcp 的 assets_fetch_page 调用(mcp-assets.md) |
+| 矢量安全路线 | 目标产物含矢量时的画法白名单:轴对齐盒子+圆角+边框+不透明渐变+真文本;与 vector-export §4 五禁令互为镜像(vector-drawing.md §4.8) |
+| 位图路线 | 目标产物为 PNG/JPG 时内联 SVG/clip-path/mask/混合模式全可用;动画 clip-path 仍限 inset/circle/ellipse(vector-drawing.md §4.8) |
+| 插画质量 rubric | 构成有理由/负形可读/单一形状语言/缩小可辨/风格统一 五项各 1–5 分,**最低分 ≥4 才交付**;机检配套 check_svg.py 9 项(vector-drawing.md §4.7) |
+| 脚本注册表 | scripts/registry.json(生成物):name/purpose/used_by/internal;由 gen_script_index.py 重建,勿手改;唯一脚本索引真相源(08 迭代) |
+| 脚本三层归属 | L1 入口(SKILL.md 只留主线 5 条)/ L2 分册(每册末「本册用到的脚本」≤10 行)/ L3 注册表(全量生成物);参数权威=脚本 --help(08 迭代) |
+| 单向绑定(图文⇒封面) | gzh_article convert 默认 --with-cover:出图文必出同主题三封面;--no-cover 逃生口需交付说明;反向 gzh_cover 不产图文(11 迭代) |
+| 公众号主题统一源 | scripts/_gzh_theme.py:6 套主题 × 全量角色,封面/图文各取角色子集;旧名 blue/dark/default/orange/green 有弃用提示,green 色值已统一 |
+| 模式 H(H5) | 交付可运行 HTML 页面的第三分支:移动端落地页/互动页;不适用铁律 1,守 H5 铁律 7 条(h5-interactive.md) |
+| H5 铁律集 | 模式 H 专用 7 条:viewport 基线(禁 user-scalable=no)/cover 配 env 安全区/触摸目标 ≥44(次要 ≥24)/CWV 工程目标/零 CDN/reduced-motion/能力降级不白屏(h5-interactive.md §二) |
+| 触摸目标 | 交互控件的可点区域:WCAG 2.5.8 最低 24×24(AA)、2.5.5 增强 44×44(AAA);项目口径主交互 ≥44(h5-interactive.md §1.4) |
+| CWV 工程目标 | Core Web Vitals 的本地等效项:LCP≤2.5s(首屏关键 CSS 内联+图≤100KB)/INP≤200ms(轻事件+只动 transform·opacity)/CLS≤0.1(显式尺寸)(h5-interactive.md §四) |
+| 配方引擎(pixel) | scripts/pixel.py:声明式配方(JSON)驱动 PS 式调整 18 项/滤镜 12 项/混合模式 25 种/蒙版;与 imageops 分工=配方 vs 工序(pixel-pipeline.md) |
+| 配方(recipe) | version+stages+output 的 JSON;stages 顺序须符合处理链固定序(乱序 validate 报错);可保存/校验/重放/批量,公共库 assets/recipes/(pixel-pipeline.md) |
+| 图层栈(layer-stack) | 自底向上按 模式+不透明度+蒙版 合成多层;混合模式 25 种 sRGB 近似实现(pixel-pipeline.md) |
+| 蒙版构建(mask) | pixel 的 --mask DSL:luminosity/alpha/color-range/shape:rect|circle|gradient/外部灰度图;对应 PS「调整层+蒙版」 |
+| 能力矩阵降级 | pixel deps 打印 Pillow/cv2/pyvips 矩阵;缺依赖 op **报错不静默**,--allow-degrade 才降级且 degraded[] 非空 |
+| 视频动效件(Video Motion Asset) | 片头/片尾/内容概括/章节卡/转场五类画面件的统称;时长契约与置信度见 video-motion.md §一 |
+| 模式 V(Mode V) | 动效第三模式:多镜头视频动效件(shot 间转场衔接,每 shot 内部仍守五段式);区别于模式 P 循环/模式 S 单卡(animation.md §〇) |
+| 分镜表(Shot List) | `shot\|内容\|时长\|动效语法\|转场\|备注` 的可执行清单,交 CutFlow 挂轨;每 shot 单独一个 HTML(video-motion.md §四) |
+| 卡点表(Beat Sheet) | BPM→帧换算后画面出入点对齐帧网格的表格;`beat_sheet.py` 生成,支持无 BPM 的秒点直对齐(video-motion.md §五) |
 | 设计简报 | 五问汇总的"生图式提示词",先给用户看再动工(design-prompt.txt) |
 | 三模式 | 文案直出(A)/ 图片复刻(B)/ 换风格改配色(C)(replicate.md 为 B 的协议) |
 | 证据链 | 复刻纪律:每个颜色/度量追溯到测量;token 必须带采样证据,裸眼估的不进 CSS(replicate.md) |

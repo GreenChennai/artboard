@@ -260,3 +260,11 @@ python scripts/check_overflow.py <项目>/src --safe-area auto
 5. flex 子项要省略号时,加了 `min-width: 0`?
 6. 跑过 `check_overflow.py` 且 `ok: true`?(或已人工确认越界的只有装饰)
 7. 装饰越界处透明度 ≤0.5、带 `data-allow-overflow`?
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `check_overflow.py` | 卡片越框 A/B 类机检 | `python scripts/check_overflow.py <proj>/src` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

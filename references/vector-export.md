@@ -85,3 +85,13 @@ Kiln-noGUI-CLI.exe import --source poster.svg --output <项目目录>   # SVG:�
 - [ ] 双面输入导出为单个 `.ai`，页数/画板数为 2
 - [ ] AI 栅格化回 PNG 与参考图相似度 ≥ 97（运行 `scripts/ai_fidelity.py`）
 - [ ] 与 PNG 导出视觉一致(排版无漂移)
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `ai_export.py` | 矢量/工程文件导出 | `python scripts/ai_export.py <项目>/src --svg` |
+| `to_vector.py` | 位图转矢量草稿 | `python scripts/to_vector.py --help` |
+| `ai_fidelity.py` | 矢量保真对拍 | `python scripts/ai_fidelity.py --help` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

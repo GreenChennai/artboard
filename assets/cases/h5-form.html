@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no,email=no">
+<title>活动报名 · 交互表单(模式 H 案例)</title>
+<style>
+:root{
+  --ink:#1e2430; --bg:#f2f4f8; --accent:#2f6fed; --err:#d84438;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+*,*::before,*::after{ box-sizing:border-box }
+body{ margin:0; padding:var(--safe-t) 16px calc(var(--safe-b) + 24px); background:var(--bg);
+  color:var(--ink); font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; }
+header{ max-width:520px; margin:0 auto; padding:40px 4px 18px; }
+header h1{ margin:0 0 6px; font-size:24px; }
+header p{ margin:0; color:#66708a; font-size:14px; }
+form{ max-width:520px; margin:0 auto; background:#fff; border-radius:18px; padding:22px 18px;
+  box-shadow:0 10px 30px rgba(30,36,48,.08); }
+label{ display:block; font-size:14px; font-weight:600; margin:16px 0 6px; }
+input,select{ width:100%; min-height:44px; font:inherit; padding:10px 12px;
+  border:1px solid #cfd6e4; border-radius:12px; background:#fbfcff;
+  touch-action:manipulation; }
+input:focus,select:focus{ outline:2px solid var(--accent); outline-offset:1px; border-color:transparent }
+.err-msg{ display:none; color:var(--err); font-size:13px; margin-top:6px }
+input:invalid + .err-msg{ display:block }
+button{ margin-top:22px; width:100%; min-height:48px; border:0; border-radius:14px;
+  background:var(--accent); color:#fff; font-size:17px; font-weight:700;
+  touch-action:manipulation; }
+button:active{ transform:translateY(1px) }
+.fine{ margin:14px 0 0; font-size:12px; color:#8a92a8; text-align:center }
+@media (prefers-reduced-motion: reduce){ *{ animation:none!important; transition:none!important } }
+</style>
+</head>
+<body>
+<header><h1>周末杯测会报名</h1><p>周六 14:00 · 12 席 · 免费参加</p></header>
+<form aria-label="报名表单">
+  <label for="name">称呼</label>
+  <input id="name" name="name" type="text" required maxlength="20" placeholder="怎么称呼你">
+  <label for="phone">手机号</label>
+  <input id="phone" name="phone" type="tel" required inputmode="numeric" pattern="[0-9]{11}"
+         placeholder="11 位手机号">
+  <p class="err-msg">请输入 11 位手机号</p>
+  <label for="slot">场次</label>
+  <select id="slot" name="slot">
+    <option>本周六 14:00(剩 4 席)</option>
+    <option>下周六 14:00(剩 9 席)</option>
+  </select>
+  <button type="submit">提交报名</button>
+  <p class="fine">提交即代表同意活动拍照用于回顾</p>
+</form>
+<script>
+document.querySelector("form").addEventListener("submit", function (e) {
+  e.preventDefault(); // 演示页:无后端;真实部署替换为提交接口
+  var btn = this.querySelector("button");
+  btn.textContent = "已登记(演示)";
+});
+</script>
+</body>
+</html>

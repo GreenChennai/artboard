@@ -16,8 +16,10 @@ python "<skill>/scripts/preflight.py"
 
 ## Step 1 需求追问与路由(细则见 intake.md)
 
-**先追问,后开工**:按 intake.md 五问(用途/尺寸/风格/配色/素材)打包发问、每问带推荐、最多追问一轮;
-B 复刻/C 换风格只问用途+尺寸;用户明说「直接做/全按推荐」才可跳过,跳过也要复述假设。
+**先追问,后开工**:按 intake.md 的 **Brief Gate 检查单**(9 字段三态标注:已给 / 可推定须带依据 / 缺失)
+打包发问、每项带推荐;**缺失 ≥1 → 强制补齐一轮并重核检查单**,不许用推荐值静默补齐。
+B 复刻/C 换风格只核 用途+尺寸 两字段;仅用户明说「直接做/全按推荐」可跳闸,
+跳闸时必须输出**假设清单并请确认**(复述不算数;用户不回复则按假设开工、交付首行再列假设留痕)。
 用途决定品类与呈现骨架,尺寸确认防默认值误伤。三模式路由:
 
 ### 模式 A · 文案直出
@@ -40,6 +42,7 @@ B 复刻/C 换风格只问用途+尺寸;用户明说「直接做/全按推荐」
 
 ## Step 1.5 设计简报(生图式提示词,AI 生图习惯对齐)
 
+**前置条件:Brief Gate 检查单无 ❌**(或用户已明说「直接做」并确认了假设清单)。
 五问答完(或用户「直接做」)后、动工前,**先输出一段"提示词"**——模拟 AI 生图用户会看到的 prompt:
 
 ```
@@ -95,10 +98,15 @@ python "<skill>/scripts/scaffold.py" <slug> --size <预设> --fonts <款1,款2>
 > 为母版复制 `draft-a…d.html`,只改差异区(`:root` tokens / 骨架类 / 主视觉层),内容与文案共享;
 > 流程与成本纪律见 `multi-draft.md §4/§7`。默认不走此分支。
 
-### Step 4.5 素材处理(细则见 materials.md)
+### Step 4.5 素材处理(细则见 materials.md;四步,顺序不能反)
 
-判定:这张图的风格**必须**有真实照片/素材吗?(电商促销/食品/人物吉祥物 = 必须;科技 KV/数据长图/编辑排版 = 可选)
-需要 → 按序取材;**照片先定角色再处理**(主体/背景/纹理/氛围,角色决定裁切与色调 → `image-language.md`):
+**① 判定**:按 `materials.md §0` 配图判定表给结论 + 理由,写入 `project.json.image_plan`
+(可执行形态:`mcp/artboard-mcp` 的 `assets_plan`)。
+**② 主动取图**:判定"必须/建议"且非产品本体/人像/品牌 → **不问即检索**(fetch_asset.py
+或 MCP 通道 mcp-assets.md;产品本体只能用户供图,红线不放松);判定"不需要" → 跳到④。
+**③ 体检**:图片进项目前先 probe(`imageops.py probe` 尺寸/水印/主色;拿不准内容 → VQA),
+多来源采集后跑 `imageops.py dedupe` 查重、`check_credits.py` 对账 CREDITS。
+**④ 上版**:**照片先定角色再处理**(主体/背景/纹理/氛围,角色决定裁切与色调 → `image-language.md`):
 
 1. **用户自备图**(吉祥物/产品/食品)= 首选:复制进 `src/img/` → `cutout.py` 抠图 + 四件套后处理(产品图 `--shadow`,吉祥物 `--sticker --trim`,卡通图 `--model isnet-anime`)。
 2. **图库/爬虫补氛围**:`fetch_asset.py --query <英文效果更好> --theme <主题> --download`,Read 挑图 → 复制进 `src/img/`。
@@ -221,3 +229,15 @@ python scripts/make_bats.py <项目> --embed
 - 动效模式库、缓动 token、无缝循环写法、导出自检 → **references/animation.md**(M2 已启用)。
 - 录制从页面加载完成后开始:入场动画可能被错过,**动图主体靠循环表达**。
 - 导出:`--format GIF --fps 25 --max-wait 6`(无 ffmpeg 时 Pillow 回退);MP4 需 ffmpeg。
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `preflight.py` | 开工预检 | `python scripts/preflight.py` |
+| `scaffold.py` | 建项目 | `python scripts/scaffold.py <slug> --size xhs` |
+| `export.py` | 导出主路径 | `python scripts/export.py --source … --output … --width 1080 --height 1440` |
+| `export_fallback.py` | 导出兜底(仅 PNG) | `python scripts/export_fallback.py --source src/index.html -o out.png` |
+| `check_overflow.py` | 机检门禁 | `python scripts/check_overflow.py <proj>/src --safe-area auto` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

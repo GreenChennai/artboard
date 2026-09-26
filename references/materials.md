@@ -1,6 +1,39 @@
-# artboard 素材分册(找图 · 抠图 · 素材纪律)
+# artboard 素材分册(判定 · 找图 · 抠图 · 素材纪律)
 
 > 管线位置:**Step 4.5 素材处理**——选风格之后、写 HTML 之前。
+
+---
+
+## 0. 配图必要性判定表(P0 闸门,先判定再动手)
+
+> **为什么**:配图不上心、默认走无图模式,与"图库糊弄产品图"是同一种懒——都不做判定。
+> 本表把"要不要配图"变成**可审计的决策**:结果 + 理由写入 `project.json.image_plan`
+> (可执行形态:`mcp/artboard-mcp` 的 `assets_plan`,细则见 mcp-assets.md)。
+
+| 品类 | 是否需配图 | 谁提供 | 数量预算 | 说明 |
+|---|---|---|---|---|
+| 电商主图 / 食品 / 产品 | **必须** | **用户提供产品本体** + 氛围图可自取 | 1 主体 + 1 氛围 | §1 红线 |
+| OOTD / 探店 / 菜品摆盘 | **必须** | **用户供图**(intake 即声明) | 1–2 | 图库糊弄不可接受 |
+| 品牌 KV / 科技发布 | **建议** | 自取(氛围 / 材质 / 场景) | 0–2 | 纯排版亦可 |
+| 小红书封面 / 干货卡 | **视风格** | 自取或纯排版 | 0–2 | 手账 / 贴纸风可零图 |
+| 数据长图 / 报告 | **不需要** | — | 0 | 图表为主 |
+| 名片 / 三折页 / 易拉宝 | **视品类** | 自取或用户 | 0–2 | 印刷慎用低清图(300dpi 见 dpi-check) |
+| 公众号双封面 | **建议** | 自取 | 0–1 | 信息流缩略图靠主体 |
+| 电影 / 活动海报 | **建议** | 自取(氛围) | 0–1 | 主体可用排版承担 |
+| 视频动效件(片头/尾/章节/转场) | **不需要** | — | 0 | 以排版/几何为主(video-motion.md) |
+
+**判定纪律(硬)**:
+
+1. 判定结果 + 理由写入 `project.json.image_plan`:
+   `{need_images, reason, level, budget, must_ask, action_taken, query}`;
+2. **`required`/`recommended` 且 `must_ask=false` → 不问即主动检索**(不等用户点出来;
+   这就是"主动取图"与旧习惯的区别);
+3. **`required` 且属产品本体 / 人像 / 品牌 → `must_ask=true`,先问**(§1 红线不放松);
+4. 判定 `not_needed` → 不检索,交付时**说明理由**(不给"省事"留口子);
+5. 用户可显式覆盖(要图/不要图),覆盖原因一并写进 `image_plan`。
+
+**数量预算(硬上限)**:单次检索 ≤50 条;单次下载 ≤20 张(Read 挑 1–2 张上版);
+上版照片 ≤2 张(§5);Bridge 采集 ≤5 页/次(mcp-assets.md §4)。
 
 ---
 
@@ -10,9 +43,9 @@
 |---|---|---|---|
 | 1 | Pexels API(`ARTBOARD_PEXELS_KEY`) | 免费商用免署名,最干净 | 无 |
 | 1 | Pixabay API(`ARTBOARD_PIXABAY_KEY`),`--image-type illustration/vector` 可搜插画 | 免费商用免署名(要求展示来源→CREDITS.md 履行) | 无 |
-| 2 | 爬虫兜底:bing / baidu / **huaban / iconfont / pinterest**(需 Cookie,可用 `tools/cookie-extension` 浏览器插件抓取后填进 config.json 的 `*_cookie`) / **miankoutu**(免抠 PNG 聚合站,签名 API 免 Cookie) | **不确定** | **文件名自动加前缀 `版权风险-`** |
+| 2 | 爬虫兜底:bing / baidu / **huaban / iconfont / pinterest**(需 Cookie:装 `tools/asset-bridge` 扩展后由 MCP **自动抓写**——`assets_cookie` tool,或 `python -m artboard_mcp cookie --site iconfont`;也可在扩展 popup 手动抓) / **miankoutu**(免抠 PNG 聚合站,签名 API 免 Cookie) | **不确定** | **文件名自动加前缀 `版权风险-`** |
 
-> Cookie 插件(MV3,Edge/Chrome 通用):`tools/cookie-extension/` → 浏览器「加载解压缩的扩展」→ 登录目标站 → 点插件复制片段 → 粘贴进 config.json。Cookie 只存本机。iconfont 是矢量/图标源(`--source iconfont`);huaban/pinterest/miankoutu 用 `--source` 显式指定,不进 auto 通道。
+> Cookie 插件(MV3,Edge/Chrome 通用;旧 cookie-extension 已删除,由 asset-bridge 全面替代):`tools/asset-bridge/` →「加载解压缩的扩展」→ 登录目标站 → Cookie 抓取走 MCP 自动写 config.json,无需手动粘贴。Cookie 只存本机。iconfont 是矢量/图标源(`--source iconfont`);huaban/pinterest/miankoutu 用 `--source` 显式指定,不进 auto 通道。
 > **miankoutu 通道**:`--source miankoutu` 直搜免抠 PNG(透明底,适合产品/吉祥物贴纸),搜索免 Cookie(内置签名),下载按源站自动带 Referer;聚合源无统一授权,保留风险前缀;版权禁词会静默返回空。
 
 > 
@@ -58,6 +91,7 @@ python $S/cutout.py hero.jpg --quality high --dml
 ```
 - 后处理四件套:去白底残边(1px 腐蚀+羽化,默认开)/ 贴纸白描边(`--sticker`)/ 软投影(`--shadow`)/ 透明边裁切(`--trim`)。
 - **模型红线:`bria-rmbg`(rembg 新版默认)商用需付费协议,脚本层硬拒绝**;允许模型白名单见脚本头注释。
+- **抠图后调色**:透明件不做全图 tone(image-language §七);需要色调用 `pixel.py <调整> --mask alpha` 局部应用(references/pixel-pipeline.md)。
 - 新模型不用开 `-a` matting(已是软 alpha);白底图残边靠默认后处理即可。
 - 模型缓存:`~/.rembg/models/<模型>/<模型>.onnx`;技能已预取 isnet-general-use 与 isnet-anime。
   **下载坑**:本机 Python requests/pooch 走 GitHub 会 SSL 证书验证失败——模型下载改用 curl 直拉
@@ -66,18 +100,23 @@ python $S/cutout.py hero.jpg --quality high --dml
   (主体会融进背景)——深色海报优先选亮主体或玻璃/暖色主体,或干脆用实拍原图做底不抠图。
 - 中文文件名素材可直接进 `src/img/` 并在 CSS `url()` 引用(实测 WPI 静态服务无碍);`版权风险-` 前缀**不许因引用方便而改名**。
 
-## 4. 本地插画包(零网络兜底,人物/吉祥物感)
+## 4. 本地插画包与矢量素材源(状态以磁盘为准,2026-09 核对)
 
-`assets/illustrations/` 三套全 CC0/等效免署名商用:
+> **本节只说真话**:`assets/illustrations/` 目前**只有一套已落地**(open-doodles 31 个 SVG)。
+> 其余两套是"可获取",不是"已有"——别把预留当库存用。
 
-| 包 | 风格 | 用法 |
-|---|---|---|
-| Open Peeps | 手绘人物,可拼装(发型/姿势/服装) | 吉祥物首选;SVG 改 `fill` 换品牌色 |
-| Open Doodles | 涂鸦场景/物件 | 氛围点缀 |
-| unDraw | 扁平插画,官网色即主题色 | 科技/互联网场景;SVG 改主色 hex 即全套换装 |
+| 包 | 磁盘状态 | 获取方式 | 许可 |
+|---|---|---|---|
+| **Open Doodles** | ✅ **已落地**(`open-doodles/`,31 SVG) | 直接用 | CC0 |
+| Open Peeps | ⬜ 需人工获取 | [openpeeps.com](https://openpeeps.com) → Download(zip)→ 解压到 `assets/illustrations/open-peeps/`;官网表单下载无直链,自动化不稳定 | CC0 |
+| unDraw | ⬜ 需人工获取 | [undraw.co](https://undraw.co) 逐张下载 SVG(可先在官网设主题色);批量接口 2026-09 实测 405 | 自定义开放许可(免署名商用,禁转售插画本身) |
+| illustrations.co | ❌ 未接入 | 许可待核,核清前不取用 | 待核 |
+| **Iconify 图标** | ✅ 可脚本获取(30 万+,按需 + 离线缓存) | `scripts/fetch_svg.py iconify --set tabler --query <词>`;许可**逐集不同**,白名单与清单见 `docs/svg-licenses.md` | 逐集(多数 MIT/Apache/CC0) |
 
 - 用法:直接内联 SVG 进 HTML(改 fill 为 tokens 色);或转 PNG 进 `src/img/`。
-- 自绘插画(素材缺元素时按同一语言补画)的语言规范见 `vector-drawing.md §4.4`(五种手法与素材包的关系)。
+- **自绘前先查素材源**:`fetch_svg.py`(图标)→ 本地插画包 → 最后才是现画;
+  现画走 `vector-drawing.md §4.3` 构成七步 + §4.7 质量门(`check_svg.py`)。
+- 插画混源禁令:同屏插画必须同一形状语言(vector-drawing.md §4.3)。
 - 手账/可爱风格注意:插画人物配 [霞鹜文楷](../fonts/lxgw-wenkai/INTRO.md)/[站酷快乐体](../fonts/zcool-kuaile/INTRO.md) 才不违和。
 
 ## 5. 素材在版式里的纪律(补 guardrails)
@@ -88,3 +127,16 @@ python $S/cutout.py hero.jpg --quality high --dml
 - 食品图选图标准:特写、暖光、有蒸汽/光泽/颗粒感——"能闻到味道"的图才配卖它。
 - 一张海报最多 2 张照片;产品图(主体)+氛围图(背景)各一,再多就乱。
 - 图像角色与处理链(先定"这张当主体还是背景"再处理,处理顺序模型)见 `image-language.md`。
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `fetch_asset.py` | 图库/爬虫搜图下载 | `python scripts/fetch_asset.py --query "coffee" --theme t --download` |
+| `cutout.py` | 抠图+四件套 | `python scripts/cutout.py product.jpg --sticker --shadow` |
+| `vqa.py` | 本地图片问答(内容拿不准) | `python scripts/vqa.py <图> --prompt "描述主体"` |
+| `fetch_model.py` | VQA 模型下载 | `python scripts/fetch_model.py` |
+| `check_credits.py` | 素材版权对账 | `python scripts/check_credits.py <项目>/src/img` |
+| `asset_hunt.py` | 全自动多站搜素材(开页→筛→下→去重→关页) | `python scripts/asset_hunt.py --query "咖啡" --theme t --limit 8` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

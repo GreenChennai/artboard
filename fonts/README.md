@@ -39,3 +39,12 @@
 | [english-frijole]english-frijole/INTRO.md | Frijole | 英文点缀·粗糙质感 | 粗糙,质感,街头 | Regular |
 | [english-trochut]english-trochut/INTRO.md | Trochut | 英文点缀·装饰几何 | 装饰,几何,艺术 | Regular |
 | [english-miss-fajardose]english-miss-fajardose/INTRO.md | Miss Fajardose | 英文点缀·优雅签名 | 签名,手写,优雅,花体 | Regular |
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `fetch_font.py` | 字体按需下载 | `python scripts/fetch_font.py` |
+| `add_font.py` | 字体入库登记 | `python scripts/add_font.py --help` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

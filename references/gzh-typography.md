@@ -1,5 +1,8 @@
 # 公众号内容排版规范(gzh-typography)
 
+> **与封面同主题(11 迭代)**:图文 `--theme` 与双封面共用唯一主题源 `scripts/_gzh_theme.py`(6 套);`convert` 默认同时出同主题三张封面,一致性机检:
+> `gzh_article.py check a.html --theme-consistency --cover-html <项目>/src/index.html --theme <名>`。
+
 > 公众号正文与普通网页 HTML 的关键差异:微信编辑器会**剥离 `<style>`/`<script>` 标签、
 > class/id 属性与部分标签**,只有写在每个元素 `style` 属性里的内联样式能存活。
 > 本分册是"公众号兼容 HTML"的写法规范;配套工具 `scripts/gzh_article.py`
@@ -75,3 +78,11 @@ doocs/md(20k+ star)验证了这套内联样式路线的可行性:其主题 CSS �
 | 文章无内容块 | `EMPTY_INPUT`(只有图片/空行的文章) |
 | check 发现违规 | 逐条列出(class/script/外链/裸标签),退出码 1 |
 | 粘贴后样式丢失 | 按本文 §一 逐项核对;常见原因:用了 class、粘了 `<style>` 块 |
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `gzh_article.py` | Markdown→公众号 HTML | `python scripts/gzh_article.py convert a.md --out a.html` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

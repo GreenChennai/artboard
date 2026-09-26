@@ -84,6 +84,22 @@ SAFE_TIERS: dict[str, dict[str, tuple[float, float, float, float]]] = {
         "tight": (7.0, 5.0, 13.0, 5.0),
         "extreme": (2.5, 2.5, 2.5, 2.5),
     },
+    # ↓ 三档为工程取值(未实测;video-motion.md §六 提案,video-safe-area.md §2.0)
+    "1x1": {
+        "standard": (8.0, 8.0, 8.0, 8.0),
+        "tight": (8.0, 8.0, 8.0, 8.0),
+        "extreme": (2.5, 2.5, 2.5, 2.5),
+    },
+    "4x5": {
+        "standard": (8.0, 8.0, 16.0, 8.0),
+        "tight": (8.0, 8.0, 16.0, 8.0),
+        "extreme": (2.5, 2.5, 2.5, 2.5),
+    },
+    "2.35x1": {
+        "standard": (5.0, 5.0, 5.0, 5.0),
+        "tight": (5.0, 5.0, 5.0, 5.0),
+        "extreme": (2.5, 2.5, 2.5, 2.5),
+    },
 }
 SAFE_LABEL = {"standard": "标准(跨平台交集)", "tight": "紧凑(内容多)",
               "extreme": "极限(几乎贴边,有代价)"}
@@ -94,7 +110,8 @@ def guess_ratio(w: int, h: int) -> str:
     if not w or not h:
         return "9x16"
     r = w / h
-    for name, (rw, rh) in (("9x16", (9, 16)), ("3x4", (3, 4)), ("16x9", (16, 9))):
+    for name, (rw, rh) in (("9x16", (9, 16)), ("3x4", (3, 4)), ("1x1", (1, 1)),
+                           ("4x5", (4, 5)), ("16x9", (16, 9)), ("2.35x1", (2.35, 1))):
         if abs(r - rw / rh) < 0.02:
             return name
     return "9x16" if r < 1 else "16x9"

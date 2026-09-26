@@ -1,5 +1,9 @@
 # 品类规范 · 微信公众号双封面(gzh-cover)
 
+> **主题统一源(11 迭代)**:封面主题不再本地定义,来自 `scripts/_gzh_theme.py`
+> (ink/night/warm/grass/red/mono 6 套 × 全量角色)。旧名 `blue→ink` / `dark→night` /
+> `green→grass` 仍可用但打印弃用提示;**green 色值已统一,与旧版不同**。图文侧同源,改色一次两产物同变。
+
 > 品类分册:视觉风格可从风格清单选,或直接用 `scripts/gzh_cover.py` 内置主题。
 > 品类规范只管尺寸、安全区与导出纪律。规格来源与证据链见 `docs/gzh-spec-summary.md`。
 
@@ -66,3 +70,11 @@
 | `MISSING_EXPORTS` | 合并前单张未导出 | 先 `export --only main` / `--only sub` |
 | `PILLOW_MISSING` | Pillow 未安装 | `pip install Pillow`(核心依赖) |
 | `EXISTS` | 项目已存在 | 换 slug 或 `--force` |
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `gzh_cover.py` | 双封面 new/export | `python scripts/gzh_cover.py new <slug> --title "标题"` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

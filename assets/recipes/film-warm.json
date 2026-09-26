@@ -1,0 +1,57 @@
+{
+  "_说明": "胶片感:轻降对比+暖高光+青阴+细颗粒+暗角",
+  "version": 1,
+  "stages": [
+    {
+      "op": "auto-orient"
+    },
+    {
+      "op": "levels",
+      "channel": "rgb",
+      "black": 0.03,
+      "gamma": 1.08,
+      "white": 0.97
+    },
+    {
+      "op": "color-balance",
+      "shadow": [
+        -0.03,
+        0.0,
+        0.04
+      ],
+      "mid": [
+        0.0,
+        0.01,
+        0.02
+      ],
+      "high": [
+        0.04,
+        0.02,
+        -0.03
+      ]
+    },
+    {
+      "op": "hsl",
+      "range": "all",
+      "sat": 0.06,
+      "light": 0.02
+    },
+    {
+      "op": "shadows-highlights",
+      "shadows": 0.15,
+      "highlights": 0.1
+    },
+    {
+      "op": "add-noise",
+      "amount": 0.015,
+      "monochrome": true
+    },
+    {
+      "op": "vignette",
+      "amount": 0.18
+    }
+  ],
+  "output": {
+    "format": "png"
+  }
+}

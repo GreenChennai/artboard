@@ -1,0 +1,21 @@
+[project]
+name = "artboard-mcp"
+version = "0.1.0"
+description = "artboard 取图通道薄壳:MCP 工具面(判定表/搜索/Bridge 采集/下载/查重),逻辑全部复用 artboard scripts/"
+requires-python = ">=3.10"
+dependencies = ["Pillow>=9.0"]
+
+[project.optional-dependencies]
+# mcp SDK 不需要:server.py 自带轻量 JSON-RPC 2.0 stdio 实现
+sdk = ["mcp>=1.0"]
+
+[project.scripts]
+artboard-mcp = "artboard_mcp.server:main"
+artboard-bridge = "artboard_mcp.bridge:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

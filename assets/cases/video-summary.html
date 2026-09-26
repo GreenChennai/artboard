@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>video-summary · 内容概括(模式 V:3 条要点 stagger + 数字滚动;总长 ~7.6s)</title>
+<!-- video-motion.md §一 概括契约:5–15s,要点逐个进场,内容在安全区内一眼扫完
+     五段式:P0 2.0 → IN 0.6(标题) → 持住 4.0(要点 stagger 2.6/2.95/3.3) → OUT 0.5 → P1 0.3
+     动效语法:数字滚动(@property counter,终值=文案数值 12,≤1s,tabular-nums) -->
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#000; }
+.poster { position:relative; width:1080px; height:1920px; overflow:hidden;
+  background:linear-gradient(165deg, #f5f2ea 0%, #e9e4d6 100%);
+  font-family:"Microsoft YaHei UI","Microsoft YaHei",sans-serif; }
+:root { --ease-in: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ink:#2a261a; }
+.band { position:absolute; left:0; right:0; top:0; height:660px;
+  background:linear-gradient(160deg, #22303f, #16202c); opacity:.96; }
+.wrap { position:absolute; left:184px; top:230px; width:712px; height:1114px; }
+.kicker { font-size:30px; font-weight:700; letter-spacing:.34em; color:#9fb6cc;
+  opacity:0; animation:rise .5s var(--ease-in) 2.0s both; }
+@keyframes rise { from { transform:translateY(36px); opacity:0; }
+                  to   { transform:translateY(0);    opacity:1; } }
+h1 { margin-top:22px; font-size:76px; font-weight:900; color:#f4f6f8; line-height:1.24;
+  opacity:0; animation:rise .6s var(--ease-in) 2.2s both; }
+.big { margin-top:40px; display:flex; align-items:baseline; gap:18px;
+  opacity:0; animation:rise .5s var(--ease-in) 2.6s both; }
+@property --n { syntax:"<integer>"; inherits:true; initial-value:0; }
+@keyframes count { from { --n:0; } to { --n:12; } }
+.big .num { font-size:150px; font-weight:900; color:#f4f6f8; line-height:1;
+  font-variant-numeric:tabular-nums;
+  animation:count .8s ease-out 2.7s 1 both; }
+.big .num::after { content:counter(num); counter-reset:num var(--n); }
+.big .unit { font-size:44px; font-weight:700; color:#dbe4ec; }
+.big .label { font-size:32px; color:#c9d4de; }
+.items { margin-top:64px; display:flex; flex-direction:column; gap:30px; }
+.item { display:flex; gap:24px; align-items:flex-start;
+  opacity:0; transform:translateX(56px); }
+.item:nth-child(1) { animation:slide .5s var(--ease-in) 3.2s both; }
+.item:nth-child(2) { animation:slide .5s var(--ease-in) 3.55s both; }
+.item:nth-child(3) { animation:slide .5s var(--ease-in) 3.9s both; }
+@keyframes slide { from { transform:translateX(56px); opacity:0; }
+                   to   { transform:translateX(0);    opacity:1; } }
+.dot { flex:none; width:52px; height:52px; border-radius:16px; background:#22303f;
+  color:#f2eee2; font:700 28px/52px "Microsoft YaHei UI"; text-align:center; }
+.item p { font-size:38px; line-height:1.5; color:#33404d; }
+.item p b { color:#1c2733; }
+.wrap-out { opacity:1; animation:leave .5s ease-in 7.1s both; }
+@keyframes leave { to { opacity:0; transform:translateY(-24px); } }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="band"></div>
+  <div class="wrap wrap-out">
+    <div class="kicker">本期回顾 · SUMMARY</div>
+    <h1>新手手冲三件事</h1>
+    <div class="big">
+      <span class="num"></span><span class="unit">分钟</span>
+      <span class="label">从烧水到出杯</span>
+    </div>
+    <div class="items">
+      <div class="item"><span class="dot">1</span><p><b>研磨度</b>:中细如砂糖,别磨成粉</p></div>
+      <div class="item"><span class="dot">2</span><p><b>水温</b>:浅烘 92°C,深烘 86°C</p></div>
+      <div class="item"><span class="dot">3</span><p><b>注水</b>:三段式,总量 225g</p></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

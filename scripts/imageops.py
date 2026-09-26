@@ -38,6 +38,7 @@ HELP_MAP = {
     "纵向拼接": "stitch --direction v",
     "多稿对比选一版": "montage --grid 2x2 --gap 24 --bg '#e8e8e6' --label",
     "统一多图色调": "tone --duotone/--saturation/--temp",
+    "素材库疑似有重复图": "dedupe --threshold 6",
     "模糊铺底转竖版": "blur-bg --aspect 3:4",
     "缩小长图": "resize --max-edge N",
     "一图多倍率": "derive --scales 1,2",
@@ -213,6 +214,9 @@ def _add_probe(sub) -> None:
     g = sub.add_parser("dpi-check", help="P8 印刷分辨率校验(DPI=LPI×2)")
     g.add_argument("--lpi", type=int); g.add_argument("--target-dpi", dest="target_dpi", type=int)
     g.add_argument("--print-size", dest="print_size", help="WxHmm,如 210x297")
+    _add_global(g)
+    g = sub.add_parser("dedupe", help="C9 查重(pHash 汉明距离 ≤阈值 视为同图;只报告不删图)")
+    g.add_argument("--threshold", type=int, default=6, help="汉明距离阈值,默认 6")
     _add_global(g)
 
 
@@ -478,7 +482,8 @@ def build_parser() -> argparse.ArgumentParser:
                      ("tone", compose.cmd_tone),
                      ("probe", probe.cmd_probe), ("palette", probe.cmd_palette),
                      ("contrast-check", probe.cmd_contrast_check),
-                     ("dpi-check", probe.cmd_dpi_check)):
+                     ("dpi-check", probe.cmd_dpi_check),
+                     ("dedupe", probe.cmd_dedupe)):
         sub.choices[name].set_defaults(func=fn)
     return p
 

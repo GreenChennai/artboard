@@ -106,3 +106,26 @@ python $S/gzh_article.py check article.html     # 必须 ok:true
 `cover-main-<slug>.png`(主)、`cover-sub-<slug>.png`(次)、`cover-merged-<slug>.png`(合并)。
 正文排版产物是单文件 HTML(`--out` 指定路径),`--preview` 会另出一份手机宽度的预览页;
 `demo` 子命令一键生成全组件示例,顺手跑一遍兼容性自检。
+
+---
+
+## 图文与封面绑定(11 迭代,2026-09-26)
+
+- **单向绑定**:出图文(`gzh_article.py convert`)默认同时出同主题双封面三图;
+  只出封面(`gzh_cover.py`)不产图文。`--no-cover` 是逃生口,用了要在交付汇报里说明。
+- **标题自动**:封面主标题取 `--cover-title > --title > 文章 H1`,通常零输入。
+- **主题唯一真相源**:`scripts/_gzh_theme.py`,6 套:ink(蓝黑)/ night(深色金)/
+  warm(暖米)/ grass(绿)/ red(红)/ mono(黑白)。封面取 bg/bg2/ink/accent/muted/line,
+  图文取 primary/text/muted/soft/border/quote,同角色同值。
+- **一致性机检**:
+  `gzh_article.py check <图文.html> --theme-consistency --cover-html <项目>/src/index.html --theme <名>`
+  → 两产物核心角色必须同值,且不得混入他主题强调色(退出码 1 = 不同风格,挡交)。
+- **旧主题名迁移**(一次性提示,不影响出图):
+
+| 旧名 | 用在哪 | 新名 | 注意 |
+|---|---|---|---|
+| blue | 封面 | ink | 色值统一 |
+| dark | 封面 | night | 色值统一 |
+| default | 图文 | ink | 色值统一 |
+| orange | 图文 | warm | 色值统一 |
+| green | 封面+图文 | grass | **同名不同色隐患已消除:统一为一套绿** |

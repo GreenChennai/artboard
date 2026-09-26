@@ -11,5 +11,8 @@
   "proxy": "",
   "vision_mode": "auto",
   "vqa_path": "",
-  "ocr_path": ""
+  "ocr_path": "",
+  "mcp_enabled": false,
+  "bridge_port": 0,
+  "bridge_token_ttl": 900
 }

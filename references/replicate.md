@@ -114,3 +114,12 @@ python scripts/compare.py ref/reference.png export/o.png --region 0,0,1,0.25 -o 
 - 用户明说「可以改良/参考风格就行」→ 结构与层级跟随参考,配色字体可按用户品牌替换,
   R1b 普查仍要做(量出原图用色才知道往哪个方向换)。
 - 参考图分辨率太低导致文字不可辨:逐字抄录改为「按上下文推断」并在交付时列出推断清单。
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `inspect_ref.py` | 参考图分区测量 | `python scripts/inspect_ref.py census <参考图>` |
+| `compare.py` | 复刻并排比对 | `python scripts/compare.py <原> <复刻> --region …` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

@@ -185,3 +185,12 @@ python $S/imageops.py montage --in <proj>/export/demo-a.png <proj>/export/demo-b
 ## §11 对照案例
 
 - `../../assets/cases/multi-draft-case.html` —— 及格线案例:同一份文案 4 变体中「B 雅」的转正形态。
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `imageops.py` | montage 联络表 | `python scripts/imageops.py montage a.png b.png --grid 2x2 --label` |
+| `export.py` | 多稿 demo 导出 | `python scripts/export.py … --scale 1` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

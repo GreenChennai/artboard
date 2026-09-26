@@ -223,3 +223,6 @@ const theme = {
 8. 无 3D、无双 Y 轴、无渐变填充?
 
 > 打分走 `design-review-rubric.md`(并入「B 排版质量」25% + 「C 色彩与对比」20%;数据误导类问题直接判 B 维度 ≤2)。
+
+> **图表动效**(片头/概括里逐系列构建):语法与导出边界见 `video-motion.md §三`「图表构建」——
+> ECharts 逐系列淡入或 SVG 描边画出;矢量交付时内联 SVG 会栅格化(`vector-drawing.md §4.5`)。

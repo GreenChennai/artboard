@@ -70,9 +70,8 @@ FIELDS = [
      "完善基础信息)→ 打开 pixabay.com/api/docs/ → 页内「Your API key」\n"
      "后面的字符串就是。"),
     ("huaban_cookie", "花瓣网 Cookie(可选)", "text",
-     "花瓣搜索通道用。浏览器登录 huaban.com → F12 → 网络(Network)\n"
-     "→ 刷新 → 任一请求 → 请求头 Cookie 全值复制。\n"
-     "更简单:用 tools\\cookie-extension 插件一键抓取。"),
+     "花瓣搜索通道用。装 tools/asset-bridge 扩展后由 MCP assets_cookie\n"
+     "自动抓写;手动:F12 → 网络 → 任一请求 → 请求头 Cookie 全值。"),
     ("iconfont_cookie", "图标库 Cookie(可选)", "text",
      "iconfont.cn 矢量图标搜索用。同上,在 iconfont.cn 登录后抓取。"),
     ("pinterest_cookie", "Pinterest Cookie(可选)", "text",

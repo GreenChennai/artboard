@@ -63,3 +63,11 @@ RGB(屏幕)色域大于 CMYK(印刷)。屏幕上鲜亮的荧光绿、宝蓝、�
 
 用户提到:打印 / 印刷 / 线下 / 喷绘 / 名片 / 折页 / 画册 / 易拉宝实物 →
 **一律按本流程**:设计用 CMYK 安全色 + 导出后转 CMYK 交付。
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `imageops.py` | dpi-check/CMYK 转换 | `python scripts/imageops.py dpi-check <图> --lpi 150` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

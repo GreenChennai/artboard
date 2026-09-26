@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>video-chapter · 章节卡(模式 V:编号 + 章节名,蒙版擦除;总长 3.7s)</title>
+<!-- video-motion.md §一 章节卡契约:1.5–3s(导出片长≈3.7−1.8=1.9s)
+     五段式:P0 2.0 → IN 0.4 → HOLD 0.6 → OUT 0.4 → P1 0.3
+     动效语法:蒙版擦除(clip-path inset)+ 编号放大定场;内容在 9:16 安全区 -->
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#000; }
+.poster { position:relative; width:1080px; height:1920px; overflow:hidden;
+  background:#101418; font-family:"Microsoft YaHei UI","Microsoft YaHei",sans-serif; }
+:root { --ease-in: cubic-bezier(0.05, 0.7, 0.1, 1); }
+.stripe { position:absolute; left:-80px; right:-80px; top:44%; height:240px;
+  background:linear-gradient(90deg, #ff5a3c, #ff8a3c); transform:skewY(-4deg);
+  clip-path:inset(0 100% 0 0); animation:wipe .45s var(--ease-in) 2.0s both; }
+@keyframes wipe { from { clip-path:inset(0 100% 0 0); } to { clip-path:inset(0 0 0 0); } }
+.wrap { position:absolute; left:184px; top:230px; width:712px; height:1114px;
+  display:flex; align-items:center; }
+.num { position:absolute; left:76px; top:50%; margin-top:-380px;
+  font-size:240px; font-weight:900; line-height:1; color:transparent;
+  -webkit-text-stroke:3px rgba(255,255,255,.22);
+  opacity:0; animation:numin .4s var(--ease-in) 2.05s both; }
+@keyframes numin { from { transform:scale(1.25); opacity:0; } to { transform:scale(1); opacity:1; } }
+.t { position:relative; margin-top:60px; }
+.t .zh { font-size:96px; font-weight:900; color:#f4f6f8; letter-spacing:.06em;
+  opacity:0; animation:rise .4s var(--ease-in) 2.25s both; }
+@keyframes rise { from { transform:translateY(30px); opacity:0; }
+                  to   { transform:translateY(0);    opacity:1; } }
+.t .en { margin-top:18px; font-size:30px; font-weight:600; letter-spacing:.4em;
+  color:#ff8a5c; opacity:0; animation:rise .4s var(--ease-in) 2.4s both; }
+.wrap-out { opacity:1; animation:leave .4s ease-in 2.95s both; }
+@keyframes leave { to { opacity:0; transform:translateX(-26px); } }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="stripe"></div>
+  <div class="wrap wrap-out">
+    <div class="num">02</div>
+    <div class="t">
+      <div class="zh">水温与研磨</div>
+      <div class="en">TEMP · GRIND</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

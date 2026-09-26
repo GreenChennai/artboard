@@ -1,0 +1,39 @@
+{
+  "_说明": "暖食:自然饱和+暖滤镜+高光柔化(食品/烘焙)",
+  "version": 1,
+  "stages": [
+    {
+      "op": "auto-orient"
+    },
+    {
+      "op": "vibrance",
+      "amount": 0.25
+    },
+    {
+      "op": "photo-filter",
+      "color": "#ffb35c",
+      "density": 0.16,
+      "preserve_luminosity": true
+    },
+    {
+      "op": "hsl",
+      "range": "y",
+      "sat": 0.12,
+      "light": 0.04
+    },
+    {
+      "op": "shadows-highlights",
+      "shadows": 0.1,
+      "highlights": 0.2
+    },
+    {
+      "op": "sharpen-usm",
+      "amount": 0.5,
+      "radius": 1.5,
+      "threshold": 3
+    }
+  ],
+  "output": {
+    "format": "png"
+  }
+}

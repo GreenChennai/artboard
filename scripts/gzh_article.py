@@ -32,16 +32,28 @@ FONT_STACK = ("-apple-system-font,BlinkMacSystemFont,'Helvetica Neue',"
               "'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif")
 CODE_FONT = "'SF Mono',Menlo,Consolas,'Liberation Mono',monospace"
 
-THEMES = {
-    "default": {"primary": "#576b95", "text": "#333333", "muted": "#888888",
-                "soft": "#f7f7f7", "border": "#e5e5e5", "quote_text": "#666666"},
-    "green":   {"primary": "#1a7a4f", "text": "#2f3530", "muted": "#8a938c",
-                "soft": "#f3f8f5", "border": "#dfe8e2", "quote_text": "#5a6b60"},
-    "orange":  {"primary": "#d47435", "text": "#3a3230", "muted": "#96897f",
-                "soft": "#faf5ef", "border": "#ecdcd0", "quote_text": "#75655a"},
-    "red":     {"primary": "#c0392b", "text": "#332e2d", "muted": "#928a88",
-                "soft": "#faf3f2", "border": "#ecd6d3", "quote_text": "#6e605d"},
-}
+# 主题:唯一真相源 = _gzh_theme.py(与 gzh_cover 共用;一处改色两产物同变)
+import _gzh_theme as _GZT
+THEMES, _THEME_ALIAS = _GZT.article_themes()
+
+
+def _resolve_theme(name: str) -> str:
+    """旧名别名(default/orange/green)→ 新名 + 一次性弃用提示(stderr)。"""
+    if name in _THEME_ALIAS:
+        canonical = _THEME_ALIAS[name]
+        note = ("色值已统一到全局主题源,与旧 green 不同" if name == "green" else f"请改用 {canonical}")
+        print(f"△ 主题名「{name}」已弃用 → 改用「{canonical}」({note})。", file=sys.stderr)
+        return canonical
+    return name
+
+
+def _extract_h1(md_text: str) -> str:
+    """文章第一个 H1(取 `# 标题` 行;图文与封面标题同源)。"""
+    for line in md_text.splitlines():
+        m = re.match(r"^#\s+(.+?)\s*$", line)
+        if m:
+            return m.group(1).strip()
+    return ""
 
 
 # ---------------------------------------------------------------- 行内解析
@@ -457,26 +469,94 @@ def cmd_convert(args) -> int:
         print(json.dumps({"ok": False, "error": "EMPTY_INPUT",
                           "hint": "输入 Markdown 为空"}, ensure_ascii=False))
         return 1
-    if args.theme not in THEMES:
+    theme_name = _resolve_theme(args.theme)
+    if theme_name not in THEMES:
         print(json.dumps({"ok": False, "error": "BAD_THEME",
-                          "hint": f"可选主题: {', '.join(THEMES)}"}, ensure_ascii=False))
+                          "hint": f"可选主题: {', '.join(sorted(THEMES))}"
+                                  "(旧名 default/orange/green 仍可用,见弃用提示)"},
+                         ensure_ascii=False))
         return 1
     try:
-        fragment = render_article(md_text, args.theme, args.title, args.author)
+        fragment = render_article(md_text, theme_name, args.title, args.author)
     except ValueError as exc:
         print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False))
         return 1
     write_text(args.out, fragment)
     payload = {"ok": True, "output": os.path.abspath(args.out),
-               "theme": args.theme, "chars": len(fragment)}
+               "theme": theme_name, "chars": len(fragment)}
     if args.preview:
         preview_path = args.out + ".preview.html"
         write_text(preview_path, PREVIEW_TEMPLATE.format(
             title=esc(args.title or os.path.basename(args.input)),
             article=fragment))
         payload["preview"] = os.path.abspath(preview_path)
+
+    # ---- 图文 ⇒ 封面 单向绑定(D-11-1:默认 on;--no-cover 逃生口) ----
+    if not getattr(args, "no_cover", False):
+        cover_result = _make_covers(args, md_text, theme_name)
+        if cover_result.get("ok"):
+            payload["cover"] = cover_result
+        else:
+            payload["ok"] = False
+            payload["cover_error"] = cover_result.get("error")
+            payload["cover_hint"] = cover_result.get("hint")
+            payload["note"] = "图文产物已生成(见 output),但封面失败——交付时必须向用户说明"
+            print(json.dumps(payload, ensure_ascii=False))
+            return 1
     print(json.dumps(payload, ensure_ascii=False))
     return 0
+
+
+def _make_covers(args, md_text: str, theme_name: str) -> dict:
+    """调同目录 gzh_cover.py 生成同主题双封面(new + export 三图)。
+    标题优先级:--cover-title > --title > 文章 H1;slug 默认 = 文件名去扩展名。"""
+    import re as _re
+    import subprocess
+    cover_py = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gzh_cover.py")
+    slug = getattr(args, "slug", "") or _re.sub(r"\.[^.]+$", "", os.path.basename(args.input))
+    title = (getattr(args, "cover_title", "") or args.title
+             or _extract_h1(md_text) or os.path.basename(args.input)).strip()
+    if not title:
+        return {"ok": False, "error": "NO_TITLE",
+                "hint": "无标题可用:给 --cover-title 或文内 H1"}
+    cmd_new = [sys.executable, cover_py, "new", slug, "--title", title,
+               "--theme", theme_name, "--force"]
+    if getattr(args, "cover_kicker", ""):
+        cmd_new += ["--kicker", args.cover_kicker]
+    if getattr(args, "cover_num", ""):
+        cmd_new += ["--num", args.cover_num]
+    try:
+        r_new = subprocess.run(cmd_new, capture_output=True, text=True,
+                               encoding="utf-8", errors="replace", timeout=120)
+        lines = [l for l in (r_new.stdout or "").splitlines() if l.strip()]
+        new_payload = json.loads(lines[-1]) if lines else {}
+        if r_new.returncode != 0 or not new_payload.get("ok"):
+            return {"ok": False, "error": "COVER_NEW_FAILED",
+                    "hint": (new_payload.get("hint") or r_new.stderr or "")[:200]}
+        r_exp = subprocess.run([sys.executable, cover_py, "export", new_payload["project"]],
+                               capture_output=True, text=True,
+                               encoding="utf-8", errors="replace", timeout=300)
+        exp_lines = [l for l in (r_exp.stdout or "").splitlines() if l.strip()]
+        exp_payload = json.loads(exp_lines[-1]) if exp_lines else {}
+        if r_exp.returncode != 0 or not exp_payload.get("ok"):
+            return {"ok": False, "error": "COVER_EXPORT_FAILED",
+                    "hint": (exp_payload.get("hint") or r_exp.stderr or "")[:200]}
+        return {"ok": True, "project": new_payload["project"],
+                "title": title, "theme": theme_name,
+                "images": [e.get("output") for e in exp_payload.get("exports", [])],
+                "note": "图文必带双封面(单向绑定);反向 gzh_cover 不产图文"}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "error": "COVER_EXCEPTION", "hint": f"{type(exc).__name__}: {exc}"[:200]}
+
+
+def _studio_dir() -> str:
+    """studio_dir(路径口径与 gzh_cover 一致;未用则不引 _config)。"""
+    try:
+        from _config import cfg, near_workspace
+        return cfg("studio_dir", near_workspace("artboard-studio"))
+    except Exception:  # noqa: BLE001
+        return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            "..", "artboard-studio")
 
 
 DEMO_MD = """# 双封面时代的公众号排版指南
@@ -539,6 +619,43 @@ def cmd_check(args) -> int:
         print(json.dumps({"ok": False, "error": "FILE_NOT_FOUND",
                           "detail": args.file}, ensure_ascii=False))
         return 1
+    # 主题一致性机检(D-11-7):图文与封面的 tokens 必须同源同值(容差 0)
+    if getattr(args, "theme_consistency", False):
+        cover_html = getattr(args, "cover_html", "")
+        if not cover_html or not os.path.isfile(cover_html):
+            print(json.dumps({"ok": False, "error": "USAGE",
+                              "hint": "需要 --cover-html <封面项目>/src/index.html"},
+                             ensure_ascii=False))
+            return 2
+        theme = _resolve_theme(getattr(args, "theme", "") or "ink")
+        a_roles = _GZT.article_roles(theme)
+        c_roles = _GZT.cover_roles(theme)
+        with open(args.file, encoding="utf-8", errors="replace") as f:
+            a_text = f.read().lower()
+        with open(cover_html, encoding="utf-8", errors="replace") as f:
+            c_text = f.read().lower()
+        mismatches = []
+        # ① 核心角色必命中(容差 0:颜色必须精确)
+        for role in ("primary", "text"):
+            if a_roles[role].lower() not in a_text:
+                mismatches.append({"role": role, "expected": a_roles[role], "where": "article"})
+        for role in ("bg", "bg2", "ink", "accent"):
+            if c_roles[role].lower() not in c_text:
+                mismatches.append({"role": role, "expected": c_roles[role], "where": "cover"})
+        # ② 禁他主题强调色混入(同风格的核心威胁是"两套色")
+        for other, roles in _GZT.THEMES.items():
+            if other == theme:
+                continue
+            for hexv in (roles["primary"], roles["accent"]):
+                if hexv.lower() in a_text or hexv.lower() in c_text:
+                    mismatches.append({"role": f"foreign:{other}", "expected": "absent",
+                                       "found": hexv})
+        print(json.dumps({"ok": not mismatches, "check": "theme-consistency",
+                          "theme": theme, "mismatches": mismatches,
+                          "hint": None if not mismatches
+                          else "两产物色值与 _gzh_theme 不一致:重新用同一 --theme 生成"},
+                         ensure_ascii=False))
+        return 0 if not mismatches else 1
     result = check_compat(args.file)
     print(json.dumps(result, ensure_ascii=False))
     return 0 if result["ok"] else 1
@@ -557,17 +674,33 @@ def main() -> int:
     pc.add_argument("--out", required=True, help="输出 HTML 路径")
     pc.add_argument("--title", default="", help="文章大标题(空=用文内 H1)")
     pc.add_argument("--author", default="", help="作者署名行")
-    pc.add_argument("--theme", default="default", choices=sorted(THEMES))
+    pc.add_argument("--theme", default="ink",
+                    help="主题(统一源 _gzh_theme):ink/night/warm/grass/red/mono;"
+                         "旧名 default/orange/green 仍可用(弃用提示)")
     pc.add_argument("--preview", action="store_true", help="同时生成本地预览页")
+    pc.add_argument("--with-cover", dest="with_cover", action="store_true", default=True,
+                    help="(默认)图文同时出同主题双封面")
+    pc.add_argument("--no-cover", dest="no_cover", action="store_true",
+                    help="只出图文不出封面(逃生口;交付汇报需说明)")
+    pc.add_argument("--slug", default="", help="封面项目 slug(默认=文件名去扩展名)")
+    pc.add_argument("--cover-title", dest="cover_title", default="",
+                    help="封面主标题(默认取 --title 或文章 H1)")
+    pc.add_argument("--cover-kicker", dest="cover_kicker", default="", help="封面眉题/栏目")
+    pc.add_argument("--cover-num", dest="cover_num", default="", help="封面期号")
     pc.set_defaults(func=cmd_convert)
 
     pd = sub.add_parser("demo", help="生成示例文章并转换(自检兼容性)")
     pd.add_argument("--outdir", default="")
-    pd.add_argument("--theme", default="default", choices=sorted(THEMES))
+    pd.add_argument("--theme", default="ink")
     pd.set_defaults(func=cmd_demo)
 
-    pk = sub.add_parser("check", help="公众号兼容性自检")
+    pk = sub.add_parser("check", help="公众号兼容性自检(可加 --theme-consistency)")
     pk.add_argument("file", help="待检查的 HTML 文件")
+    pk.add_argument("--theme-consistency", dest="theme_consistency", action="store_true",
+                    help="校验图文与封面 tokens 同源同值(11 迭代)")
+    pk.add_argument("--cover-html", default="", dest="cover_html",
+                    help="<封面项目>/src/index.html")
+    pk.add_argument("--theme", default="", help="主题名(默认 ink)")
     pk.set_defaults(func=cmd_check)
 
     args = p.parse_args()

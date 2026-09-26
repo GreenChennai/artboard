@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  :root { --bg:#14121f; --card:#1e1b2e; --ink:#f2eeff; --muted:#8f89a8; --accent:#2ee6a8; }
+  * { box-sizing:border-box; margin:0; }
+  body { width:340px; background:var(--bg); color:var(--ink);
+         font:14px/1.6 "Microsoft YaHei UI", "Segoe UI", sans-serif; padding:16px; }
+  h1 { font-size:15px; letter-spacing:.06em; display:flex; align-items:center; gap:8px; }
+  h1 .dot { width:9px; height:9px; border-radius:50%; background:var(--accent);
+            box-shadow:0 0 10px var(--accent); }
+  h2 { margin-top:14px; font-size:12px; color:var(--muted); letter-spacing:.08em; }
+  .site { margin-top:10px; padding:10px 12px; background:var(--card); border-radius:10px;
+          border:1px solid rgba(255,255,255,.08); font-size:13px; }
+  .site b { color:var(--accent); }
+  .site .bad { color:#e05a6a; }
+  button { margin-top:10px; width:100%; padding:10px 0; border:0; border-radius:10px;
+           background:var(--accent); color:#101a2e; font:700 13px/1 inherit; cursor:pointer; }
+  button:disabled { background:#3a3750; color:var(--muted); cursor:not-allowed; }
+  button.ghost { background:transparent; color:var(--muted);
+                 border:1px solid rgba(255,255,255,.15); font-weight:400; }
+  textarea { margin-top:10px; width:100%; height:80px; background:var(--card); color:var(--ink);
+             border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:10px;
+             font:11px/1.5 Consolas, monospace; resize:none; display:none; }
+  .row { display:flex; gap:8px; margin-top:8px; }
+  input { flex:1; background:var(--card); border:1px solid rgba(255,255,255,.12);
+          color:var(--ink); border-radius:8px; padding:8px 10px; font:12px/1.4 monospace; }
+  .state { margin-top:8px; font-size:12px; color:var(--muted); }
+  .state.ok { color:var(--accent); }
+  .state.err { color:#e05a6a; }
+  .tip { margin-top:8px; font-size:11.5px; color:var(--muted); }
+  .ok { color:var(--accent); }
+</style>
+</head>
+<body>
+  <h1><span class="dot"></span>artboard 素材 Bridge</h1>
+  <div class="site" id="site">正在读取当前标签页…</div>
+  <button id="grab" disabled>抓取本站 Cookie → 复制 config 片段</button>
+  <button id="export" disabled>导出本页素材 JSON(旧通道,进剪贴板)</button>
+  <textarea id="out" spellcheck="false"></textarea>
+
+  <h2>本机会话 BRIDGE(显式授权,一次一会话)</h2>
+  <div class="row">
+    <input id="port" placeholder="端口(bridge.py --json 输出)">
+    <input id="token" placeholder="token">
+  </div>
+  <button id="connect">连接本机会话(= 允许本次采集)</button>
+  <button id="disconnect" class="ghost">断开</button>
+  <div class="state" id="state">未连接。先运行 bridge.py 拿端口/token;连接只授权「本次会话」,
+     且仅采集白名单域名(花瓣/iconfont/Pinterest/SVGRepo/Iconify)。</div>
+  <div class="tip">采集的素材一律带「版权风险-」前缀入库,交付时会提醒更换;
+     Bridge 不落 Cookie 明文、不上传任何数据。</div>
+  <script src="popup.js"></script>
+</body>
+</html>

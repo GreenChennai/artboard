@@ -1,0 +1,50 @@
+{
+  "_说明": "冷调夜景:压高光+提阴影+偏蓝+暗角+发光",
+  "version": 1,
+  "stages": [
+    {
+      "op": "auto-orient"
+    },
+    {
+      "op": "exposure",
+      "exposure": -0.15,
+      "offset": 0.0,
+      "gamma_correction": 1.1
+    },
+    {
+      "op": "color-balance",
+      "shadow": [
+        -0.05,
+        0.0,
+        0.08
+      ],
+      "mid": [
+        -0.02,
+        0.0,
+        0.05
+      ],
+      "high": [
+        0.0,
+        0.0,
+        0.03
+      ]
+    },
+    {
+      "op": "shadows-highlights",
+      "shadows": 0.25,
+      "highlights": 0.35
+    },
+    {
+      "op": "glow",
+      "radius": 14,
+      "amount": 0.4
+    },
+    {
+      "op": "vignette",
+      "amount": 0.3
+    }
+  ],
+  "output": {
+    "format": "png"
+  }
+}

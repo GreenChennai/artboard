@@ -1,0 +1,30 @@
+{
+  "_说明": "高对比促销:拉对比+提饱和+亮部锐(促销大字报背景)",
+  "version": 1,
+  "stages": [
+    {
+      "op": "auto-orient"
+    },
+    {
+      "op": "brightness-contrast",
+      "brightness": 0.02,
+      "contrast": 0.22
+    },
+    {
+      "op": "vibrance",
+      "amount": 0.35
+    },
+    {
+      "op": "sharpen-highpass",
+      "amount": 0.5,
+      "radius": 8
+    },
+    {
+      "op": "vignette",
+      "amount": 0.12
+    }
+  ],
+  "output": {
+    "format": "png"
+  }
+}

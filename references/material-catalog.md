@@ -96,3 +96,11 @@
 ## 尺寸换算
 
 全部换算用 `scripts/calc_size.py`(公式:px = inch × DPI = mm ÷ 25.4 × DPI);印刷 ≥300dpi、室内写真 72–150、户外喷绘 30–45。非预设尺寸的 scale 反推:`scale = 目标成品宽 ÷ CSS 宽`。
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `calc_size.py` | 非常规物料尺寸换算 | `python scripts/calc_size.py --help` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

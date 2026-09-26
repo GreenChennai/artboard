@@ -1,5 +1,64 @@
 # Changelog
 
+## v1.16.0 — Bridge 全自动素材搜索(2026-09-27)
+
+> 依据桌面《artboard-Bridge素材搜索迭代-20260927》;grilling 九问收敛(D1–D10)。
+
+### Added
+- `scripts/asset_hunt.py`:一条命令全自动素材搜索——多站编排(花瓣/SVGRepo/Pexels·Pixabay API)
+  → 花瓣 DOM 自动化勾「素材范围=不看素材」(来源侧规避水印)→ 下载+原图升级(剥后缀→详情页兜底)
+  → 筛选(透明 PNG/横竖图/主色距离,默认降级留痕,--strict 严格)→ pHash 查重 → 关闭本轮标签页
+  → 单行 JSON 报告
+- **专用素材浏览器**:独立 profile(持久登录)+ 首次可见绑定/日常 --headless=new 后台(混合,不抢用户浏览器);
+  狩猎 hub 固定端口 8811 + **固定长效 token**(config bridge_hunt_token)→ 扩展凭据一次填好永久有效 = 登录常态化
+- Bridge 协议 v3:`open`(后台标签+等待+DOM 自动化)/`close_tab`/`cookie` 三命令;扩展 v2.1.0(manifest +tabs)
+- MCP 第 6 tool `assets_cookie`:**Cookie 自动抓取并合并写 config.json**(取代手动复制粘贴;
+  Cookie 仅 localhost 传输、只落本机)
+
+### Removed
+- `tools/cookie-extension/` 删除(asset-bridge 全面替代);全库引用改口(README/setup/materials/fetch_asset/config_gui)
+
+### Verified
+- 离线全协议 5/5:降级阶梯/严格空手 exit 1/全收+查重/Cookie 写入/详情页兜底+关页(WS 替身+本地图床)
+- 真机(用户浏览器):白名单拦截/采集/下载/前缀/CREDITS 全链通;MV3 SW 休眠→alarms 自愈实测
+
+## v1.15.0 — 迭代计划 v2:料 · 动 · 确定性(2026-09-26)
+
+> 落地《artboard-迭代计划-v2-20260925》00–11 全部阶段;决策台账见 `docs/adr/0027`(本地)。
+
+### Added · 能力面(按诉求)
+- **开工确定性(04)**:铁律 8 升级 Brief Gate(9 字段三态标注/缺项强制补齐/「直接做」须假设确认);
+  `check_brief.py` 机检;intake/pipeline/SKILL 三处口径同步
+- **配图判定与取图通道(03)**:materials §0 判定表(写 image_plan,主动取图);
+  `mcp/artboard-mcp` 五 tool(stdio JSON-RPC,零 SDK;plan/search/fetch_page/download/dedupe);
+  `tools/asset-bridge`(MV3,localhost WS + token + 白名单 + 显式授权);config 新键 mcp_enabled/bridge_port/bridge_token_ttl
+- **视频动效体系(02)**:`video-motion.md` 模式 V(五类件×时长契约/五类视频矩阵/7 式语法/分镜表/卡点表);
+  `beat_sheet.py`;5 案例全机检 + MP4 导出 + 抽帧三点验证;画幅扩展 1:1/4:5/2.35:1(文档+机检同步)
+- **SVG/插画(05)**:`fetch_svg.py`(Iconify,逐集许可白名单 + docs/svg-licenses.md 238 集)+
+  `check_svg.py`(9 项);图标 63→648 枚(24px 并排校验无异类);vector-drawing §4.7 rubric / §4.8 两路线决策树
+- **位图配方引擎(09)**:`pixel.py` + `_px_*` 5 模块:18 调整 + 12 滤镜 + 25 混合模式 + 蒙版 DSL;
+  recipe save/validate/run/batch(乱序报错);`pixel deps` 能力矩阵(缺依赖报错不静默);
+  公共配方库 `assets/recipes/` 6 套;`pixel-pipeline.md`
+- **H5 交互页(10)**:模式 H(`h5-interactive.md`,H5 铁律 7 条,不适用铁律 1;MDN/WCAG/CWV 口径,
+  不采纳 user-scalable=no);`check_h5.py` 8 项机检;2 案例 + 3 坏样例
+- **图文⇒封面单向绑定(11)**:`_gzh_theme.py` 统一主题源(6 套,消灭 green 同名不同色);
+  `gzh_article convert --with-cover` 默认出同主题三封面(--no-cover 逃生口);一致性机检 `check --theme-consistency`
+
+### Added · 工程与台账(06/08)
+- `imageops dedupe`(pHash 查重)、`check_credits.py`(版权对账)
+- `docs/upstream-issues.md`(UP-1/UP-2 登记带绕行);failures 复查留痕(8 条全已修)
+- selfcheck 增 `materials`(声明 vs 磁盘)/`golden`(回归基线)/`scriptdocs`(脚本可达)三门禁 → PASS 9→12
+- 脚本文档架构(08):SKILL 脚本块瘦身为主线 5 条;29 册新增「本册用到的脚本」;
+  `registry.json` + `docs/scripts.md` 生成物(gen_script_index.py);README 清单改指针
+- 公共配方库 `assets/recipes/` 6 套;`assets/recipes` 与新增产物合计 +9.7MB(≤30MB 预算)
+
+### Fixed · 文档说谎与口径
+- materials「插画三套全 CC0」→ 按磁盘真实状态改写(仅 open-doodles 落地,其余标获取方式)
+- `green` 主题同名不同色隐患消除(统一主题源 + 迁移说明)
+
+### Upstream(只登记,不改上游)
+- UP-1 浏览道字体联接 canonicalize 判越界(绕行 --embed-fonts);UP-2 native 道伪3D 静默降级(绕行 --engine auto)
+
 ## v1.14.0 — 合并「模式 W」公众号图文分支 + 联网核对白名单口径(2026-09-22)
 
 来自外部交付的 `artboard-modeW` 增量包(基线 1.7.6)正式并入主线。安装器对 1.13.0 干跑校验:

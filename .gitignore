@@ -1,5 +1,7 @@
 # 本地环境与密钥——绝不提交
 config.json
+mcp/artboard-mcp/.bridge-session.json  # 含一次性会话 token(运行态,绝不入库)
+assets/icons-cache/  # 按需缓存,可随时重建(不算库存)
 
 __pycache__/
 *.pyc

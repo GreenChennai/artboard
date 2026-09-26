@@ -173,7 +173,7 @@ python scripts\preflight.py
 | `kiln_cli_exe` | Kiln 引擎 exe 路径(未配置则自动探测) |
 | `studio_dir` | 海报项目与素材库落盘目录 |
 | `pexels_key` / `pixabay_key` | 免费图库 API key |
-| `*_cookie` | 素材站 Cookie,用 [tools/cookie-extension](tools/cookie-extension/)(MV3)一键抓取 |
+| `*_cookie` | 素材站 Cookie:装 [tools/asset-bridge](tools/asset-bridge/)(MV3)后由 MCP 自动抓写(`assets_cookie` tool / `python -m artboard_mcp cookie --site iconfont`),也可在扩展 popup 手动抓 |
 | `proxy` | 本地代理(访问境外源用) |
 | `ffmpeg` | 可选,启用 MP4 与高质量 GIF |
 | `vision_mode` | `auto`(Agent 视觉优先)/ `local`(强制本地 VQA/OCR) |
@@ -267,29 +267,11 @@ python scripts/upload_imgchr.py out/*.jpg --cookie "PHPSESSID=…" --urls-out ur
 
 **双击即出图 / 矢量 / 素材 / 维护**
 
-```bash
-python scripts/make_bats.py <项目> --embed     # 每个 HTML 生成"导出-<名字>.bat"
-python scripts/ai_export.py <项目目录> [--svg --eps --ai --pptx]
-python scripts/fetch_asset.py --query "…" --theme t --download
-python scripts/cutout.py product.jpg --sticker --shadow        # 抠图+投影
-python scripts/selfcheck.py                    # 仓库自检:10 项,退出码可接 CI
-```
+> 全量脚本清单是**生成物**:见 [`docs/scripts.md`](docs/scripts.md)
+> (由 `python scripts/gen_script_index.py` 重建;权威参数 = 各脚本 `--help`)。
+> 分册末尾的「本册用到的脚本」是就近索引;SKILL.md 只保留主线 5 条。
 
 <details>
-<summary><strong>其余脚本(字体 / 二维码 / 打包 / 换算 / 环境)</strong></summary>
-
-```bash
-python scripts/fetch_font.py <目录名>                            # 按需下载缺失字体
-python scripts/add_font.py <目录名> --name 显示名 --category 分类 --tags 关键词
-python scripts/qr.py generate --data "…" --out img/qr.png --logo logo.png
-python scripts/pack.py <项目> [--include-fonts] [--include-vendor]   # 自包含 zip
-python scripts/slim_project.py <项目> --dry-run                  # 老项目改瘦身影子
-python scripts/calc_size.py mm 210 297 --dpi 300 --scale 2       # 印刷尺寸计算器
-python scripts/setup_kiln.py --force                             # 升级 Kiln 引擎
-python scripts/setup_ffmpeg.py                                   # 部署 FFmpeg
-python scripts/fetch_model.py vqa                                # 部署本地 VQA
-```
-
 </details>
 
 ## 目录结构
@@ -310,7 +292,7 @@ artboard/
 ├── scripts/                 # preflight / scaffold / export / check_overflow / imageops …
 ├── fonts/                   # 28 款开源中英文字体族(按需下载)
 ├── assets/                  # vendor(ECharts/GSAP) · 图标 · 插画 · 各风格参考案例
-├── tools/                   # cookie-extension(MV3) · config-editor(exe)
+├── tools/                   # asset-bridge(MV3 素材 Bridge) · config-editor(exe)
 └── docs/                    # setup / glossary / failures / samples / readme 图
 ```
 

@@ -247,3 +247,12 @@
 | 出 `.ai` 工程文件 | `vector-export.md` + `scripts/ai_export.py` |
 | 二维码印刷尺寸 | 各品类分册(码宽 ≥ 版面宽 8%) |
 | 纸感/噪点/半调等印刷质感特效 | `effects.md` |
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `imageops.py` | 印刷前转换 | `python scripts/imageops.py convert --in x.png --to tiff` |
+| `calc_size.py` | 印刷尺寸换算 | `python scripts/calc_size.py --help` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

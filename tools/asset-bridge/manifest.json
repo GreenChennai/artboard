@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "artboard 素材 Bridge",
+  "description": "登录态站点素材采集桥:抓 Cookie / 导出本页素材(向后兼容)+ 被本机 artboard-mcp 调用的滚动/分页采集(仅 127.0.0.1 + 一次性 token + 显式授权)。SW 休眠自动重连(alarms 自愈)。绝不申请 <all_urls>。",
+  "version": "2.1.0",
+  "permissions": [
+    "activeTab",
+    "alarms",
+    "clipboardWrite",
+    "cookies",
+    "downloads",
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "*://*.huaban.com/*",
+    "*://*.iconfont.cn/*",
+    "*://*.pinterest.com/*",
+    "*://*.svgrepo.com/*",
+    "*://*.iconify.design/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "artboard 素材 Bridge"
+  }
+}

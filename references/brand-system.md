@@ -192,3 +192,12 @@
 9. 印刷任务的品牌色在 CMYK 安全范围内?
 
 > 打分走 `design-review-rubric.md`(并入「C 色彩与对比」20% + 「E 去 AI 味」10%;品牌色滥用按 C 维度扣分)。
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `add_font.py` | 品牌字体入库 | `python scripts/add_font.py --help` |
+| `fetch_font.py` | 字体按需下载 | `python scripts/fetch_font.py` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

@@ -96,3 +96,11 @@
 5. 数字列 tabular-nums 对齐、千分位、货币符号贴合;
 6. 无行首点号、无行尾开始引号;
 7. 主对齐唯一;无混用缩进+段间距。
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `check_overflow.py` | 断行/越框复核 | `python scripts/check_overflow.py <proj>/src --overlap` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

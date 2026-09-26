@@ -290,3 +290,11 @@ CSS 帮不了语义 —— 标题必须**手动给断点**。
 
 > 打分走 `design-review-rubric.md`(并入「B 排版质量」25%;孤字/词中劈开直接判该维度 ≤2)。
 > 规则条文(为什么这么规定)见 `typography-rules.md`。
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `check_overflow.py` | 中文排版落地复核 | `python scripts/check_overflow.py <proj>/src` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

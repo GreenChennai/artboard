@@ -153,6 +153,16 @@ def main() -> int:
             "找图将仅有爬虫通道(素材自动带「版权风险-」前缀);"
             "在 config.json 填 pexels_key/pixabay_key 启用授权干净的图库源")
 
+    # 7.3.1 MCP / Bridge 通道(默认关闭;开启见 references/mcp-assets.md)
+    mcp_on = cfg("mcp_enabled")
+    fixed_port = cfg("bridge_port", 0) or 0
+    add("MCP/Bridge 通道", "PASS",
+        ("已启用" if mcp_on else "未启用(默认)")
+        + (f";Bridge 固定端口 {fixed_port}" if fixed_port else ";Bridge 随机端口"),
+        None if mcp_on else
+        "如需经 MCP/浏览器 Bridge 取登录态站点素材,把 config.json 的 mcp_enabled 设为 true"
+        "(安全边界见 references/mcp-assets.md)")
+
     # 7.4 视觉模式(Agent 视觉优先 vs 本地模型强制)
     vmode = cfg("vision_mode", "auto")
     add("视觉模式", "PASS",

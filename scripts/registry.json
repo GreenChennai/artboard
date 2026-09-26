@@ -1,0 +1,729 @@
+{
+  "_comment": "generated, do not edit — 由 scripts/gen_script_index.py 重建",
+  "generated_at": "2026-09-27",
+  "scripts": [
+    {
+      "name": "_config.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "artboard 共享配置读取与写入:环境变量 > config.json > 默认值。",
+      "used_by": [
+        "SKILL.md",
+        "docs/ITERATION.md",
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "_download.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "artboard 共享下载器:带超时、带重试、带进度、临时文件必清理。",
+      "used_by": [
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "_gzh_theme.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "公众号统一主题真相源(图文 gzh_article + 双封面 gzh_cover 共用;11 迭代 D-11-2)。",
+      "used_by": [
+        "SKILL.md",
+        "docs/glossary.md",
+        "docs/gzh-guide.md",
+        "docs/scripts.md",
+        "references/formats/gzh-cover.md",
+        "references/gzh-typography.md",
+        "references/h5-interactive.md"
+      ]
+    },
+    {
+      "name": "_img_compose.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "C 组(合成层)实现(指导书 §5.4,批次二核心项提前落地):",
+      "used_by": [
+        "docs/failures.md",
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "_img_core.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "imageops 公共契约(《artboard-位图脚本库扩充-迭代指导书》§4):",
+      "used_by": [
+        "docs/failures.md",
+        "docs/scripts.md",
+        "references/imaging.md"
+      ]
+    },
+    {
+      "name": "_img_encode.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "E 组(编码与体积)实现(指导书 §5.2):convert / compress / optimize / strip-meta。",
+      "used_by": [
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "_img_geom.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "G 组(几何与尺寸)+ D 组(派生与切片)实现(指导书 §5.1/§5.3)。",
+      "used_by": [
+        "docs/failures.md",
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "_img_probe.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "P 组(检测与体检)实现(指导书 §5.5):零 token 机检,只出 JSON 不写图。",
+      "used_by": [
+        "docs/failures.md",
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "_paths.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "artboard 共享路径探测:浏览器内核 / 7-Zip 的候选路径单点定义。",
+      "used_by": [
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "_px_adjust.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "P0-A 调整类 18 项(对标 PS Adjustments;全 Pillow+numpy 自实现,无可选依赖)。",
+      "used_by": [
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "_px_core.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "pixel 引擎公共层:JSON 契约、图像 IO(float32 归一)、蒙版解析。",
+      "used_by": [
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "_px_filter.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "P0-B 滤镜类 12 项(对标 PS Filter;依赖分级:纯 Pillow 可跑,cv2 提速/增强)。",
+      "used_by": [
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "_px_layer.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "P0-C 图层与合成:混合模式 25 种 / 图层栈 / 填充 / 描边 / 投影。",
+      "used_by": [
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "_px_recipe.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "配方引擎:recipe.json 解析 / 校验(未知 op·参数·乱序·缺依赖)/ 单图重放 / 目录批量。",
+      "used_by": [
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "add_font.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 字体登记:把 fonts/<目录> 注册进字体总目录 fonts/README.md。",
+      "used_by": [
+        "docs/scripts.md",
+        "fonts/README.md",
+        "references/brand-system.md"
+      ]
+    },
+    {
+      "name": "ai_export.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "一键矢量导出(v1.9:Kiln 原生九格式薄壳)。",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/depth-3d.md",
+        "references/formats/ppt.md",
+        "references/print-production.md",
+        "references/vector-drawing.md",
+        "references/vector-export.md"
+      ]
+    },
+    {
+      "name": "ai_fidelity.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "PNG ↔ 可编辑 AI/PDF 相似度门禁。",
+      "used_by": [
+        "docs/scripts.md",
+        "docs/setup.md",
+        "references/vector-export.md"
+      ]
+    },
+    {
+      "name": "asset_hunt.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 全自动素材搜索(asset_hunt):一条命令 = 开页→搜词→筛→下→去重→关页→JSON 报告。",
+      "used_by": [
+        "SKILL.md",
+        "docs/glossary.md",
+        "docs/scripts.md",
+        "references/materials.md",
+        "references/mcp-assets.md"
+      ]
+    },
+    {
+      "name": "beat_sheet.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 卡点表:BPM → 帧网格(模式 V · 视频动效件;细则见 references/video-motion.md §五)。",
+      "used_by": [
+        "docs/glossary.md",
+        "docs/scripts.md",
+        "references/video-motion.md"
+      ]
+    },
+    {
+      "name": "calc_size.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 尺寸计算器:px / mm / inch / DPI 互转,印刷导出一把算清。",
+      "used_by": [
+        "docs/scripts.md",
+        "references/export.md",
+        "references/material-catalog.md",
+        "references/print-cmyk.md",
+        "references/print-production.md",
+        "references/sizes-common.md"
+      ]
+    },
+    {
+      "name": "check_brief.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 开工前检查单(Brief Gate)机检。",
+      "used_by": [
+        "docs/glossary.md",
+        "docs/scripts.md",
+        "references/intake.md"
+      ]
+    },
+    {
+      "name": "check_credits.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 素材版权复核:img 目录 ↔ CREDITS.md 逐条对账。",
+      "used_by": [
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/materials.md",
+        "references/mcp-assets.md",
+        "references/pipeline.md"
+      ]
+    },
+    {
+      "name": "check_h5.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard H5 交互页机检(模式 H;规范见 references/h5-interactive.md)。",
+      "used_by": [
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/h5-interactive.md"
+      ]
+    },
+    {
+      "name": "check_mobile_width.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "import argparse",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/wechat-article.md"
+      ]
+    },
+    {
+      "name": "check_overflow.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 溢出与安全区机检。",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/glossary.md",
+        "docs/gzh-guide.md",
+        "docs/scripts.md",
+        "references/animation.md",
+        "references/bilingual-typography.md",
+        "references/card-layout.md",
+        "references/cjk-typography-css.md",
+        "references/design-review-rubric.md",
+        "references/design-thinking.md",
+        "references/formats/ppt.md",
+        "references/guardrails.md",
+        "references/material-language.md",
+        "references/multi-draft.md",
+        "references/pipeline.md",
+        "references/revision-protocol.md",
+        "references/typographic-expression.md",
+        "references/typography-rules.md",
+        "references/video-motion.md",
+        "references/video-safe-area.md",
+        "references/wechat-article.md"
+      ]
+    },
+    {
+      "name": "check_svg.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard SVG 质量门(9 项结构机检;细则见 references/vector-drawing.md §4.7)。",
+      "used_by": [
+        "docs/glossary.md",
+        "docs/scripts.md",
+        "references/materials.md",
+        "references/vector-drawing.md"
+      ]
+    },
+    {
+      "name": "check_wechat_svg.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "从整页文档里切出「会被粘贴进公众号」的那一段。",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/wechat-article.md"
+      ]
+    },
+    {
+      "name": "compare.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 复刻比对:参考图 vs 复刻导出图并排拼接,供视觉逐项核对。",
+      "used_by": [
+        "docs/ITERATION.md",
+        "docs/glossary.md",
+        "docs/scripts.md",
+        "references/pipeline.md",
+        "references/replicate.md"
+      ]
+    },
+    {
+      "name": "config_gui.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "",
+      "used_by": [
+        "docs/ITERATION.md",
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "cutout.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 抠图:本地 rembg + 四件套后处理(去残边/羽化/贴纸白边/软投影)。",
+      "used_by": [
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/image-language.md",
+        "references/imaging.md",
+        "references/materials.md",
+        "references/pipeline.md",
+        "references/pixel-pipeline.md"
+      ]
+    },
+    {
+      "name": "doctor.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 项目体检:扫 studio 目录,核对 project.json 与 HTML 真值。",
+      "used_by": [
+        "docs/scripts.md",
+        "references/export.md"
+      ]
+    },
+    {
+      "name": "export.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 导出薄壳(主路径):Kiln 原生引擎(v1.9.0 起)→ 失败给 hint。",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/ITERATION.md",
+        "docs/scripts.md",
+        "references/animation.md",
+        "references/dataviz.md",
+        "references/depth-3d.md",
+        "references/export.md",
+        "references/formats/gzh-cover.md",
+        "references/formats/ppt.md",
+        "references/imaging.md",
+        "references/multi-draft.md",
+        "references/pipeline.md",
+        "references/print-production.md",
+        "references/vector-drawing.md",
+        "references/vector-export.md",
+        "references/video-motion.md",
+        "references/wechat-article.md"
+      ]
+    },
+    {
+      "name": "export_fallback.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 兜底导出:独立 Playwright → 静态 PNG。",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/ITERATION.md",
+        "docs/scripts.md",
+        "references/export.md",
+        "references/pipeline.md"
+      ]
+    },
+    {
+      "name": "export_local.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 项目一键导出:双击或 `python 导出.py` 即可导出本目录全部 HTML。",
+      "used_by": [
+        "docs/ITERATION.md",
+        "docs/scripts.md",
+        "references/export.md"
+      ]
+    },
+    {
+      "name": "fetch_asset.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 素材获取:图库 API(授权干净)+ 爬虫兜底 + 剪贴板入库 + CREDITS 登记。",
+      "used_by": [
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/materials.md",
+        "references/mcp-assets.md",
+        "references/pipeline.md"
+      ]
+    },
+    {
+      "name": "fetch_font.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 字体按需下载:读 fonts/download.json,把本地缺失的字体取回。",
+      "used_by": [
+        "docs/ITERATION.md",
+        "docs/scripts.md",
+        "docs/setup.md",
+        "fonts/README.md",
+        "references/brand-system.md"
+      ]
+    },
+    {
+      "name": "fetch_model.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/ITERATION.md",
+        "docs/scripts.md",
+        "docs/setup.md",
+        "references/materials.md"
+      ]
+    },
+    {
+      "name": "fetch_svg.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 矢量素材获取:Iconify 图标(按需 + 离线缓存 + 逐集许可)。",
+      "used_by": [
+        "docs/scripts.md",
+        "docs/svg-licenses.md",
+        "references/materials.md",
+        "references/vector-drawing.md"
+      ]
+    },
+    {
+      "name": "gen_script_index.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "artboard 脚本索引生成器(08 迭代 D-08-3):registry.json + docs/scripts.md。",
+      "used_by": [
+        "README.md",
+        "docs/ITERATION.md",
+        "docs/glossary.md",
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "gzh_article.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "公众号文章排版器:Markdown → 微信公众号编辑器可直接粘贴的全内联样式 HTML。",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/gzh-guide.md",
+        "docs/gzh-spec-summary.md",
+        "docs/scripts.md",
+        "references/gzh-typography.md"
+      ]
+    },
+    {
+      "name": "gzh_cover.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "微信公众号双封面工作站:一次设计,三张产物(主封面/次条/合并预览图)。",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/gzh-guide.md",
+        "docs/scripts.md",
+        "references/formats/gzh-cover.md",
+        "references/imaging.md",
+        "references/wechat-article.md"
+      ]
+    },
+    {
+      "name": "imageops.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "位图工序唯一入口(指导书 §1.3/附录 D.2):只做参数分发与结果汇总,不含算法。",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/failures.md",
+        "docs/scripts.md",
+        "references/depth-3d.md",
+        "references/image-language.md",
+        "references/imaging.md",
+        "references/mcp-assets.md",
+        "references/multi-draft.md",
+        "references/pipeline.md",
+        "references/pixel-pipeline.md",
+        "references/print-cmyk.md",
+        "references/print-production.md"
+      ]
+    },
+    {
+      "name": "inspect_ref.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 复刻测量:参考图像素普查工具(证据链协议,见 references/replicate.md)。",
+      "used_by": [
+        "docs/glossary.md",
+        "docs/scripts.md",
+        "references/imaging.md",
+        "references/pipeline.md",
+        "references/replicate.md"
+      ]
+    },
+    {
+      "name": "junction.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "NTFS 目录联接(junction)创建/检测。",
+      "used_by": [
+        "docs/ITERATION.md",
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "make_bats.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 一键导出批处理生成:给 src/ 下每个 HTML 生成一个双击即出图的 .bat。",
+      "used_by": [
+        "docs/ITERATION.md",
+        "docs/scripts.md",
+        "references/export.md",
+        "references/pipeline.md"
+      ]
+    },
+    {
+      "name": "pack.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 工程打包:把瘦身影子项目引用的所有外部文件收集进 zip,可迁移交付。",
+      "used_by": [
+        "SKILL.md",
+        "docs/glossary.md",
+        "docs/scripts.md",
+        "references/export.md",
+        "references/h5-interactive.md"
+      ]
+    },
+    {
+      "name": "pixel.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 位图配方引擎(pixel):声明式配方 + PS 对照的调整/滤镜/图层能力。",
+      "used_by": [
+        "docs/glossary.md",
+        "docs/scripts.md",
+        "references/image-language.md",
+        "references/imaging.md",
+        "references/materials.md",
+        "references/pixel-pipeline.md"
+      ]
+    },
+    {
+      "name": "preflight.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 任务预检:渲染环境一次查清,输出人类可读清单 + 单行 JSON。",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/ITERATION.md",
+        "docs/scripts.md",
+        "docs/setup.md",
+        "references/depth-3d.md",
+        "references/mcp-assets.md",
+        "references/pipeline.md"
+      ]
+    },
+    {
+      "name": "qr.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 二维码工具:生成(品牌色/内嵌 logo)+ 解析(本地 zxing,URL 走草料 API)。",
+      "used_by": [
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/formats/a4p.md",
+        "references/formats/card.md",
+        "references/formats/rollup.md",
+        "references/formats/trifold.md"
+      ]
+    },
+    {
+      "name": "scaffold.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 项目脚手架:在 artboard-studio/ 下生成海报项目(src/ + export/)。",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/ITERATION.md",
+        "docs/glossary.md",
+        "docs/scripts.md",
+        "references/depth-3d.md",
+        "references/formats/ppt.md",
+        "references/formats/trifold.md",
+        "references/image-language.md",
+        "references/imaging.md",
+        "references/multi-draft.md",
+        "references/pipeline.md",
+        "references/replicate.md",
+        "references/responsive-reflow.md"
+      ]
+    },
+    {
+      "name": "selfcheck.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "artboard 仓库自检:拦住\"文档说有、代码没有\"与\"同一事实多处不一致\"这一类缺陷。",
+      "used_by": [
+        "docs/ITERATION.md",
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "setup_ffmpeg.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 环境部署:一键下载部署 FFmpeg(Windows)。",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/scripts.md",
+        "docs/setup.md",
+        "references/export.md"
+      ]
+    },
+    {
+      "name": "setup_kiln.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "Kiln 引擎一键部署(v1.9.0 起,WPI 已退役)。",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/gzh-guide.md",
+        "docs/scripts.md",
+        "docs/setup.md",
+        "references/export.md",
+        "references/formats/gzh-cover.md",
+        "references/vector-export.md"
+      ]
+    },
+    {
+      "name": "slim_project.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 项目瘦身:把项目里\"实体拷贝\"的 fonts/vendor 目录换成 Skill 资产库的目录联接。",
+      "used_by": [
+        "docs/scripts.md",
+        "references/export.md"
+      ]
+    },
+    {
+      "name": "to_vector.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard 矢量交付 CLI(v1.9:Kiln 原生九格式薄壳)。",
+      "used_by": [
+        "docs/scripts.md",
+        "references/vector-export.md"
+      ]
+    },
+    {
+      "name": "upload_imgchr.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "last = \"\"",
+      "used_by": [
+        "README.md",
+        "docs/scripts.md",
+        "references/wechat-article.md"
+      ]
+    },
+    {
+      "name": "vqa.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard VQA:调用本地 VQA 项目解释图片内容(离线,CPU)。",
+      "used_by": [
+        "docs/scripts.md",
+        "references/materials.md"
+      ]
+    }
+  ]
+}

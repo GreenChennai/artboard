@@ -1,0 +1,45 @@
+{
+  "_说明": "高级灰:降饱和+中间调压灰+轻 USM(编辑排版向)",
+  "version": 1,
+  "stages": [
+    {
+      "op": "auto-orient"
+    },
+    {
+      "op": "hsl",
+      "range": "all",
+      "sat": -0.28,
+      "light": 0.03
+    },
+    {
+      "op": "curves",
+      "points": [
+        [
+          0,
+          0.02
+        ],
+        [
+          0.3,
+          0.3
+        ],
+        [
+          0.7,
+          0.72
+        ],
+        [
+          1,
+          0.97
+        ]
+      ]
+    },
+    {
+      "op": "sharpen-usm",
+      "amount": 0.45,
+      "radius": 1.2,
+      "threshold": 3
+    }
+  ],
+  "output": {
+    "format": "png"
+  }
+}

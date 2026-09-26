@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>video-outro · 片尾(模式 V:落版 + CTA;总长 4.8s,全 finite)</title>
+<!-- video-motion.md §一 片尾契约:3–6s(导出片长≈3.0s)
+     五段式:P0 2.0 → IN 0.6 → HOLD 1.4 → OUT 0.5 → P1 0.3
+     动效语法:落版 rise stagger + CTA 呼吸一次(emphasized);内容全在 9:16 安全区 -->
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { margin:0; background:#000; }
+.poster { position:relative; width:1080px; height:1920px; overflow:hidden;
+  background:linear-gradient(180deg, #171410 0%, #241d14 100%);
+  font-family:"Microsoft YaHei UI","Microsoft YaHei",sans-serif; }
+:root { --ease-in: cubic-bezier(0.05, 0.7, 0.1, 1);
+        --ease-emph: cubic-bezier(0.4, 0.0, 0.2, 1); }
+.grain { position:absolute; inset:0; opacity:.05;
+  background-image:radial-gradient(rgba(255,240,210,.8) 1px, transparent 1px);
+  background-size:26px 26px; }
+.ring { position:absolute; left:50%; top:46%; width:980px; height:980px;
+  transform:translate(-50%,-50%); border:1px solid rgba(255,205,120,.14); border-radius:50%; }
+.wrap { position:absolute; left:184px; top:230px; width:712px; height:1114px;
+  display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; }
+.brand { font:900 92px/1.15 "Microsoft YaHei UI"; color:#ffdf9e; letter-spacing:.06em;
+  opacity:0; animation:rise .6s var(--ease-in) 2.0s both; }
+@keyframes rise { from { transform:translateY(42px); opacity:0; }
+                  to   { transform:translateY(0);    opacity:1; } }
+.tagline { margin-top:30px; font-size:34px; letter-spacing:.24em; text-indent:.24em;
+  color:#b8a988; opacity:0; animation:rise .5s var(--ease-in) 2.25s both; }
+.cta { margin-top:74px; padding:26px 74px; border-radius:999px;
+  background:#ffc45e; color:#241a08; font:700 42px/1 "Microsoft YaHei UI";
+  letter-spacing:.12em; text-indent:.12em; box-shadow:0 12px 40px rgba(255,196,94,.28);
+  opacity:0; animation:pop .5s var(--ease-emph) 2.6s both, breathe 1.2s ease-in-out 3.1s 1 both; }
+@keyframes pop { from { transform:scale(.86); opacity:0; } to { transform:scale(1); opacity:1; } }
+@keyframes breathe { 0%,100% { transform:scale(1); } 50% { transform:scale(1.045); } }
+.meta { margin-top:56px; font-size:28px; color:#8f8368; letter-spacing:.18em;
+  opacity:0; animation:rise .5s var(--ease-in) 2.9s both; }
+.wrap-out { opacity:1; animation:leave .5s ease-in 4.0s both; }
+@keyframes leave { to { transform:translateY(-30px); opacity:0; } }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="grain"></div><div class="ring"></div>
+  <div class="wrap wrap-out">
+    <div class="brand">手冲研究室</div>
+    <div class="tagline">每周三 · 一支豆子</div>
+    <div class="cta">关注看下期</div>
+    <div class="meta">账号 @手冲研究室 · 下期预告 埃塞俄比亚</div>
+  </div>
+</div>
+</body>
+</html>

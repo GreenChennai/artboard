@@ -5,7 +5,7 @@
   bing / baidu      — 爬虫兜底,版权不确定 → 文件名自动加前缀「版权风险-」
   iconfont          — POST 接口(Cookie),SVG 源码内嵌在搜索结果里;风险标记
   pinterest         — 搜索页 HTML 解析(走 config.json 的 proxy)+ curl 下载图床;风险标记
-  huaban            — WAF 拦截程序化访问,走插件通道:浏览器装 tools/cookie-extension,
+  huaban            — WAF 拦截程序化访问,走插件通道:浏览器装 tools/asset-bridge,
                       在花瓣搜索页点「导出本页素材 JSON」,再 --source clipboard 入库;风险标记
 
 用法:
@@ -13,7 +13,7 @@
       [--limit 6] [--orientation landscape|portrait|square] [--download] [--image-type photo]
 
   --source auto:pexels → pixabay → bing → baidu
-  --source clipboard:读取剪贴板里的素材 JSON(由 cookie-extension「导出本页素材」生成),
+  --source clipboard:读取剪贴板里的素材 JSON(由 asset-bridge「导出本页素材」生成),
                      无需 --query;配合花瓣等 WAF 站点使用
   --download:把前 limit 张候选下载进 <studio>/materials/<theme>/ 并登记 CREDITS.md
   Pixabay 要求搜索结果展示时注明来源——CREDITS.md 即履行此义务。
@@ -161,7 +161,7 @@ def search_baidu(q: str, limit: int) -> list[dict]:
 
 def search_iconfont(q: str, limit: int) -> list[dict]:
     """阿里巴巴图标库:POST 接口,SVG 源码内嵌在 show_svg 字段(实测 2026-09)。
-    需要 Cookie(config.json iconfont_cookie,tools/cookie-extension 插件抓取)。"""
+    需要 Cookie(config.json iconfont_cookie;装 tools/asset-bridge 后由 MCP assets_cookie 自动抓写)。"""
     headers = {"Accept": "application/json",
                "Referer": "https://www.iconfont.cn/search/index?q=" + urllib.parse.quote(q)}
     cookie = cfg("iconfont_cookie")
@@ -174,7 +174,7 @@ def search_iconfont(q: str, limit: int) -> list[dict]:
     except Exception as exc:
         return [{"source": "iconfont", "url": "", "page_url": "", "author": "",
                  "license": f"接口失败({type(exc).__name__}):请确认 config.json 的 iconfont_cookie"
-                            "(tools/cookie-extension 插件抓取);站点接口可能已变动",
+                            "(asset-bridge 扩展 / MCP assets_cookie 自动抓取);站点接口可能已变动",
                  "risk": True}]
     out = []
     for it in data.get("data", {}).get("icons", []) or []:
@@ -228,12 +228,12 @@ def search_pinterest(q: str, limit: int) -> list[dict]:
 
 def search_huaban(q: str, limit: int) -> list[dict]:
     """花瓣:WAF 拦截一切程序化访问(urllib/requests/curl/无头浏览器实测全 403/405),
-    走插件通道:tools/cookie-extension 在花瓣搜索页「导出本页素材 JSON」→ --source clipboard。
+    走插件通道:tools/asset-bridge 在花瓣搜索页「导出本页素材 JSON」→ --source clipboard。
 
     返回空列表(而不是一条空 url 的伪候选)——否则上层会以为"搜到了 1 条"
     却在下载阶段静默跳过,用户看不到任何提示。
     """
-    print("△ 花瓣 WAF 拦截程序化访问。请改用插件通道:浏览器装 tools/cookie-extension,"
+    print("△ 花瓣 WAF 拦截程序化访问。请改用插件通道:浏览器装 tools/asset-bridge,"
           "打开花瓣搜索页点「导出本页素材 JSON」,再跑 --source clipboard 入库。",
           file=sys.stderr)
     return []
@@ -290,7 +290,7 @@ def search_miankoutu(q: str, limit: int) -> list[dict]:
 
 
 def search_clipboard(q: str, limit: int) -> list[dict]:
-    """剪贴板入库:读取 cookie-extension「导出本页素材」生成的 JSON。"""
+    """剪贴板入库:读取 asset-bridge「导出本页素材」生成的 JSON。"""
     try:
         r = subprocess.run(
             ["powershell", "-NoProfile", "-command",

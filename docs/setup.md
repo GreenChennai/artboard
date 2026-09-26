@@ -59,7 +59,7 @@ C:\Users\你\.agents\skills\artboard\
 | Pexels API Key | 第 3 步复制的 Key | 推荐 |
 | Pixabay API Key | 第 3 步复制的 Key | 推荐 |
 | FFmpeg 路径 | 见第 5 步(可一键部署) | 用 MP4 才需要 |
-| 花瓣/图标库/Pinterest Cookie | 用 `tools\cookie-extension` 浏览器插件抓取(见仓库内说明) | 可选 |
+| 花瓣/图标库/Pinterest Cookie | 装 `toolssset-bridge` 扩展后由 MCP 自动抓写(`assets_cookie`);或扩展 popup 手动抓 | 可选 |
 | 本地代理 | 访问 Pinterest 等境外源时填,如 `http://127.0.0.1:7890` | 可选 |
 | 视觉识别模式 | 保持 `auto`(Agent 自带视觉优先) | 保持默认 |
 | 本地 VQA / OCR 路径 | 跑 `scripts\fetch_model.py vqa`(或 `ocr`)自动下载部署 | 可选 |

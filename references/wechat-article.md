@@ -869,3 +869,14 @@ $PY $S/upload_imgchr.py out/*.jpg --cookie "…" --urls-out urls.json --key-pref
 - **未找到实证、留待自测的项**:动态 SMIL 经「剪贴板直贴 / 草稿 API」的存活率;
   `stroke-dasharray` 与 `mpath` 经编辑器链路的实际存活;SMIL 属性级 iOS/Android 差异。
   以上任何一项做过的实测结果,都应回填进 §3.1 坑清单或 §8.4bis。
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `check_wechat_svg.py` | 微信 SVG 白名单机检 | `python scripts/check_wechat_svg.py <文件或目录>` |
+| `check_mobile_width.py` | 窄屏溢出机检 | `python scripts/check_mobile_width.py <文件或目录>` |
+| `upload_imgchr.py` | 图床上传拿直链 | `python scripts/upload_imgchr.py <图…> --cookie …` |
+| `gzh_cover.py` | 图文绑定出同主题封面 | `python scripts/gzh_cover.py new <slug> --title "…"` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

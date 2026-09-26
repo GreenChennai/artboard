@@ -156,6 +156,7 @@
 4. **压字对比度在压缩前验收**:`contrast-check` 过线后才许 `compress`——压缩(尤其有损格式)会移动色彩,验收必须针对最终像素;数值口径见 `color-contrast.md`;
 5. **压缩永远最后**:前面每一步(裁切重采样、抠图羽化、色调重映射)都可能放大体积或重写像素,提前压缩 = 白压。
 
+色调/滤镜/图层环节的**可重放配方**用 `scripts/pixel.py`(references/pixel-pipeline.md);
 一条链到底用 `pipeline` 子命令(`imaging.md` §3);中间步骤的产物保留,改稿时从最近的有效步骤重放,不从头再来。
 
 ---
@@ -179,3 +180,12 @@
 
 - **硬提示**:照片上版前先各写一句"这张是____";多图共用同一组 `tone` 参数;主体 `cutout.py --shadow`,投影并入统一光源;背景角色压暗后再压字,`contrast-check` 过线才 `compress`;特效计数含纹理层,≤3 达标。
 - **软提示**:三词品牌人格(如:新鲜 / 手作 / 晨光) + 视觉参照(杂志内页的产品特写:大留白 + 暖调 + 单主体)。
+
+## 本册用到的脚本
+
+| 脚本 | 何时用 | 一行示例 |
+|---|---|---|
+| `imageops.py` | tone/blur-bg/card/watermark | `python scripts/imageops.py tone <图> --duotone` |
+| `cutout.py` | 主体分离(抠图) | `python scripts/cutout.py hero.jpg --quality high` |
+
+> 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

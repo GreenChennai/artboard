@@ -133,8 +133,10 @@ python scripts/asset_hunt.py --query "咖啡 拉花" --theme promo-coffee --limi
   → 扩展凭据永久有效,配合 alarms 自愈 = **绑定一次,登录常态化**(D9);
 - 采集后自动:原图升级(剥后缀→详情页兜底)→ 筛选(透明/横竖/主色,默认降级留痕)→
   pHash 查重 → **关闭本轮全部标签页**(保留浏览器与登录态)→ 单行 JSON 报告;
-- 批次站点:花瓣 / SVGRepo / Pexels·Pixabay(API,授权干净);unDraw 网络不可达自动跳过;
-  **付费站不做**(版权不可商用)。
+- 批次站点(0927 扩):花瓣 / **SVGRepo**(page_fetch 页内取,过 CF)/ **vector4free**(S3 预览图
+  page_fetch;授权逐条各异) / **gahag**(日系 Public Domain,原图 URL 从缩略图推导 + Referer)/
+  Pexels·Pixabay(API,授权干净);unDraw 网络不可达自动跳过;**付费站不做**(版权不可商用)。
+  每站"是什么/何时用/授权"详表见 `materials.md §1`。
 
 ## 6. 故障排查
 

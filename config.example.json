@@ -9,6 +9,7 @@
   "iconfont_cookie": "",
   "pinterest_cookie": "",
   "proxy": "",
+  "proxy_enabled": false,
   "vision_mode": "auto",
   "vqa_path": "",
   "ocr_path": "",

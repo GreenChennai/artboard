@@ -185,25 +185,52 @@ def _ext_alive(token: str) -> bool:
 
 # ---------------- 站点编排(D2 批次) ----------------
 
-def site_urls(site: str, kw: str) -> dict:
-    if site == "huaban":
-        return {"url": "https://huaban.com/search?q=" + urllib.parse.quote(kw),
-                "automations": [{"trigger": "素材范围", "option": "不看素材"}],
-                "pages": 2, "min_px": 200}
-    if site == "svgrepo":
-        return {"url": f"https://www.svgrepo.com/vectors/{urllib.parse.quote(kw)}/",
-                "pages": 1, "min_px": 64}
-    return {}
+# 站点注册表(0927 迭代②;每站:检索式/自动化/下载模式/授权/风险——与 materials.md §1 表同源)
+SITES: dict[str, dict] = {
+    "huaban": {"search": "https://huaban.com/search?q={kw}",
+               "automations": [{"trigger": "素材范围", "option": "不看素材"}],
+               "pages": 2, "min_px": 200, "dl": "direct",
+               "license": "不确定(花瓣采集)", "risk": True, "kw_note": "中文词"},
+    "svgrepo": {"search": "https://www.svgrepo.com/vectors/{kw}/",
+                "pages": 1, "min_px": 64, "dl": "page_fetch",
+                "license": "svgrepo 集许可:多数 CC0,逐条核对", "risk": True,
+                "kw_note": "英文词"},
+    "vector4free": {"search": "https://www.vector4free.com/free-vectors/{kw}/",
+                    "pages": 1, "min_px": 200, "dl": "page_fetch",
+                    "license": "逐条各异(部分需署名),交付必须核对", "risk": True,
+                    "kw_note": "英文词"},
+    "gahag": {"search": "https://gahag.net/?s={kw}",
+              "pages": 1, "min_px": 200, "dl": "direct",
+              "license": "Public Domain(ACworks 条款;禁再配布类细则自查)", "risk": False,
+              "kw_note": "日文词命中率更高"},
+}
+
+# gahag 原图升级:缩略 gahag.net/img/<ym>/<N>s/gahag-<id>[-N].jpg
+#   → 原图 img01.gahag.net/<ym>/<N>o/gahag-<id>.jpg(2026-09-27 详情页 href 实测)
+_GAHAG_THUMB = re.compile(
+    r"https://gahag\.net/img/([\w]+)/(\d+)s/(gahag-\d+)(?:-\d+)?\.(jpg|png)")
+
+
+def gahag_original(u: str) -> str:
+    return _GAHAG_THUMB.sub(r"https://img01.gahag.net/\1/\2o/\3.\4", u)
+
+
+def site_cfg(site: str, kw: str) -> dict | None:
+    c = SITES.get(site)
+    if not c:
+        return None
+    out = dict(c)
+    out["url"] = c["search"].format(kw=urllib.parse.quote(kw))
+    return out
 
 
 def hunt_site(site: str, kw: str, limit: int, client_timeout: float = 90) -> dict:
-    """经 Bridge 开页采集单站。返回 items/automations/tabId/error。"""
-    from bridge import BridgeClient, read_session
-    cfg_s = site_urls(site, kw)
+    """经 Bridge 开页采集单站。返回 items/automations/tabId/error(站点级 license/risk 已贴)。"""
+    from bridge import BridgeClient
+    cfg_s = site_cfg(site, kw)
     if not cfg_s:
-        return {"collected": 0, "error": f"未知站点 {site}"}
-    info = {"port": HUNT_PORT, "token": hub_token()}
-    cli = BridgeClient(info["port"], info["token"])
+        return {"collected": 0, "error": f"未知站点 {site}(可用:{sorted(SITES)} + pexels/pixabay API)"}
+    cli = BridgeClient(HUNT_PORT, hub_token())
     ready = cli.handshake(role="client")
     if ready.get("type") != "ready":
         cli.close()
@@ -215,22 +242,44 @@ def hunt_site(site: str, kw: str, limit: int, client_timeout: float = 90) -> dic
     cli.close()
     if out.get("type") != "items" and "items" not in out:
         return {"collected": 0, "error": out.get("error") or out.get("hint") or "无应答"}
-    # 与 server.assets_fetch_page 同口径:风险强制 + link 接通 + 花瓣原图升级
-    import re as _re
     fixed = []
     for it in out.get("items", []):
-        it["risk"] = True
+        it["risk"] = bool(cfg_s["risk"])
+        it["license"] = cfg_s["license"]
         it["source"] = f"bridge-{site}"
         it["page_url"] = it.get("page_url") or it.get("link") or ""
         u = it.get("url") or ""
-        if "gd-hbimg" in u and "huaban.com" in u:
-            it["url"] = _re.sub(r"_(?:fw|sq)\d+webp", "", u)
+        if "gd-hbimg" in u and "huaban.com" in u:  # 花瓣缩略→原图
+            it["url"] = re.sub(r"_(?:fw|sq)\d+webp", "", u)
+        if site == "gahag":
+            it["url"] = gahag_original(u)
+            it["dl_headers"] = {"Referer": "https://gahag.net/"}  # img01 防盗链(实测 403→3MB)
         fixed.append(it)
     return {"collected": len(fixed), "items": fixed,
             "tabId": out.get("tabId"),
             "source_filter": (out.get("automations") or {}).get("applied") or [],
             "source_filter_failed": (out.get("automations") or {}).get("failed") or [],
             "error": out.get("error")}
+
+
+def page_fetch_items(items: list[dict], tab_id: int | None) -> list[dict]:
+    """page_fetch 站(svgrepo/vector4free):经扩展页内 fetch 取字节(过 CF/防盗链),
+    以 content_b64 附回 item,统一走 sources.download 落盘。失败的记 fetch_error 跳过。"""
+    from bridge import fetch_file
+    out = []
+    for it in items:
+        r = {}
+        for attempt in (1, 2):  # 首连竞态偶发(开页连接刚收尾),失败重试一次
+            r = fetch_file(it.get("url", ""), tab_id=tab_id)
+            if r.get("b64"):
+                break
+            time.sleep(0.6)
+        if r.get("b64"):
+            it["content_b64"] = r["b64"]
+            out.append(it)
+        else:
+            out.append({**it, "fetch_error": r.get("error") or "fetchfile 失败"})
+    return out
 
 
 # ---------------- 下载 / 筛选 / 去重(D3 原图兜底;D4 筛选降级) ----------------
@@ -329,7 +378,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="全自动素材搜索(开页→搜→筛→下→去重→关页;0927 迭代)")
     ap.add_argument("--query", required=True, help="搜索关键词(多词空格分隔)")
     ap.add_argument("--theme", required=True, help="素材库主题目录名")
-    ap.add_argument("--sites", default="huaban,svgrepo,pexels,pixabay")
+    ap.add_argument("--sites", default="huaban,svgrepo,vector4free,gahag,pexels,pixabay",
+                    help="huaban/svgrepo/vector4free/gahag(Bridge)+ pexels,pixabay(API)")
     ap.add_argument("--limit", type=int, default=8, help="单站采集上限")
     ap.add_argument("--transparent", action="store_true", help="只要透明 PNG")
     ap.add_argument("--orientation", default="any", choices=["any", "landscape", "portrait"])
@@ -368,15 +418,24 @@ def main() -> int:
     tab_ids: list[int] = []
     pool_items: list[dict] = []
     for site in [s.strip() for s in args.sites.split(",") if s.strip()]:
-        if site in ("huaban", "svgrepo"):  # Bridge 通道
+        if site in SITES:  # Bridge 通道
             r = hunt_site(site, args.query, args.limit)
             if r.get("tabId") is not None:
                 tab_ids.append(r["tabId"])
+            items = r.get("items", [])[: args.limit]
+            if items and SITES[site]["dl"] == "page_fetch":
+                items = page_fetch_items(items, r.get("tabId"))
+                fails = [i for i in items if i.get("fetch_error")]
+                if fails:
+                    report["errors"].append(
+                        f"{site}: 页内取文件失败 {len(fails)} 条({fails[0].get('fetch_error')})")
+            items = [i for i in items if not i.get("fetch_error")]
             site_r = {"collected": r.get("collected", 0),
+                      "downloaded": len(items),
                       "source_filter": r.get("source_filter") or [],
                       "source_filter_failed": r.get("source_filter_failed") or [],
                       "error": r.get("error")}
-            pool_items.extend(r.get("items", [])[: args.limit])
+            pool_items.extend(items)
         elif site in ("pexels", "pixabay"):  # 干净 API 通道(无浏览器)
             try:
                 import sources

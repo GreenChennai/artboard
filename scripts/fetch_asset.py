@@ -29,7 +29,7 @@ import sys
 import urllib.parse
 import urllib.request
 
-from _config import cfg, near_workspace
+from _config import cfg, near_workspace, proxy_active
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_STUDIO = near_workspace("artboard-studio")
@@ -197,7 +197,7 @@ RX_PINIMG = re.compile(r'https://i\.pinimg\.com/(?:736x|originals)/[a-f0-9/]+\.(
 def search_pinterest(q: str, limit: int) -> list[dict]:
     """Pinterest:搜索页 HTML 解析(需要 config.json 的 proxy 走本地代理),
     图床下载用 curl(python TLS 会被 pinimg 掐断,实测 curl 可用)。风险标记。"""
-    proxy = cfg("proxy")
+    proxy = proxy_active()
     headers = {"Cookie": cfg("pinterest_cookie"),
                "Accept-Language": "en-US,en;q=0.9"}
     u = "https://www.pinterest.com/search/pins/?q=" + urllib.parse.quote(q)
@@ -205,7 +205,8 @@ def search_pinterest(q: str, limit: int) -> list[dict]:
         html = http_get(u, headers, timeout=25, proxy=proxy).decode("utf-8", "ignore")
     except Exception as exc:
         return [{"source": "pinterest", "url": "", "page_url": "", "author": "",
-                 "license": f"接口失败({type(exc).__name__}):确认 config.json 已填 proxy(本地代理)"
+                 "license": f"接口失败({type(exc).__name__}):国内网络需代理——"
+                            "config.json 设 proxy_enabled:true 并填 proxy"
                             "与 pinterest_cookie(插件抓取);国内网络 Pinterest 需代理",
                  "risk": True}]
     urls = list(dict.fromkeys(RX_PINIMG.findall(html)))
@@ -372,7 +373,7 @@ def download_one(c: dict, theme_dir: str, base: str) -> tuple[str, str]:
             return finalize(f"{base}{sniff_ext(data)}", data), ""
         except Exception as exc:  # noqa: BLE001 — python TLS 被掐时 curl 兜底
             last_err = str(exc)
-            for curl_proxy in (None, cfg("proxy") or None):  # 直连优先,代理其次
+            for curl_proxy in (None, proxy_active()):  # 直连优先,代理其次(proxy_enabled 开才有)
                 tmp = os.path.join(theme_dir, base + ".bin")
                 try:
                     code = curl_get(url, out_path=tmp, proxy=curl_proxy, timeout=45,

@@ -36,6 +36,7 @@ ENV_MAP = {
     "iconfont_cookie": "ARTBOARD_ICONFONT_COOKIE",
     "pinterest_cookie": "ARTBOARD_PINTEREST_COOKIE",
     "proxy": "ARTBOARD_PROXY",
+    "proxy_enabled": "ARTBOARD_PROXY_ENABLED",
     "vision_mode": "ARTBOARD_VISION_MODE",
     "vqa_path": "ARTBOARD_VQA",
     "ocr_path": "ARTBOARD_OCR",
@@ -87,6 +88,17 @@ def cfg_raw(key: str, default=None):
         return env
     v = _load().get(key)
     return default if v is None else v
+
+
+def proxy_active() -> str | None:
+    """代理唯一出口(0927 迭代①):`proxy_enabled` 开(默认关)且 proxy 非空才返回地址,
+    否则一律直连。所有下载/安装类脚本必须经此函数取代理,禁止各自直读 `cfg("proxy")`——
+    否则残留的死代理值会让首轮下载必定失败(用户实测痛点)。"""
+    enabled = str(cfg_raw("proxy_enabled", False)).strip().lower()
+    if enabled not in ("1", "true", "yes", "on"):
+        return None
+    p = cfg("proxy")
+    return p or None
 
 
 def write_config(data: dict, path: str = "") -> str:

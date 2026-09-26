@@ -208,7 +208,8 @@ class BridgeHub:
                     target = self.pending.pop(0) if self.pending else None
                 else:
                     mtype = msg.get("type")
-                    if mtype in ("collect", "download", "open", "close_tab", "cookie"):
+                    if mtype in ("collect", "download", "open", "close_tab", "cookie",
+                                 "fetchfile"):
                         if self.ext is not None:
                             self.pending.append(sock)  # 挂起等扩展回执(FIFO)
                             try:
@@ -331,6 +332,26 @@ def fetch_page(url: str = "", scroll: bool = True, limit: int = 50,
     except OSError as exc:
         return {"ok": False, "error": "BRIDGE_UNREACHABLE",
                 "hint": f"连不上常驻服务({exc});重跑 bridge.py --serve"}
+
+
+def fetch_file(url: str, tab_id: int | None = None, port: int | None = None,
+               token: str | None = None, timeout: float = 90) -> dict:
+    """页内取文件(0927 迭代:svgrepo/vector4free 等 CF 站的下载通道)。
+    需先用 open 打开同站标签页;url 必须在白名单域内。返回 {type:"file", b64, size, mime}。"""
+    info = read_session()
+    if not info:
+        return {"type": "file", "error": "BRIDGE_NOT_STARTED"}
+    try:
+        cli = BridgeClient(port or info["port"], token or info["token"])
+        ready = cli.handshake(role="client")
+        if ready.get("type") != "ready":
+            cli.close()
+            return {"type": "file", "error": "BRIDGE_AUTH"}
+        out = cli.call({"type": "fetchfile", "url": url, "tabId": tab_id}, timeout=timeout)
+        cli.close()
+        return out
+    except OSError as exc:
+        return {"type": "file", "error": f"BRIDGE_UNREACHABLE: {exc}"[:120]}
 
 
 SITE_URLS = {"huaban": "https://huaban.com/", "iconfont": "https://www.iconfont.cn/",

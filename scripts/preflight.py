@@ -17,7 +17,7 @@ import sys
 SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 if SCRIPTS not in sys.path:
     sys.path.insert(0, SCRIPTS)
-from _config import cfg, config_error, near_workspace  # noqa: E402
+from _config import cfg, cfg_raw, config_error, near_workspace  # noqa: E402
 from _paths import find_chrome, find_edge  # noqa: E402
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -152,6 +152,14 @@ def main() -> int:
         add("图库 key", "WARN", "未配置 Pexels/Pixabay key",
             "找图将仅有爬虫通道(素材自动带「版权风险-」前缀);"
             "在 config.json 填 pexels_key/pixabay_key 启用授权干净的图库源")
+
+    # 7.3 代理(0927 迭代:proxy_enabled 默认关;开=下载走 proxy)
+    _pa_on = str(cfg_raw("proxy_enabled", False)).strip().lower() in ("1", "true", "yes", "on")
+    _pa_addr = cfg("proxy")
+    add("代理", "PASS",
+        ("开 → " + (_pa_addr or "未填地址(等于直连)")) if _pa_on else "关(默认,全部直连)",
+        None if _pa_on or _pa_addr else
+        "国内网络拉取海外素材/模型失败时:config.json 填 proxy 并把 proxy_enabled 设为 true")
 
     # 7.3.1 MCP / Bridge 通道(默认关闭;开启见 references/mcp-assets.md)
     mcp_on = cfg("mcp_enabled")

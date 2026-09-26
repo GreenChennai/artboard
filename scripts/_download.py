@@ -25,8 +25,8 @@ CHUNK = 1 << 18            # 256KB
 
 def _proxy() -> str:
     try:
-        from _config import cfg
-        return cfg("proxy")
+        from _config import proxy_active
+        return proxy_active() or ""
     except Exception:
         return ""
 

@@ -1,5 +1,24 @@
 # Changelog
 
+## v1.17.0 — 代理开关 + 素材站扩展(2026-09-27)
+
+### Fixed · 代理模型(用户实测痛点:残留死代理致首轮下载必败)
+- 新增 `proxy_enabled`(默认 **关**)+ `_config.proxy_active()` 代理唯一出口
+  (ENV `ARTBOARD_PROXY_ENABLED`);消费者全量改造:fetch_font / _download / fetch_asset
+  (pinterest + curl 兜底)/ mcp sources;preflight 新增代理状态报告;config_gui 提示同步
+
+### Added · 素材站扩展(hunt 多站编排)
+- **vector4free**:免费矢量(S3 预览图,页内 fetch 下载;授权逐条各异→前缀)
+- **svgrepo**:30 万 SVG(Cloudflare 盾→**Bridge 页内 fetch**;多数 CC0→前缀)
+- **gahag**:日系照片/矢量,**明示 Public Domain**;原图 URL 从缩略图直接推导
+  (img01.gahag.net/<ym>/<N>o/,已验证 3.1MB 原图)+ Referer 防盗链;日文关键词命中更高
+- Bridge 协议新增 `fetchfile`(SW fetch 优先→页内 fetch 兜底,≤8MB);sources.download
+  支持 content_b64;站点级 license/risk 进 SITES 注册表(materials.md §1 同步)
+
+### Verified
+- 代理开关双态单测(关=直连 None / 开=带代理);离线全协议两遍全过
+  (降级阶梯/strict/全收+查重/cookie/兜底+关页/svgrepo page_fetch/gahag 直下无前缀)
+
 ## v1.16.0 — Bridge 全自动素材搜索(2026-09-27)
 
 > 依据桌面《artboard-Bridge素材搜索迭代-20260927》;grilling 九问收敛(D1–D10)。

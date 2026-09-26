@@ -83,7 +83,33 @@ def download(items: list[dict], theme: str) -> dict:
         with open(credits, "w", encoding="utf-8") as f:
             f.write(f"# CREDITS · {theme}\n\n"
                     "| 文件 | 来源 | 作者 | 授权 | 来源页 | 日期 |\n|---|---|---|---|---|---|\n")
+    import base64 as _b64
     for i, it in enumerate(items, 1):
+        # 页内 fetch 通道(svgrepo/vector4free 等_CF 站):字节已回传,直接落盘
+        if it.get("content_b64"):
+            try:
+                data = _b64.b64decode(it["content_b64"])
+            except Exception as exc:  # noqa: BLE001
+                errors.append({"id": it.get("id"), "error": f"base64: {exc}"})
+                continue
+            cand = {"source": it.get("source") or "bridge", "risk": bool(it.get("risk")),
+                    "author": it.get("author") or "unknown",
+                    "license": it.get("license") or "不确定(浏览器采集)",
+                    "page_url": it.get("page_url") or it.get("link") or ""}
+            base = f"{theme}-{cand['source']}-{i:02d}"
+            if cand["risk"]:
+                base = fa.RISK_PREFIX + base
+            name = base + fa.sniff_ext(data)
+            with open(os.path.join(theme_dir, name), "wb") as f:
+                f.write(data)
+            row = (f"| {name} | {cand['source']} | {cand['author']} | {cand['license']} "
+                   f"| {cand['page_url']} | {datetime.date.today().isoformat()} |" + chr(10))
+            with open(credits, "a", encoding="utf-8") as f:
+                f.write(row)
+            files.append({"file": os.path.join(theme_dir, name), "source": cand["source"],
+                          "license": cand["license"], "risk": cand["risk"],
+                          "page_url": cand["page_url"]})
+            continue
         url = it.get("url") or ""
         if not url:
             continue

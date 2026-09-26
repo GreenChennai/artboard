@@ -130,6 +130,53 @@ async function handleCloseTab(msg) {
   return { type: "closed", closed: ids };
 }
 
+// 页内取文件(SW fetch 优先=带 host_permissions 免 CORS;失败退页面上下文 fetch=带站点 Cookie/CF 放行)
+async function handleFetchfile(msg) {
+  const MAX = 8 * 1024 * 1024;
+  const url = msg.url || "";
+  const swFetch = async () => {
+    const r = await fetch(url, { credentials: "include" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const buf = await r.arrayBuffer();
+    if (buf.byteLength > MAX) throw new Error("too_large");
+    const bytes = new Uint8Array(buf);
+    let bin = "";
+    for (let i = 0; i < bytes.length; i += 0x8000)
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return { b64: btoa(bin), size: buf.byteLength, mime: r.headers.get("content-type") || "" };
+  };
+  const pageFetch = async () => {
+    if (!msg.tabId) throw new Error("no_tab");
+    const [{ result }] = await chrome.scripting.executeScript({
+      target: { tabId: msg.tabId },
+      func: async (u, max) => {
+        try {
+          const r = await fetch(u, { credentials: "include" });
+          if (!r.ok) return { error: "HTTP " + r.status };
+          const buf = await r.arrayBuffer();
+          if (buf.byteLength > max) return { error: "too_large" };
+          const bytes = new Uint8Array(buf);
+          let bin = "";
+          for (let i = 0; i < bytes.length; i += 0x8000)
+            bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+          return { b64: btoa(bin), size: buf.byteLength, mime: r.headers.get("content-type") || "" };
+        } catch (e) { return { error: e.message }; }
+      },
+      args: [url, MAX]
+    });
+    if (!result || result.error) throw new Error((result && result.error) || "page_fetch_failed");
+    return result;
+  };
+  try {
+    let data;
+    try { data = await swFetch(); }
+    catch (e1) { data = await pageFetch(); }
+    return { type: "file", url, ...data };
+  } catch (e) {
+    return { type: "file", url, error: e.message };
+  }
+}
+
 // Cookie 自动抓取(白名单站;仅经 localhost 回传,由 MCP 写进本机 config.json)
 async function handleCookie(msg) {
   let host = "";
@@ -187,6 +234,9 @@ function connect(port, token) {
       ws.send(JSON.stringify(out));
     } else if (msg.type === "close_tab") {
       const out = await handleCloseTab(msg);
+      ws.send(JSON.stringify(out));
+    } else if (msg.type === "fetchfile") {
+      const out = await handleFetchfile(msg);
       ws.send(JSON.stringify(out));
     } else if (msg.type === "cookie") {
       const out = await handleCookie(msg);

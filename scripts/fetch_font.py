@@ -44,12 +44,12 @@ def fetch(d: str, entry: dict) -> str:
     import urllib.request
     os.makedirs(os.path.join(FONTS_DIR, d), exist_ok=True)
     headers = entry.get("headers", {})
-    # 走 _config:config.json 的 proxy 与环境变量 ARTBOARD_PROXY 都能生效
+    # 走 _config.proxy_active():proxy_enabled 开(默认关)才用代理,否则直连
     try:
-        from _config import cfg as _cfg
-        proxy = _cfg("proxy") or None
+        from _config import proxy_active as _pa
+        proxy = _pa()
     except Exception:
-        proxy = os.environ.get("ARTBOARD_PROXY") or None
+        proxy = None
 
     def get(url: str, dest: str | None = None) -> bytes:
         last = None

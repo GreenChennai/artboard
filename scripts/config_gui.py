@@ -76,7 +76,7 @@ FIELDS = [
      "iconfont.cn 矢量图标搜索用。同上,在 iconfont.cn 登录后抓取。"),
     ("pinterest_cookie", "Pinterest Cookie(可选)", "text",
      "Pinterest 图片搜索用(国内网络需代理)。登录 pinterest.com 后抓取。"),
-    ("proxy", "本地代理(可选)", "text",
+    ("proxy", "本地代理(默认关;需 proxy_enabled:true 才启用)", "text",
      "访问 Pinterest 等境外源的代理,如 http://127.0.0.1:7890。\n"
      "留空 = 直连。"),
     ("vision_mode", "视觉识别模式", "choice: auto,local",

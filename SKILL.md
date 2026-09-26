@@ -1,7 +1,7 @@
 ---
 name: artboard
 description: Use when the user wants a finished graphic produced from copy or a reference image, or wants an existing design revised — 海报、banner、小红书封面、公众号封面、主 KV、信息长图、数据图、名片、A4 海报、三折页、易拉宝、PPT 页、二维码物料; 动态海报、GIF、MP4、口播信息卡、图解动画卡、科普动画卡等视频场景卡; 片头动画、片尾动画、内容概括动画、章节卡、转场卡等视频动效件(按口播/教程/vlog/短片/MV 配动效); H5 页面、移动端落地页、互动页、邀请函 H5 等轻量交互页(模式 H); 把文案变成图片、复刻一张设计图、换风格重做、改稿但说不清哪里不满意. 风格像 Illustrator/Photoshop 做的设计图,不是网页交互风. Not for 网页 UI、视频剪辑、纯 AI 生图. Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.16.0
+version: 1.17.0
 ---
 
 # artboard · HTML 海报工作室

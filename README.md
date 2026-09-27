@@ -12,7 +12,7 @@
 <p align="center">
   <a href="#-成品样例"><img alt="samples" src="https://img.shields.io/badge/%E6%88%90%E5%93%81%E6%A0%B7%E4%BE%8B-15%20%E5%BC%A0-1f6feb"></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-ACL--1.0-8b5cf6"></a>
-  <img alt="engine" src="https://img.shields.io/badge/Kiln-v0.9.0-00a88f">
+  <img alt="engine" src="https://img.shields.io/badge/Kiln-v0.10.0-00a88f">
   <img alt="python" src="https://img.shields.io/badge/python-3.10%2B-3776ab">
   <img alt="selfcheck" src="https://img.shields.io/badge/selfcheck-10%20pass-2da44e">
 </p>

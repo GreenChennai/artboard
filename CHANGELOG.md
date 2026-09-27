@@ -15,6 +15,13 @@
 - Bridge 协议新增 `fetchfile`(SW fetch 优先→页内 fetch 兜底,≤8MB);sources.download
   支持 content_b64;站点级 license/risk 进 SITES 注册表(materials.md §1 同步)
 
+### Changed · 引擎发行
+- Kiln 发行页升级 **v0.10.0**(重构 release 后真机构建,SHA-256 6f714f2d…):
+  VB-1 静态服务目录联接 404 根修(artboard UP-1 关闭,瘦身影子下 webfont 恢复,
+  不再需要 --embed-fonts 绕行)+ VB-2 native/矢量道静默丢弃改降级可观测(UP-2 关闭)
+  + warnings_by_kind / anim_coverage / SVG 导入跳过清单强类型化;
+  setup_kiln.py 默认地址与 README 徽章已同步
+
 ### Verified
 - 代理开关双态单测(关=直连 None / 开=带代理);离线全协议两遍全过
   (降级阶梯/strict/全收+查重/cookie/兜底+关页/svgrepo page_fetch/gahag 直下无前缀)

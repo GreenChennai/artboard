@@ -1,6 +1,6 @@
 # artboard 脚本总表(生成物)
 
-> 由 `scripts/gen_script_index.py` 生成 @ 2026-09-27;**不要手改**。
+> 由 `scripts/gen_script_index.py` 生成 @ 2026-09-28;**不要手改**。
 > 权威参数 = 各脚本 `--help`;分册末尾「本册用到的脚本」是就近索引。
 
 ## 脚本(39个)

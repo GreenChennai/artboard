@@ -18,6 +18,7 @@
 
 规则(级别 —— 谁能拦住):
   P0 external-ref          离线铁律 2:HTML 引用 http(s) 资源(字体/图/脚本/iframe)
+  P0 canvas-discipline     铁律 1:position:fixed / 100vh / 100vw(H5 页自动降 P1)
   P0 ai-default-indigo     默认 LLM 强调色(Tailwind indigo/violet 那 7 个 hex)
   P0 purple-gradient       紫/蓝紫渐变("大众脸"第一名;含 purple/violet 关键词)
   P0 trust-gradient        蓝→青两段式"信任渐变"(SaaS hero 陈词)
@@ -26,12 +27,14 @@
   P0 filler-copy           填充文案(lorem ipsum / feature one / 待补充…)
   P0 sans-display          标题硬编码 Inter/Roboto/system-ui 当展示体
   P0 cjk-leading           **中文**标题行高 < 1.3(强制换行时 P0;单行降 P1)
-  P1 canvas-discipline     铁律 1:position:fixed / 100vh / 100vw(H5 页自动降级)
+  P1 left-accent-card      圆角卡 + 左彩边(AI 仪表盘卡经典形)
   P1 all-caps-no-tracking  uppercase 无 ≥0.06em 字距(token 感知)
   P1 raw-hex               :root 外裸 hex > 12 个(token 没被遵守)
   P1 accent-overuse        正文里强调色引用 > 6 次(每屏可见 ≤2 处)
-  P1 left-accent-card      圆角卡 + 左彩边(AI 仪表盘卡经典形)
   P1 cjk-negative-tracking 中文标题负字距(促销风例外)
+
+级别台账在 `RULE_META`,是**唯一真相源** —— 本表与 `--list-rules` 都从它渲染,
+改级别只改一处。合计 10 条 P0 + 5 条 P1(无 P2)。
 
 豁免(与 check_overflow 的 data-allow-* 同源):
   - 文件级:`<!-- slop-ignore: filler-copy,invented-metric -->` 或 `<!-- slop-ignore: all -->`
@@ -160,7 +163,6 @@ LETTER_SPACING_RE = re.compile(r"letter-spacing\s*:\s*(-?[\d.]+)\s*(em|px|rem|%)
 VAR_DEF_RE = re.compile(r"(--[A-Za-z0-9_-]+)\s*:\s*([^;}]+)")
 
 SEV_ORDER = {"P0": 0, "P1": 1, "P2": 2}
-TAGS = {"P0": "必须修", "P1": "建议修", "P2": "锦上添花"}
 
 
 # ------------------------------------------------------------------ 小工具
@@ -241,9 +243,13 @@ def rule_external_ref(html: str) -> list[dict]:
     return out
 
 
-def rule_canvas(html: str, css_all: str) -> list[dict]:
-    """铁律 1:固定画布。H5 页(有 viewport meta)自动降 P1 —— 模式 H 允许滚动。"""
-    m = FIXED_RE.search(css_all) or VH_VW_RE.search(css_all)
+def rule_canvas(html: str) -> list[dict]:
+    """铁律 1:固定画布。H5 页(有 viewport meta)自动降 P1 —— 模式 H 允许滚动。
+
+    扫**整个 html** 而不只是 <style>:行内 `style="position:fixed"` 同样是
+    违反铁律 1。正则要求 `position:` / 数值单位前缀,正文散文撞不上。
+    """
+    m = FIXED_RE.search(html) or VH_VW_RE.search(html)
     if not m:
         return []
     h5 = bool(VIEWPORT_RE.search(html))
@@ -421,10 +427,8 @@ def rule_all_caps(html: str, css_all: str, tokens: dict) -> list[dict]:
 
 
 def rule_raw_hex(html: str) -> list[dict]:
-    blocks = style_blocks(html)
-    if not blocks:
-        return []
-    css = TOKEN_SCOPE_RE.sub("", blocks[0])
+    # 所有 <style> 块一起数 —— 只看第一块的话,拆成多段样式的页会漏掉后半截
+    css = TOKEN_SCOPE_RE.sub("", "\n".join(style_blocks(html)))
     hexes = HEX_RE.findall(css)
     if len(hexes) > 12:
         return [sev("P1", "raw-hex",
@@ -488,7 +492,7 @@ def _cjk_context(html: str, selector: str) -> tuple[bool, bool]:
     return found_cjk, br
 
 
-def rule_cjk_leading(html: str, css_all: str) -> list[dict]:
+def rule_cjk_leading(html: str) -> list[dict]:
     """中文标题行高下限 1.3(来源:open-design craft/typography.md)。
 
     CJK 字形撑满 em 框,拉丁能用的 1.0–1.2 会让两行中文肉眼相撞。分级:
@@ -505,9 +509,9 @@ def rule_cjk_leading(html: str, css_all: str) -> list[dict]:
             if fs is None or lh is None or fs < 32:
                 continue
             num, unit = float(lh.group(1)), (lh.group(2) or "").lower()
-            px = num if unit == "px" else num * fs
-            if unit == "%":
-                px = num / 100.0 * fs
+            # % 要除 100;px 直接用;无单位 / em / rem 都按倍数算
+            # (rem 严格说挂在根字号上,海报里几乎不这么写行高,按倍数是安全近似)
+            px = {"px": num, "%": num / 100.0 * fs}.get(unit, num * fs)
             ratio = px / fs
             if ratio >= 1.3:
                 continue
@@ -525,7 +529,7 @@ def rule_cjk_leading(html: str, css_all: str) -> list[dict]:
     return []
 
 
-def rule_cjk_negative_tracking(html: str, css_all: str) -> list[dict]:
+def rule_cjk_negative_tracking(html: str) -> list[dict]:
     for css in style_blocks(html):
         for m in re.finditer(r"([^{}]*)\{([^{}]*)\}", css):
             selector, body = (m.group(1) or "").strip(), (m.group(2) or "")
@@ -566,43 +570,50 @@ RULES = {
     "cjk-negative-tracking": rule_cjk_negative_tracking,
 }
 
+# 绝大多数规则只吃 html;唯一需要跨 <style> 汇总上下文的是 all-caps
+# (要 :root 的 token 表来换算 letter-spacing)。
+def _call(fn, html: str, css_all: str, tokens: dict) -> list:
+    if fn is rule_all_caps:
+        return fn(html, css_all, tokens)
+    return fn(html)
+
 
 def sev(level: str, rid: str, message: str, fix: str, snippet: str = "",
         force: bool = False) -> dict:
     """级别一律取 RULE_META(台账是唯一真相源),`force=True` 只给动态降级的规则用。"""
-    lv = level if force else RULE_META.get(rid, (level, ""))[0]
+    lv = level if force else RULE_META[rid][0]
     return {"severity": lv, "id": rid, "message": message,
             "fix": fix, "snippet": clip(snippet)}
 
 
-def lint_page(html_raw: str, file: str, only: set, ignores: set) -> list[dict]:
+def lint_page(html_raw: str, file: str, only: set) -> list[dict]:
     ignores, html = parse_ignores(html_raw)
     if "*" in ignores:
         return []
     css_all = "\n".join(style_blocks(html))
     tokens = collect_tokens(css_all)
     out: list[dict] = []
+    crashed: list[str] = []
     for rid, fn in RULES.items():
         if rid in ignores:
             continue      # 注意:only 是**级别**(P0/P1/P2),不是规则 id,故此层不过滤
         try:
-            if rid in ("all-caps-no-tracking",):
-                found = fn(html, css_all, tokens)
-            elif rid in ("canvas-discipline", "cjk-leading", "cjk-negative-tracking"):
-                found = fn(html, css_all)
-            elif rid == "raw-hex":
-                found = fn(html)
-            elif rid == "accent-overuse":
-                found = fn(html)
-            else:
-                found = fn(html)
-        except Exception:  # noqa: BLE001 — 单条规则出错不该让整页检查失败
+            found = _call(fn, html, css_all, tokens)
+        except Exception as exc:  # noqa: BLE001 — 单条规则出错不该让整页检查失败,
+            # 但**必须留痕**:静默 continue 会让规则悄悄失效(签名一改就中招),
+            # 门禁看上去"通过"实则没跑,那比误报危险得多。
+            crashed.append(f"{rid}({type(exc).__name__}: {exc})")
             continue
         for f in found:
             if only and "P" in f["severity"] and f["severity"] not in only:
                 continue
             f["file"] = file
             out.append(f)
+    for c in crashed:                      # 规则崩了要在报告里看得见
+        out.append({"severity": "P2", "id": "rule-crashed", "message": c,
+                    "fix": "这是本脚本自身的 bug(规则实现与签名不符等),"
+                           "请修脚本而不是加豁免;该规则本轮**没有运行**。",
+                    "snippet": "", "file": file})
     return out
 
 
@@ -659,17 +670,20 @@ def main() -> int:
 
     findings: list[dict] = []
     files: list[dict] = []
+    # --strict 下 P1 也阻断,单页 ok 必须跟着变,否则 files[] 与 blocking 自相矛盾
+    gate = {"P0", "P1"} if args.strict else {"P0"}
     for name in names:
         full = name if kind == "file" else os.path.join(path, name)
         rel = os.path.basename(full) if kind == "dir" else full
-        got = lint_page(read_text(full), rel, only, set())
+        got = lint_page(read_text(full), rel, only)
         findings.extend(got)
-        files.append({"file": rel, "ok": not any(f["severity"] == "P0" for f in got),
+        files.append({"file": rel,
+                      "ok": not any(f["severity"] in gate for f in got),
                       "count": len(got)})
 
     findings.sort(key=lambda f: (SEV_ORDER.get(f["severity"], 9), f["file"], f["id"]))
     counts = {s: sum(1 for f in findings if f["severity"] == s) for s in SEV_ORDER}
-    blocking = counts["P0"] + (counts["P1"] if args.strict else 0)
+    blocking = sum(counts[s] for s in gate)
     emit({"ok": blocking == 0, "source": path, "strict": args.strict,
           "files": files, "count": len(findings), "counts": counts,
           "blocking": blocking, "findings": findings})

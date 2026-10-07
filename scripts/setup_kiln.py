@@ -11,11 +11,20 @@
   python setup_kiln.py --from <url>   # 首次部署:从指定 URL 下载后写入
   python setup_kiln.py --force        # 升级:忽略已装引擎,重新下载覆盖
   python setup_kiln.py --exe <路径>   # 用手动下载的 exe(可与 --force 并用)
+
+发行同步(v0.14.1 轮):发行资产带 sha256,这里**强制校验**再写 config.json。
+`download()` 只保证字节流落盘,不保证落的是 exe —— 代理截断、把 404 的 HTML
+存成 .exe、CDN 半截文件,都会得到一个"下载成功"的坏引擎,而 `--version` 探测
+失败只报「继续自检」,于是坏引擎被写进 config,后续每次导出才炸。
+更糟的是 GB 镜像正式版**故意不给 sha256**(只承诺可复现),所以拿别的构建冒充
+本版也校验不出来 —— 这条只能靠记 baseline 版本号兜(见 BASELINE)。
 """
 
 import argparse
+import hashlib
 import json
 import os
+import re
 import shutil
 import sys
 
@@ -32,6 +41,15 @@ CANDIDATES = [
 
 SELF_CHECK = ["--help"]
 
+# ── 发行同步(改版本时三处同改:URL / SHA256 / BASELINE)────────────────────
+KILN_VERSION = "0.14.1"
+RELEASE_URL = ("https://github.com/GreenChennai/artboard/releases/download/"
+               "kiln-cli-v" + KILN_VERSION + "/Kiln-noGUI-CLI.exe")
+# 正式版才承诺 sha256(GB 镜像「可复现但无 sha256」是另一条路,见文档头注)
+RELEASE_SHA256 = "00185547dc56d20480610016e4a9c5f1adcff797a9747f724eb0236b902065c6"
+# 已知基线:低于它 export.py 的参数面/语义对不上(KILN_TOO_OLD 判定用)
+BASELINE = (0, 14, 1)
+
 
 def probe() -> str:
     cli = cfg("kiln_cli_exe")
@@ -43,6 +61,31 @@ def probe() -> str:
     return ""
 
 
+def sha256_of(path: str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for blk in iter(lambda: f.read(1 << 20), b""):
+            h.update(blk)
+    return h.hexdigest()
+
+
+def read_version(exe: str) -> str:
+    """`Kiln-noGUI-cli 0.14.1` → `0.14.1`;探不到返回空串(不猜)。"""
+    try:
+        r = subprocess_run([exe, "--version"])
+    except Exception:  # noqa: BLE001 —— 探不到版本不是致命错,交给基线判定
+        return ""
+    m = re.search(r"(\d+)\.(\d+)\.(\d+)", r)
+    return m.group(0) if m else ""
+
+
+def vtuple(v: str):
+    try:
+        return tuple(int(x) for x in v.split(".")[:3])
+    except Exception:  # noqa: BLE001
+        return (0, 0, 0)
+
+
 def main() -> int:
     for stream in (sys.stdout, sys.stderr):
         try:
@@ -50,11 +93,13 @@ def main() -> int:
         except Exception:
             pass
     ap = argparse.ArgumentParser(description="Kiln 引擎部署 / 升级")
-    default_url = "https://github.com/GreenChennai/artboard/releases/download/kiln-cli-v0.10.0/Kiln-noGUI-CLI.exe"
-    ap.add_argument("--from", dest="from_url", default=default_url,
+    ap.add_argument("--from", dest="from_url", default=RELEASE_URL,
                     help="从 URL 下载 Kiln-noGUI-CLI.exe(默认 artboard 发行页最新资产)")
     ap.add_argument("--exe", dest="exe", default="",
                     help="指向已手动下载的 Kiln-noGUI-CLI.exe(跳过下载,写 config 并自检)")
+    ap.add_argument("--sha256", dest="sha256", default="",
+                    help="配合 --from 校验下载产物(默认:内置 RELEASE_SHA256;"
+                         "发行资产换版时同步更新)")
     ap.add_argument("--force", action="store_true",
                     help="已装可用引擎时也重新下载/覆盖(升级路径)")
     args = ap.parse_args()
@@ -76,13 +121,31 @@ def main() -> int:
         if not (dest and os.path.isfile(dest)):
             dest = near_workspace(os.path.join("artboard-tools", "Kiln-noGUI-CLI.exe"))
         os.makedirs(os.path.dirname(dest), exist_ok=True)
-        print(f"下载 {args.from_url} → {dest}")
+        # 只对**内置发行 URL** 用内置校验值:用户自带 --from 的资产没有承诺过
+        # sha256,拿官方值去比对第三方构建必然误报。
+        want = (args.sha256 or "").strip().lower()
+        if not want and args.from_url.rstrip("/") == RELEASE_URL.rstrip("/"):
+            want = RELEASE_SHA256
+        if want:
+            print(f"下载 {args.from_url} → {dest}")
+        else:
+            print(f"下载 {args.from_url} → {dest}(非官方发行资产,跳过 sha256 校验)")
         try:
             from _download import download
             download(args.from_url, dest)
         except Exception as exc:  # noqa: BLE001
             print(f"[X] 下载失败: {exc}")
             return 1
+        if want:
+            got = sha256_of(dest)
+            if got != want:
+                # 不删:留着好比对与复现。只**拒绝写 config**,免得坏引擎生效。
+                print(f"[X] sha256 不符,已拒绝写入 config(产物保留在 {dest})")
+                print(f"    期望 {want}")
+                print(f"    实际 {got}")
+                print("    多为下载被截断/代理改写/CDN 半截文件;重试,或用 --sha256 <值> 覆盖")
+                return 3
+            print(f"[OK] sha256 校验通过({got[:16]}…)")
         found = dest
 
     if not found:
@@ -94,15 +157,23 @@ def main() -> int:
         print("       python setup_kiln.py --force --from <exe 直链>")
         return 1
 
+    # 引擎版本 vs 基线:低版本**照样能用**(能导 PNG),但参数面/语义对不上 ——
+    # 0.14.1 起 --max-wait 从静默忽略变成真总预算,拿老引擎配新参数会静默出废图。
+    # 这里只告警不拦(用户可能故意用老版对比),但要说清差在哪。
+    ver = read_version(found)
+    if ver and vtuple(ver) < BASELINE:
+        print(f"[!] 引擎版本 {ver} 低于已知基线 {'.'.join(map(str, BASELINE))}"
+              f"(当前发行版 {KILN_VERSION})。")
+        print("    export.py 会按参数面报 KILN_TOO_OLD 而不是静默用错语义;")
+        print("    升级:python scripts/setup_kiln.py --force")
+    elif ver:
+        print(f"[OK] 引擎版本 {ver}(基线 {'.'.join(map(str, BASELINE))})")
+
     write_config({"kiln_cli_exe": found})
     print(f"[OK] Kiln 引擎:{found}")
     print("[OK] 已写入 config.json:kiln_cli_exe")
     # 超时/执行失败分报,不再宽 except 一律「跳过」
     import subprocess as _sp
-    try:
-        print(f"[OK] 引擎版本:{subprocess_run([found, '--version'])}")
-    except (_sp.TimeoutExpired, OSError) as exc:
-        print(f"△ 版本探测失败({exc}),继续自检")
     try:
         r = subprocess_run([found, "selfcheck"])
         print(f"[OK] 引擎自检:{r}")

@@ -1,5 +1,171 @@
 # Changelog
 
+## v1.20.0 — 全量审查修复 + 同步 Kiln v0.14.1 + SKILL.md 定位瘦身(2026-10-07)
+
+> 触发:一次对 v1.19.0 的全量代码审查(OCR 委派模式 + 定向核实)。**v1.19.0 引入的两处
+> 未完成改动让 `export.py` 全线失效**,审查第一轮就实测复现;其余为审片台与 `check_slop.py`
+> 的缺陷收口,以及同步上游 Kiln v0.10.0 → **v0.14.1**。
+> 结论:不留半吊子上游缺陷 —— 下面每一条都有复现命令或代码位置。
+
+### Fixed · export.py P0 回归(v1.19.0 遗留,实测复现)
+
+- **`--timeout` 参数根本没注册**:`export_via_kiln` 已在用 `args.timeout`,但 argparse
+  从未声明 → 每一次导出都走进 `except Exception` 报 `KILN_CLI_FAILED: 'Namespace'
+  object has no attribute 'timeout'`。**技能的主路径 100% 失效**,且错误信息完全指错方向。
+- **`_proc.Result.stdout` 已是 str,代码还在 `.decode()`**:`r.stdout.decode(...)` 抛
+  `AttributeError`,`r.stderr.decode(...)` 同理。修掉上一条之后立刻撞上这条 —— 两处漏改。
+- **`find_kiln()` 末尾的"兜底放行"循环**:注释写"让上层拿到可诊断错误,而非静默用旧 CLI",
+  代码却恰恰是把参数面滞后的旧 CLI 放行出去。**注释与行为相反**,是最典型的一处兜圈子。
+  改为三处候选(含显式配置的 `cfg`)走**同一条**能力判定;全不满足时按"缺哪个 flag"
+  报 `KILN_TOO_OLD`,不再让人从一句 `KILN_CLI_FAILED` 里猜。
+- **能力探测漏了 `--duration`**:动画车道全靠它。只探 `--engine/--height/--vector`
+  分不出新旧 CLI(0.14.1 起 `--max-wait` 从"静默忽略"变成真总预算,行为已剧变)。
+- **`run_playwright_fallback` 仍用 `subprocess.run(timeout=600)`**:兜底车道会拉起
+  Playwright 浏览器(孙进程继承管道),正是 `_proc.py` 头注描述的"timeout 形同虚设"。
+  `_proc.py` 写了两天,自己却没在自己的兜底路径上用 —— 现已统一。
+
+### Fixed · `--max-wait` 语义与 Kiln 0.14.1 撞车(实测)
+
+Kiln 0.14.1 把 `--max-wait` 从**静默忽略**改成**真接线**的每实例总 deadline
+(`set_overall_deadline`;settle 与全部 CDP 长等待被 `min(默认上限, 剩余预算)` 收口)。
+而 artboard 一直把 `--max-wait` 当**动画时长**用 —— 于是"给动画时长"意外变成
+"给整条导出链路的总预算"。实测(`--max-wait 0.5` 跑重页面):浏览器车道直接失败 →
+**静默降级自研引擎**(`engine_fallback:true` + `degraded:true`)→ 真实海报页出废图。
+
+- 三个时间量彻底分家:`--max-wait`(动画时长,透传 `--duration`)/
+  `--timeout`(进程树墙钟上限)/ `--max-wait-budget`(引擎预算,**默认不下发**)。
+- 命中 `KILN_CLI_TIMEOUT` 时按"先调大 `--timeout`,再怀疑引擎"给提示,并登记 UP-5。
+- 新认 `KILN_CANCELLED`(Kiln 0.14.0 的协作取消,退出码 130)—— 取消不是故障,单独报。
+
+### Fixed · check_slop.py
+
+- **规则崩溃被静默吞掉**:`except Exception: continue` 让"签名与调用不符"的规则
+  悄悄失效 —— 实测中 `rule_cjk_leading` 因签名没跟着改就整条不跑了,门禁显示"通过"。
+  改为收集并在结果里报 `rule-crashed`(P2,附异常类型与消息)。**门禁"看起来过了"比误报危险得多。**
+- **死参数**:`lint_page(..., ignores)` 在函数体第一行就被 `parse_ignores` 的返回值覆盖,
+  调用方永远传 `set()`。删。
+- **四路分发阶梯塌成两路**:`raw-hex` / `accent-overuse` / `else` 三个分支调的是同一个
+  `fn(html)`;`rule_canvas` / `rule_cjk_*` 的 `css_all` 形参从未被读。收敛成 `_call()` 一处。
+- **死代码 `TAGS`**(定义了从未引用)、**`RULE_META` 兜底分支**(`get(rid, (level, ""))`
+  永远不会走到,因为动态规则全在台账里)。
+- **文件头规则表与台账不符**:表里写 `P1 canvas-discipline`,台账里是 P0(共 9 P0 + 6 P1)。
+  表改成从台账口径重写,并写明"级别台账是唯一真相源"。
+- **`line-height` 的百分号双算**:`px = num if unit=="px" else num*fs` 之后又用
+  `if unit=="%"` 覆盖一次 —— 中间那行对 `%` 是错的,靠后面覆盖蒙对。改成一个 dict 查表。
+- **`rule_raw_hex` 只扫第一个 `<style>` 块**:拆成多段样式的页,后半截的裸 hex 全漏。
+- **`--strict` 下 `files[].ok` 与 `blocking` 自相矛盾**:单页 `ok:true` 但整体 `blocking>0`。
+- `rule_canvas` 扫全 html 而不只是 `<style>`:行内 `style="position:fixed"` 同样违反铁律 1。
+
+### Fixed · 审片台(tools/review-station,本次审查的主体)
+
+- **`sb-strokecolor` id 大小写不匹配** → **每次开页必弹"页面缺 1 个控件"红条**。
+  `cfgApply` 用 `$("sb-" + kCamel(k))` 查,配置键是 `strokeColor`,控件 id 是全小写;
+  `getElementById` 大小写敏感。`kCamel` 本身还是个**恒等函数**(纯兜圈子)。
+  改 `.toLowerCase()` 查表并删掉 `kCamel`。
+- **行距滑块写进错单位**:配置存 `1.35`,滑块是 `100..220` 的 range → 被钳到 100,
+  显示 100% 而实际 135%,用户一动就跳变。现在按 `lh` 显式换算后再赋值。
+- **坏 JSON 静默清空审片意见**:`read_json` 解析失败 `return {}`,于是
+  `notes`/`subs`/`config` 的 POST 把它当"用户要存空内容"写盘 —— 浏览器崩溃或代理
+  截断一次,已落盘的审片意见**不可恢复地清空**。改为抛 `BadRequest` + 400 拒写。
+  实测回归:坏 body → HTTP 400,原有意见仍在。
+- **裁片段任务无超时**:`for line in proc.stdout` 阻塞到管道 EOF,ffmpeg 卡死则 job 永远
+  `running`、前端 1.5s 无限轮询、`JOBS` 只增不删。与刚写完的 `_proc.py` 口径**相反**。
+  按段长 6 倍 + 60s 兜底强杀整棵进程树。
+- **`jid` 用毫秒时间戳会撞键**:同一毫秒点两次渲染,后一条覆盖前一条,先完成的把
+  state 写成 done,前端轮询到错误任务。改 `uuid4().hex[:8]`。
+- **工具自己的产物污染成片探测**:`find_mp4s` 扫 `WORK`,而 `片段/`、`字幕导出/`
+  是中文目录名,`_scan` 只跳过 `.`/`_` 开头的 —— 点几次「渲染此段」后
+  `primary_mp4()`(取体积最大)会锁到某个片段。实测修复后 `refs` 干净。
+- **字幕导出回环丢字幕**:`字幕导出/*.srt` 被列进"可编辑字幕候选",用户切回它 →
+  用被按片长裁过、丢过整条的版本覆盖 `字幕轨.json` → **丢的字幕永久丢失**。已排除。
+- **意见文本注入**:`buildMarkBars` 把 `tag`/`note` 拼进 `title="…"`,`paintMarks` 把
+  `tag`/`note`/`fix`/元素名直接拼进 `innerHTML`;`esc()` 只转 `&<>`、**不转引号**,
+  而且这两处根本没用它。意见文件会被 Agent 写回 → 跨进程注入通道。现补全 `esc()` 并全部走它。
+- **Range 后缀区间解析错**:`bytes=-500`(末 500 字节)被当成 `bytes=0-500`,返回文件头。
+  416 缺 `Content-Range: bytes */size`;多段 Range 被静默当单段按 206 返回。全部修正,
+  三种情形均已实测(`0-99` / `-50` / 越界)。
+- **取帧缓存键只到秒**,且 ffmpeg 中途失败留的 0 字节文件会被永久缓存成坏图。
+  键加字节数、失败删文件、`with` 读文件。
+- **每次探测/取帧弹黑框**:`ffprobe`/`ffmpeg` 都没传 `CREATE_NO_WINDOW`(三处补齐),
+  而 `_proc.py` 早就把它列为 Windows 必需项。
+- **死代码/迁移遗留**:`PY` 变量、`review_station.py` 未用的 `import urllib.parse`;
+  HTML 里只 `log()` 的死控件 `sel-sub`(option 还写着移植时漏改的 `../06_成片输出/…`);
+  `sb-open`/`sb-srt` 的 title 也还写着 `06_成片输出`;一处注释乱码字(`放��视口里`)。
+
+### Fixed · 引擎发行同步(`setup_kiln.py`)
+
+- **下载无完整性校验**:`download()` 只保证字节流落盘,不保证落的是 exe。代理截断 /
+  把 404 的 HTML 存成 `.exe` / CDN 半截文件,都会得到一个"下载成功"的**坏引擎**;
+  而 `--version` 探测失败只报「继续自检」,于是坏引擎照样被写进 `config.json`,
+  之后每次导出才炸。现按发行资产承诺的 sha256 校验,**不符则拒绝写 config 并保留产物**
+  (留产物是为了能比对与复现)。实测:传错值 → 退出码 3 + 打印期望/实际。
+  用户自带 `--from` 的第三方资产**不比对**官方 sha256(必然误报),可用 `--sha256` 自带。
+- **版本没有基线,坏版本也报 OK**:低版本引擎照样能导 PNG,于是被静默接受;而 0.14.1
+  起 `--max-wait` 从"静默忽略"变成真总预算,拿老引擎配新参数会**静默出废图**。
+  现装版本 vs `BASELINE` 逐元比,低版本**告警但不拦**(用户可能故意用老版做对比),
+  并指明 `export.py` 会报 `KILN_TOO_OLD` 而不是静默用错语义。
+- 发行事实集中成三件套 `KILN_VERSION` / `RELEASE_SHA256` / `BASELINE`(原先 URL 散在
+  函数体里、sha256 根本没有),换版时三处同改;`docs/setup.md` 与
+  `docs/upstream-issues.md` 补上这条同步纪律与实测记录。
+
+### Changed
+
+- **SKILL.md「定位」瘦身**:原来 32 行的定位段把地图/模式 W/模式 H/审片台四条分支的
+  能力矩阵、工具清单、机检、约束全复述了一遍,与下面的资源索引表**内容重复**。
+  改为「一句定位 + 不适配清单 + 资源索引(按需读取,禁止批量预读)」,资源索引上提到
+  定位处并按 **① 五条分支(触发词 → 必读 → 交付物 → 机检)② 主流程常用分册
+  ③ 素材/位图/交付/环境** 三段重排;分支的硬约束收成五条要点清单,细节指向各自那一册。
+  重复的旧表整段删除。
+- **README 追上现状**:「五问协议」→ **Brief Gate 九字段检查单**(v1.19 已改口径);
+  补 `check_slop.py` 这道门禁(原文只写 `check_overflow`)、补审片台与模式 H/矢量两条分支;
+  Kiln 徽章与基线 v0.10.0 → **v0.14.1**;新「交付后审阅(审片台)」一节;
+  致谢补 open-design / hyperframes 两库的改编来源;脚本一览补三个时间量的说明。
+- **`references/export.md`**:补「三个时间量」对照表 + UP-5 实测帧率;错误码表补
+  `KILN_TOO_OLD`/`KILN_CLI_TIMEOUT`/`KILN_CANCELLED`;删掉指向已失效行号的引用。
+
+### 台账(`docs/upstream-issues.md`)
+
+- **UP-4 勘误**:原登记"GIF 走单 pass 内置量化(无 palettegen 两 pass)"**不准确** ——
+  `frames.rs:105` 的 `palettegen=stats_mode=diff` + `paletteuse=dither=sierra2_4a`
+  自 v0.9.0 起就存在,只是 `if ffmpeg_available()` 门控,且报告里不声明走了哪条。
+  真实缺陷是"**质量取决于本机有没有 ffmpeg 且不声明**"。MP4 码率已由 `--bitrate` 暴露,
+  仍缺 GOP / `-bf` / 色彩标签。状态改为「部分已修」。
+- **UP-3 复核未修**:0.14.1 上重跑原复现(40 帧 @10fps,`steps(1,end)` 红→蓝),
+  取帧读中心像素**全为 (255,0,0)**,第 20 帧后应为 (0,0,255) —— 仍未修,结论不变。
+- **UP-5 新增**:动画车道实测 0.88 帧/秒(375 帧 427s),且长任务后**残留 27 个孤儿
+  `msedge` 进程**会把后续导出的截图拖到超时。
+- **UP-6 / UP-7 新增**:动画两道结果 JSON 的 `width/height` 未传时恒为 0(下游尺寸门必错);
+  浏览器两条车道 `degraded` 硬编码 `false`(降级门禁被静默绕过,与 ADR-0046 相悖)。
+- **纪律条款**改为可执行路径:实测复现 → 订正事实 → 登记 + 绕行 → **由用户**提 issue
+  → 复查改状态。明确「确认修好之前不删本行」(删了丢复现步骤),且提 issue / 改上游 /
+  关 issue 都不自动做。
+
+### 验证
+
+- `export.py` 真实导出通过(PNG 走浏览器车道,JSON 含 `width/height/frames/engine`);
+  浏览器车道不可用时**自动兜底按设计生效**:拒绝信任自研引擎 → 改走 Playwright 重出
+  → 返回可用 PNG + 明确告警。
+- `check_slop.py` 固样例判定不变(坏样例 10 P0 + 4 P1 / 好样例 0);全量 49 个内置样例
+  跑一遍 **0 条规则崩溃**,P0>0 集中在 `slop-bad/`(故意)、`h5-bad/cdn.html`(故意)、
+  `video-opener.html`(104px 双行中文主标行高 —— 即 v1.19.0 已知的那一条)与
+  地图 demo 页(用 100vh,非海报稿)。
+- 审片台端到端:ping / meta / notes 写入 / **坏 JSON 400 且意见存活** / Range 三态 /
+  裁片段 job done / `refs` 不被片段污染 / 取帧返回真 PNG(25843 字节)。
+- `selfcheck` **FAIL 0 / WARN 0 / PASS 12**(引用 1008 处 · 路由 65/65 · 脚本 75 全部可达)。
+- `preflight.py` 全绿(Kiln / Edge / playwright / ffmpeg / 字体库 28 款 / vendor / rembg / 图库 key)。
+- `setup_kiln.py` 两条路径实测:正常探测 → 版本 0.14.1 == 基线,引擎自检 `ok:true`;
+  错 sha256 → **拒绝写 config**、保留产物、打印期望/实际。
+- 同步 `VellumBench`:`main` 612a405 → **007d8e1**(0.14.1 发行,65 提交)已入库;
+  `target/release/kiln-cli.exe` 原是 9/28 的 **v0.10.0** 旧物(`6f714f2d…`),按当前 HEAD
+  重建后 sha256 为 `4e303144…` —— **与已发布资产 `00185547…` 不同**:Rust release 默认
+  非位级可复现(无 `build-std`、工具链版本参与码生成)。但**输出等价**:同一真实样例
+  (`assets/cases/card-case.html` @1080×1440)两个构建导出的 PNG **sha256 逐位一致**,
+  `selfcheck` 都是 `{"ok":true,"formats":9}`。**故不覆盖已发布资产** —— 同版本号下
+  换资产会让已下载者拿到不同文件,并连带失效 `setup_kiln.py` 里记录的 sha256。
+  另:GB 镜像那条「可复现但无 sha256」的路子给不出校验值,所以完整性校验**只对正式资产生效**。
+- `VellumBench` 补入 `docs/iteration-review-2026-10-04.md`(653 行;上一条发行提交的
+  message 写了「iteration-review 收口后」,但那份记录本身一直只躺在工作区),已推送。
+
 ## v1.19.0 — 机检三连 + 交付后审阅(审片台)并入 + 两库方法论吸收(2026-10-07)
 
 > 依据两条外部输入:**① 迭代指导**(基于 heygen-com/hyperframes 与 nexu-io/open-design,

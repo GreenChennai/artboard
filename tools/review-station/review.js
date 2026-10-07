@@ -445,7 +445,8 @@
     return ((n >> 16) & 255) + "," + ((n >> 8) & 255) + "," + (n & 255);
   }
   function esc(t) {
-    return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   /* 每帧只更新"当前该显示的那一条"，DOM 复用，不重建列表 */
@@ -865,12 +866,12 @@
       var col = n.el ? "#5ee7ff" : "#ff4d8d";
       if (a < -2 || a > 102) continue;
       if (n.t1 > n.t0) {
-        hr += '<i data-id="' + n.id + '" style="left:' + a + '%;width:' +
+        hr += '<i data-id="' + esc(n.id) + '" style="left:' + a + '%;width:' +
           Math.max(0.25, b - a) + '%;background:' + col + '"></i>';
       } else {
-        hb += '<i class="hit" data-id="' + n.id + '" style="left:' + a + '%;' +
+        hb += '<i class="hit" data-id="' + esc(n.id) + '" style="left:' + a + '%;' +
           'border-top-color:' + col + '" title="' +
-          (n.tag || "") + " " + fmt(n.t0) + " " + (n.note || "") + '"></i>';
+          esc((n.tag || "") + " " + fmt(n.t0) + " " + (n.note || "")) + '"></i>';
       }
     }
     $("rv-bar-marks").innerHTML = hb;
@@ -887,13 +888,15 @@
     }
     box.innerHTML = NOTES.slice().sort(function (a, b) { return a.t0 - b.t0; })
       .map(function (n) {
+        /* 意见文本全部走 esc():意见文件会被 Agent 写回,tag/note/fix/元素名
+           都是自由文本,直接拼 innerHTML 就是一条跨进程注入通道。 */
         var dur = n.t1 > n.t0 ? " ▭ " + (n.t1 - n.t0).toFixed(2) + "s" : "";
-        var el = n.el ? (" <span class=\"z\">⌖ " + n.el.label + "</span>") : "";
-        return '<div class="rv-item" data-id="' + n.id + '">' +
+        var el = n.el ? (' <span class="z">⌖ ' + esc(n.el.label) + "</span>") : "";
+        return '<div class="rv-item" data-id="' + esc(n.id) + '">' +
           '<span class="rt">' + fmt(n.t0) + dur + "</span>" +
-          '<span class="rn">[' + (n.tag || "画面") + "] " +
-          (n.note || "（无描述）") +
-          (n.fix ? '<br><span style="color:#5fe08a">→ ' + n.fix + "</span>" : "") +
+          '<span class="rn">[' + esc(n.tag || "画面") + "] " +
+          esc(n.note || "（无描述）") +
+          (n.fix ? '<br><span style="color:#5fe08a">→ ' + esc(n.fix) + "</span>" : "") +
           el + "</span>" +
           '<span class="rz">✕</span></div>';
       }).join("");
@@ -970,11 +973,16 @@
         ["font", "size", "color", "stroke", "strokeColor", "bg", "bga",
          "pad", "bottom", "align", "lh", "maxw"].forEach(function (k) {
           if (st[k] == null) return;
-          SUB.st[k] = st[k];
-          var e = $("sb-" + kCamel(k));
-          if (e) e.value = st[k];
+          /* 行距存的是比例(1.35),滑块是百分比(100..220) —— 直接写 e.value
+             会被 range 钳到 100,用户一动滑块就跳变。 */
+          var pct = (k === "lh" && st[k] <= 3) ? st[k] * 100 : st[k];
+          SUB.st[k] = (k === "lh") ? pct / 100 : st[k];
+          /* id 全小写:配置键是 camelCase(strokeColor),控件 id 是全小写
+             (sb-strokecolor)。getElementById 大小写敏感,写成 strokeColor
+             会查不到 → 每次开页都报"页面缺控件"。 */
+          var e = $("sb-" + k.toLowerCase());
+          if (e) e.value = pct;
         });
-        SUB.st.lh = st.lh > 3 ? st.lh / 100 : st.lh;   /* 行距存的是 % */
       }
       if (c.cmp) {
         if (c.cmp.mode) { S.diffMode = c.cmp.mode; }
@@ -994,7 +1002,6 @@
       log("⚠ 配置套用失败：" + e);
     }
   }
-  function kCamel(k) { return k; }
   function pfModeFromSel(v) {
     if (!v) return;
     PERF.auto = v === "auto";
@@ -2368,7 +2375,9 @@
       $("btn-diff").classList.add("rv-on");
       refV.addEventListener("loadeddata", function () { refSync(); draw(S.t); }, { once: true });
     };
-    $("sel-sub").onchange = function () { log("字幕轨：" + (this.value || "关")); };
+    /* 字幕轨选择已移除:字幕来源统一走顶部「字幕」区的 sb-file(由
+       subfiles 动态列出)。这里原来挂一个只 log() 的死下拉,它的 option
+       还写着 `../06_成片输出/…` —— 移植时漏改的硬编码,点它什么也不会发生。 */
 
     /* ---- 性能面板 ---- */
     $("pf-mode").onchange = function () {

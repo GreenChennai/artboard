@@ -1,48 +1,115 @@
 ---
 name: artboard
 description: Use when the user wants a finished graphic produced from copy or a reference image, or wants an existing design revised — 海报、banner、小红书封面、公众号封面、主 KV、信息长图、数据图、名片、A4 海报、三折页、易拉宝、PPT 页、二维码物料; 动态海报、GIF、MP4、口播信息卡、图解动画卡、科普动画卡等视频场景卡; 片头动画、片尾动画、内容概括动画、章节卡、转场卡等视频动效件(按口播/教程/vlog/短片/MV 配动效); 成片/长动效的**审片**(逐帧审阅、元素拾取、审片意见落盘、像素基线回归、缓存隔离审计,子技能 references/review-loop.md + tools/review-station); H5 页面、移动端落地页、互动页、邀请函 H5 等轻量交互页(模式 H); 地图/城市地图/路网/区位图/街道底图、2.5D 等轴测与 3D 城市、地图 KV、多网点分布图、地图动画(车流/通勤/导航)、地图播放器 H5(子技能 references/map-studio.md); 印刷/打样/烫金/UV/模切/专色/裁切线等印前工艺; 公众号文章/微信图文/秀米排版(模式 W); SVG/EPS/AI/可编辑 PDF 等矢量工程文件交付; 抠图/调色/滤镜/压缩/水印/切片等位图工序; 图标/几何图形/极简插画; 多稿同出/给几个方案; 品牌色/logo/VI 一致性; 把文案变成图片、复刻一张设计图、换风格重做、改稿但说不清哪里不满意. 风格像 Illustrator/Photoshop 做的设计图,不是网页交互风. Not for 网页 UI、视频剪辑、纯 AI 生图. Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.19.0
+version: 1.20.0
 ---
 
 # artboard · HTML 海报工作室
 
-**定位**:把文案/图片变成"平面设计成品图"。不调 AI 生图,而是写 HTML/CSS
-(护栏、风格库、字体库都在分册里),经 Kiln 单文件引擎渲染导出
-PNG/JPG/GIF/MP4/PDF/SVG/EPS/AI/PPTX 九格式。浏览器在位时 PNG/PDF/AI 走
-系统 Edge/Chrome 高保真车道,缺席自动降级自研引擎并在结果里声明;
-动画逐帧求值,中文真文本。外部矢量稿改回 HTML 走 kiln-cli import
-(**正常流水线无此步**)。
-
-> **子技能:地图模块(城市地图 / 路网 / 区位图 / 3D 城市 / 地图动画)** —— 工具已并入
-> 本技能 `scripts/`(`map_tiles.py` 平面瓦片拼接、`fetch_osm_data.py` OSM 矢量、
-> `svg_map.py` / `svg_iso.py` 主题化 2D / 2.5D、`render_3d.py` / `render_3d_vec.py` 真 3D、
-> `build_player.py` 动画播放器、`compute_route.py` 寻路、`probe_tiles.py` 源探测、
-> `test_v7.py` 验收),运行期产物落 `work/`(已 gitignore),成品样张在 `assets/map/samples/`。
-> 用户要"地图/路网/区位图/城市配图/地图动画"时,**必读 `references/map-studio.md`**
-> (触发词、能力矩阵、实测命令、合规口径全在那里)。
-
-> **分支:模式 W(微信公众号图文)** —— 交付物是**可直接粘进微信编辑器的 HTML**,
-> 不是图片、不走 Kiln 图片导出。约束更硬(只能内联样式、动效只能内联 SVG+SMIL、
-> 禁用渐变/滤镜/一切 `id`),写法与动效全在 **`references/wechat-article.md`**,
-> 机检用 `scripts/check_wechat_svg.py` + `scripts/check_mobile_width.py`。
-> 做"公众号文章/微信图文/秀米排版"时走这条分支。
-> **图文必带双封面**(`gzh_article.py convert` 默认 `--with-cover`,同主题三图齐出;
-> `--no-cover` 是逃生口且交付需说明);只出封面用 `gzh_cover.py`(不产图文)。
-> 主题唯一真相源:`scripts/_gzh_theme.py`(ink/night/warm/grass/red/mono;旧名有弃用提示)。
-
-> **分支:模式 H(H5 交互页)** —— 交付物是**可运行的 HTML 页面**(移动端落地页/邀请函/
-> 报名页/长滚动叙事/轻互动),**不走 Kiln 出图、不适用铁律 1**(H5 允许滚动与固定定位),
-> 遵守 H5 自有铁律集;写法与权威口径在 **`references/h5-interactive.md`**,
-> 机检用 `scripts/check_h5.py`。做"移动端落地页/互动页/邀请函 H5"时走这条分支。
-> **应用型**交互原型/SPA/小程序仍不接(边界见 h5-interactive.md §〇)。
-
-> **交付后审阅(审片台)** —— 动效/视频卡/长动效交付后,用户说"审片/挑问题/哪里不对劲"时,
-> 起 `tools/review-station/`(逐帧看 + 元素拾取 + 意见落盘成 JSON);**意见文件就是给 Agent
-> 的接口**,下一轮直接读它定点改。口径与通用铁律在 **`references/review-loop.md`**。
-> 多轮返修的 MV/宣传片按这条闭环走。
+**定位**:把文案/图片变成"平面设计成品图"。不调 AI 生图,而是写 HTML/CSS,
+经 Kiln 单文件引擎渲染导出 PNG/JPG/GIF/MP4/PDF/SVG/EPS/AI/PPTX 九格式。
+中文真文本;浏览器在位时走系统 Edge/Chrome 高保真车道,缺席自动降级自研引擎
+并在结果里声明;动画逐帧求值。
 
 **不适配,别接**:网页 UI / 应用型交互原型(轻量 H5 走模式 H)、视频剪辑、纯 AI 生图、
 用户只有产品照片还没给文案(先追问,见 Step 1)。
+
+## 资源索引(按需读取,禁止批量预读)
+
+> **读取纪律(省 token)**:本表即路由表 —— 「何时才读」列决定是否打开;
+> 一次只读命中的那几份,其余一律不读不解析。**别在开工前把 references/ 扫一遍。**
+
+### 五条分支(先看分支,再进主流程)
+
+分支的完整口径、命令与机检全在各自那一册里 —— 本表只给"什么话触发、读哪一份"。
+
+| 分支 | 触发词(用户话里出现即走) | 必读 | 交付物 | 机检 |
+|---|---|---|---|---|
+| **主流程** | 海报/封面/banner/长图/印刷/名片/GIF/矢量… | `references/guardrails.md` + `intake.md` | 图片/矢量/视频 | `check_slop.py` → `check_overflow.py` |
+| **子技能 · 地图** | 地图/路网/区位图/街道底图/3D 城市/网点分布/地图动画 | **`references/map-studio.md`** | 平面图 / 2.5D / 3D / 播放器 H5 | `scripts/test_v7.py` |
+| **模式 W · 公众号图文** | 公众号文章/微信图文/秀米排版 | **`references/wechat-article.md`** | 可粘进编辑器的 HTML | `check_wechat_svg.py` + `check_mobile_width.py` |
+| **模式 H · H5 交互页** | 移动端落地页/互动页/邀请函 H5/长滚动叙事 | **`references/h5-interactive.md`** | 可运行的 HTML 页面 | `check_h5.py` |
+| **交付后审阅(审片台)** | 审片/挑问题/逐帧看/哪里不对劲 | **`references/review-loop.md`** | 审片意见 JSON(返修闭环) | `check_review_ui/cache/px_baseline.py` |
+
+分支之间的硬约束(只记结论,细则在册内):
+
+- **模式 W** 不出图、不走 Kiln;只能内联样式,动效只能内联 SVG+SMIL,
+  禁用渐变/滤镜/一切 `id`。图文**必带双封面**(`gzh_article.py convert` 默认
+  `--with-cover`,同主题三图齐出;`--no-cover` 是逃生口且交付需说明);
+  只出封面用 `gzh_cover.py`。主题唯一真相源 `scripts/_gzh_theme.py`。
+- **模式 H** 不适用铁律 1(H5 允许滚动与 `position:fixed`),遵守 H5 自有铁律集;
+  **应用型**交互原型/SPA/小程序仍不接(边界见 h5-interactive.md §〇)。
+- **审片台** 是交付**之后**的闭环:起 `tools/review-station/`,逐帧看 + 元素拾取 +
+  意见落盘 JSON。**意见文件就是给 Agent 的接口**,下一轮直接读它定点改。
+- **地图** 工具在 `scripts/`,运行期产物落 `work/`(已 gitignore),
+  成品样张在 `assets/map/samples/`。
+- 外部矢量稿改回 HTML 走 `kiln-cli import`(**正常流水线无此步**)。
+
+### 主流程常用分册
+
+| 资源 | 路径 | 何时才读 |
+|---|---|---|
+| **设计护栏(硬规则)** | references/guardrails.md | **每次出图必读**(一次) |
+| 需求追问 | references/intake.md | 每次新任务开工前(一次) |
+| 流水线细则 | references/pipeline.md | 流程不确定时 |
+| **改稿决策(模糊愿望)** | references/revision-protocol.md | 用户说"不够高级/太乱/做减法/说不出但不满"时(必读) |
+| **设计思维(概念/主导动作)** | references/design-thinking.md | 需求本身很平/要"设计感"/想要记忆点时(选骨架之前) |
+| 风格分册 | references/styles/<命中项>.md | 选定该风格时,只读命中的 1 份 |
+| 风格系统 / 风格气质总表 | references/style-system.md · styles-catalog.md | 需要布局原型/配色 tokens;或需求模糊需匹配方向时 |
+| 新增风格指南 | references/style-guide.md | 仅当要新建风格分册 |
+| 字体库 | fonts/README.md | 选字体时(两级筛查) |
+| **构图与版式骨架** | references/composition.md | 选完风格之后、写 HTML 之前;或画面"看着散/没重点"时 |
+| **排版表达(语气/尺度/字体即图形)** | references/typographic-expression.md | 要"排出语气/有冲击力/超大标题"时(排版硬规则之外的表达层) |
+| 中文排版 CSS 落地 | references/cjk-typography-css.md | 写中文正文/标题时(标点挤压/中西文间距/断行的实现) |
+| 排版细则 | references/typography-rules.md | 自检发现断行/层级/留白问题时 |
+| **中西文结合(搭配/密度/双语层级)** | references/bilingual-typography.md | 版面有英文/中英并置/双语标题时 |
+| 数字·单位·日期 | references/numeric-typography.md | 版面出现价格/百分比/统计/日期/序号时 |
+| 视频安全区 | references/video-safe-area.md | 做视频场景卡(模式 S)、口播桥/图解卡、会被叠字幕的动图时(**必读**) |
+| **视频动效(片头/片尾/概括/章节/转场)** | references/video-motion.md | 做**一整件**片头动画/片尾动画/内容概括/章节卡/转场,或按视频类型配动效、出分镜表/卡点表时(**必读**;模式 V) |
+| 动效分册 | references/animation.md | 动图任务(GIF/MP4)或**视频桥场景卡**时 |
+| 视觉特效 43 式 | references/effects.md | 需要特效配方时(通常写 HTML 时) |
+| **伪3D与空间感** | references/depth-3d.md | 标题要立体/画面要前后空间/要厚度时 |
+| 标题手法库 | references/title-fx.md | 标题需要描边/蒙版/错位等处理时 |
+| **对比度与色彩工程** | references/color-contrast.md | 定配色 tokens、文字压图、自检"看不清"时(WCAG 定义 + 遮罩数值 + 色盲) |
+| 数据可视化规范 | references/dataviz.md | 版面出现图表/数据卡/排行榜时 |
+| 卡片与容器布局 | references/card-layout.md | 写任何带背景/边框的文字容器时;或文字越出边框时 |
+| 材质语言(纸/金属/玻璃/布/木/塑料) | references/material-language.md | 需要"材质感"(金属字/玻璃卡/纸纹底)时 |
+| 一稿多尺寸重排 | references/responsive-reflow.md | 同一设计要出多个画布比例时 |
+| **设计评审打分表** | references/design-review-rubric.md | Step 6 自检的两个时机(首版完成 / 用户要求) |
+| **多稿同出(备选模式)** | references/multi-draft.md | 用户要"多出几版/给几个方案/一次出4稿让我选"时(默认单稿,勿主动触发) |
+| 图片复刻协议 | references/replicate.md | 复刻/换风格任务(B/C 模式)开工时必读(一次) |
+
+### 素材 / 位图 / 交付 / 环境
+
+| 资源 | 路径 | 何时才读 |
+|---|---|---|
+| 素材分册 | references/materials.md | 任务涉及图片素材时(§0 配图判定表是 Step 4.5 第一闸门) |
+| **取图 MCP 与素材 Bridge** | references/mcp-assets.md | 要经 MCP 工具面/浏览器 Bridge 取登录态站点素材,或配 `artboard-mcp` 客户端时(安全边界必读) |
+| **位图语言(角色/分级/裁切/景深)** | references/image-language.md | 任务里要用照片/图做背景·主体·纹理,或要统一多图色调时 |
+| **位图工序** | references/imaging.md | 拿到图片后要加工(裁/缩/压/转/水印/切片/体检)时;或判断素材能不能用(`probe`) |
+| **位图配方引擎(调整/滤镜/图层)** | references/pixel-pipeline.md | 要**调色/滤镜/混合模式/图层栈/蒙版局部调整**(PS 式)时;几何/压缩收口仍走 imaging |
+| **矢量绘制(几何/图标/插画语言)** | references/vector-drawing.md | 要画图标/几何图形/极简插画,或想好"怎么画"时(导出见 vector-export) |
+| 矢量交付手册 | references/vector-export.md | 用户要 SVG/EPS/AI 可编辑 PDF/.ai/可编辑矢量时(必读) |
+| 品牌一致性 | references/brand-system.md | 用户给了品牌色/logo/VI,或一次做多张同品牌物料 |
+| 公众号排版规范 | references/gzh-typography.md | 公众号正文排版任务(Markdown→内联样式 HTML / 粘贴不塌样式)时 |
+| 导出手册 | references/export.md | 导出参数/故障不确定时 |
+| 物料尺寸总表 / 常用物料速查 | references/material-catalog.md · sizes-common.md | 需要非常规物料尺寸/平台规范时;**定尺寸时先查 sizes-common**(默认入口) |
+| 品类规范 | references/formats/<品类>.md | 选中印刷/PPT 品类时,只读命中 1 份(slug `slide` 的文件是 `ppt.md`) |
+| 印刷 CMYK 流程 | references/print-cmyk.md | 印刷任务定色时(TAC/单色黑/安全色谱) |
+| 印前与后工艺 | references/print-production.md | 用户提"印刷/打样/烫金/UV/模切/专色/裁切线"时 |
+| 项目总览 / 安装 | README.md | 需要安装、依赖、目录结构等仓库级信息时 |
+| **环境与依赖部署** | docs/setup.md | 预检报缺件、要装 Kiln/ffmpeg/模型、配 Bridge 或换机器重建环境时 |
+| **故障速查** | docs/failures.md | 导出/机检报错、结果不对劲,想先查是不是已知坑时 |
+| **Kiln 上游缺陷台账** | docs/upstream-issues.md | Kiln 行为异常(静默回退/降级/超时)时先看是否已登记的已知缺陷 + 绕行 |
+| **脚本总表(生成物)** | docs/scripts.md(源:`scripts/registry.json`) | 找不到某脚本在哪册时查全表;参数权威=脚本 `--help` |
+| 公众号实操指南 | docs/gzh-guide.md | 模式 W 要按步骤做图文/双封面,或主题怎么选、怎么发时 |
+| 公众号规范摘要 | docs/gzh-spec-summary.md | 只想快速查微信白名单/尺寸/字号口径,不想读整册 wechat-article.md 时 |
+| 图标与素材许可 | docs/svg-licenses.md | 用了 assets 里的图标/插画要交付、需核对署名与许可时 |
+| 词汇表·术语消歧 | docs/glossary.md | 术语含义或取值口径有疑问时 |
+| 参考案例 / vendor / 图标插画包 | assets/cases/*.html · assets/… | 写 HTML 需要参照时,只读命中风格的 1 份;引用具体文件时不预读 |
+| 审片台工具 | tools/review-station/README.md | 要起审片台/改审片台 UI/查它的 HTTP 契约时 |
+| 模型下载 | scripts/fetch_model.py | 本地 VQA 模型缺失且需要时 |
+| 环境部署 | scripts/setup_kiln.py / setup_ffmpeg.py | 预检报缺失时;升级 Kiln 加 `--force` |
 
 ## 流水线(Step 0–7,含 1.5/4.5 两个子步,细则见 references/pipeline.md)
 
@@ -64,6 +131,8 @@ Step 4.5 素材   references/materials.md §0 判定表(要不要配图→写 im
                 全自动多站搜素材用 scripts/asset_hunt.py(细则 references/mcp-assets.md §5.5);
                 用户图抠图(cutout.py);图片体检 imageops.py probe;查重 dedupe + 对账 check_credits.py
 Step 5 导出     scripts/export.py(Kiln 九格式)→ 失败走 export_fallback.py(仅 PNG)
+                动图加 --max-wait <秒>(= 动画时长,透传给引擎 --duration);
+                整棵树卡住不动就调 --timeout(默认 900s,超时强杀进程树并如实报错)
 Step 6 自检+改稿 **6.0 机检门禁**(每次重导前必跑,零 token):
                 scripts/check_slop.py <proj>/src      ← 先跑这个(纯静态,<1s):AI 味七宗罪 +
                                                         铁律 1/2 + 中文行高。有 P0 先修再渲染
@@ -105,77 +174,6 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 > 尺寸:先查 `references/sizes-common.md`(默认入口),查无再翻 `material-catalog.md`(40+ 物料);
 > 18 个画布预设的真实定义在 `scripts/scaffold.py` 的 `SIZES`。
 
-## 资源索引(按需读取,禁止批量预读)
-
-> **读取纪律(省 token)**:只读**当前任务需要**的文件;本表即路由表——
-> "何时读"列决定是否打开;风格分册一次只读命中的那一份;其余一律不读不解析。
-
-| 资源 | 路径 | 何时才读 |
-|---|---|---|
-| **地图模块(子技能)** | references/map-studio.md | 做城市地图/路网/区位图/街道底图/2.5D 与 3D 城市/地图 KV/网点分布图/地图动画播放器时(**必读**;触发词、能力矩阵、实测命令、合规) |
-| **H5 交互页(模式 H)** | references/h5-interactive.md | 做移动端落地页/互动页/邀请函 H5/长滚动叙事时(**必读**;viewport/安全区/触摸目标/CWV/微信内行为) |
-| 项目总览 / 安装 | README.md | 需要安装、依赖、目录结构等仓库级信息时 |
-| **环境与依赖部署** | docs/setup.md | 预检报缺件、要装 Kiln/ffmpeg/模型、配 Bridge 或换机器重建环境时 |
-| **公众号实操指南** | docs/gzh-guide.md | 模式 W 要按步骤做图文/双封面,或主题怎么选、怎么发时(与 wechat-article.md 配套) |
-| **故障速查** | docs/failures.md | 导出/机检报错、结果不对劲,想先查是不是已知坑时 |
-| 公众号规范摘要 | docs/gzh-spec-summary.md | 只想快速查微信白名单/尺寸/字号口径,不想读整册 wechat-article.md 时 |
-| 图标与素材许可 | docs/svg-licenses.md | 用了 assets 里的图标/插画要交付、需核对署名与许可时 |
-| Kiln 上游缺陷台账 | docs/upstream-issues.md | Kiln 行为异常(静默回退/降级)时先看是否已登记的已知缺陷 + 绕行 |
-| **脚本总表(生成物)** | docs/scripts.md(源:`scripts/registry.json`) | 找不到某脚本在哪册时查全表;参数权威=脚本 `--help` |
-| 设计护栏(硬规则) | references/guardrails.md | **每次出图必读**(一次) |
-| 流水线细则 | references/pipeline.md | 流程不确定时 |
-| **改稿决策(模糊愿望)** | references/revision-protocol.md | 用户说"不够高级/太乱/做减法/说不出但不满"时(必读) |
-| **多稿同出(备选模式)** | references/multi-draft.md | 用户要"多出几版/给几个方案/一次出4稿让我选"时(默认单稿,勿主动触发) |
-| 风格分册 | references/styles/<命中项>.md | 选定该风格时,只读命中的 1 份 |
-| 风格系统 | references/style-system.md | 需要布局原型/配色 tokens 时 |
-| **设计思维(概念/主导动作)** | references/design-thinking.md | 需求本身很平/要"设计感"/想要记忆点时(选骨架之前) |
-| **构图与版式骨架** | references/composition.md | 选完风格之后、写 HTML 之前;或画面"看着散/没重点"时 |
-| **卡片与容器布局** | references/card-layout.md | 写任何带背景/边框的文字容器(卡片/要点框/条目)时;或文字越出边框时 |
-| **视频安全区** | references/video-safe-area.md | 做视频场景卡(模式 S)、口播桥/图解卡、会被叠字幕的动图时(**必读**) |
-| 视觉特效 43 式 | references/effects.md | 需要特效配方时(通常写 HTML 时) |
-| **伪3D与空间感** | references/depth-3d.md | 标题要立体/画面要前后空间/要厚度时 |
-| 标题手法库 | references/title-fx.md | 标题需要描边/蒙版/错位等处理时 |
-| 物料尺寸总表 | references/material-catalog.md | 需要非常规物料尺寸/平台规范时(40+ 物料) |
-| 排版细则 | references/typography-rules.md | 自检发现断行/层级/留白问题时 |
-| **排版表达(语气/尺度/字体即图形)** | references/typographic-expression.md | 要"排出语气/有冲击力/超大标题"时(排版硬规则之外的表达层) |
-| 中文排版 CSS 落地 | references/cjk-typography-css.md | 写中文正文/标题时(标点挤压/中西文间距/断行的实现) |
-| **中西文结合(搭配/密度/双语层级)** | references/bilingual-typography.md | 版面有英文/中英并置/双语标题时 |
-| 数字·单位·日期 | references/numeric-typography.md | 版面出现价格/百分比/统计/日期/序号时 |
-| 数据可视化规范 | references/dataviz.md | 版面出现图表/数据卡/排行榜时 |
-| **对比度与色彩工程** | references/color-contrast.md | 定配色 tokens、文字压图、自检"看不清"时(WCAG 定义 + 遮罩数值 + 色盲) |
-| 一稿多尺寸重排 | references/responsive-reflow.md | 同一设计要出多个画布比例时 |
-| 品牌一致性 | references/brand-system.md | 用户给了品牌色/logo/VI,或一次做多张同品牌物料 |
-| 素材分册 | references/materials.md | 任务涉及图片素材时(§0 配图判定表是 Step 4.5 第一闸门) |
-| **取图 MCP 与素材 Bridge** | references/mcp-assets.md | 要经 MCP 工具面/浏览器 Bridge 取登录态站点素材(花瓣/Pinterest 等),或配 `artboard-mcp` 客户端时(安全边界必读) |
-| **材质语言(纸/金属/玻璃/布/木/塑料)** | references/material-language.md | 需要"材质感"(金属字/玻璃卡/纸纹底)时(配方总表) |
-| **位图配方引擎(调整/滤镜/图层)** | references/pixel-pipeline.md | 要**调色/滤镜/混合模式/图层栈/蒙版局部调整**(PS 式),或写配方批量处理图片时;几何/压缩收口仍走 imaging |
-| **位图工序** | references/imaging.md | 拿到图片后要加工(裁/缩/压/转/水印/切片/体检)时;或判断素材能不能用(`probe`) |
-| **位图语言(角色/分级/裁切/景深)** | references/image-language.md | 任务里要用照片/图做背景·主体·纹理,或要统一多图色调时 |
-| 图片复刻协议 | references/replicate.md | 复刻/换风格任务(B/C 模式)开工时必读(一次) |
-| 需求追问 | references/intake.md | 每次新任务开工前(一次) |
-| 常用物料速查 | references/sizes-common.md | 定尺寸时先查(默认入口) |
-| 动效分册 | references/animation.md | 动图任务(GIF/MP4)或**视频桥场景卡**(口播信息卡/图解卡)时 |
-| **视频动效(片头/片尾/概括/章节/转场)** | references/video-motion.md | 做**一整件**片头动画/片尾动画/内容概括/章节卡/转场,或按视频类型(口播/教程/vlog/短片/MV)配动效、出分镜表/卡点表时(**必读**;模式 V) |
-| **公众号图文(模式 W)** | references/wechat-article.md | 做微信图文/公众号 HTML/秀米排版/带 SMIL 动效的长图文时(**必读**;含微信白名单、实战问题清单、无目视验收手法、封面与素材处理、**135 编辑器中转发布法**) |
-| 导出手册 | references/export.md | 导出参数/故障不确定时 |
-| 矢量交付手册 | references/vector-export.md | 用户要 SVG/EPS/AI 可编辑 PDF/.ai/可编辑矢量时(必读) |
-| **矢量绘制(几何/图标/插画语言)** | references/vector-drawing.md | 要画图标/几何图形/极简插画,或想好"怎么画"时(导出见 vector-export) |
-| 公众号排版规范 | references/gzh-typography.md | 公众号正文排版任务(Markdown→内联样式 HTML / 粘贴不塌样式)时 |
-| 品类规范 | references/formats/<品类>.md | 选中印刷/PPT 品类时,只读命中 1 份(注意 slug `slide` 的文件是 `ppt.md`) |
-| 印刷 CMYK 流程 | references/print-cmyk.md | 印刷任务定色时(TAC/单色黑/安全色谱) |
-| 印前与后工艺 | references/print-production.md | 用户提"印刷/打样/烫金/UV/模切/专色/裁切线"时 |
-| 风格气质总表 | references/styles-catalog.md | 用户需求模糊、需要匹配方向时 |
-| 新增风格指南 | references/style-guide.md | 仅当要新建风格分册 |
-| **设计评审打分表** | references/design-review-rubric.md | Step 6 自检的两个时机(首版完成 / 用户要求) |
-| 字体库 | fonts/README.md | 选字体时(两级筛查) |
-| **交付后审阅(审片台)** | references/review-loop.md | 用户说"审片/挑问题/逐帧看/哪里不对劲"时,或交付了动效/视频卡/长动效要进返修闭环时(**必读**;意见文件即 Agent 接口) |
-| 审片台工具 | tools/review-station/README.md | 要起审片台/改审片台 UI/查它的 HTTP 契约时 |
-| 参考案例 | assets/cases/*.html | 写 HTML 需要参照时,只读命中风格的 1 份 |
-| vendor/图标/插画包 | assets/… | 引用具体文件时,不预读 |
-| 模型下载 | scripts/fetch_model.py | 本地 VQA 模型缺失且需要时 |
-| 环境部署 | scripts/setup_kiln.py / setup_ffmpeg.py | 预检报缺失时;升级 Kiln 加 `--force` |
-| 词汇表·术语消歧 | docs/glossary.md | 术语含义或取值口径有疑问时 |
-
 ## 脚本(主线 5 条;分册末尾「本册用到的脚本」就近索引;全量见 `docs/scripts.md`)
 
 ```bash
@@ -192,6 +190,18 @@ python $S/check_overflow.py <proj>/src        # 机检:越框/安全区(需浏�
 - **瘦身影子(默认)**:src/fonts、src/vendor 是指向 Skill 资产库的目录联接,零拷贝;
   交付迁移用 `pack.py` 打包自包含 zip;`--embed-fonts` 则真拷贝(体积大,单件交付用)。
 - 环境变量 `ARTBOARD_KILN_CLI` / `ARTBOARD_FFMPEG` / `ARTBOARD_STUDIO` 可临时覆盖 config.json。
+
+### 三个时间量别混(导出报错的第一个排查点)
+
+| 参数 | 是什么 | 默认 | 什么时候动它 |
+|---|---|---|---|
+| `--max-wait` | **动画总时长**(秒),透传给引擎 `--duration` | 15 | 动图任务按五段式总长给;静态格式忽略 |
+| `--timeout` | 整棵进程树(含浏览器)的**墙钟上限**(秒) | 900 | 逐帧动画跑不完就调大;报 `KILN_CLI_TIMEOUT` 就是撞它 |
+| `--max-wait-budget` | 引擎的 **settle/截图总预算**(`--max-wait`) | 0 = 不下发 | 只在确认"引擎慢而非挂死、要给静默等待更长预算"时才给 |
+
+> `--max-wait-budget` 默认不传是有意的:Kiln ≥0.14.1 把它当浏览器车道**总 deadline**,
+> 给了会把 settle 与全部截图一起收口,重页面会**静默降级成自研引擎的废图**。
+> 引擎侧行为异常先查 `docs/upstream-issues.md`,别拿这个参数当性能旋钮。
 
 ## 铁律(违反任何一条 = 重做)
 

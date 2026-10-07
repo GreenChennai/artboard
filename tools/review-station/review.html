@@ -148,10 +148,10 @@
       <button id="sb-toggle" class="rv-on">关闭字幕</button>
       <select id="sb-file" title="切换字幕文件"></select>
       <button id="sb-add" title="从本机导入 .srt / .vtt / .ass / .ssa（调试用，不写工程）">导入</button>
-      <button id="sb-open" title="把当前字幕文件从 06_成片输出 重新读一遍">重读</button>
+      <button id="sb-open" title="把当前字幕文件从工程里重新读一遍">重读</button>
       <button id="sb-import" title="丢弃本文件的改动，回到来源版本">重置</button>
       <button id="sb-undo" title="撤销上一步 (Ctrl+Z)">撤销</button>
-      <button id="sb-srt" title="按实际片长裁剪后导出到 06_成片输出/字幕导出/">导出 SRT</button>
+      <button id="sb-srt" title="按实际片长裁剪后导出到 审片台目录/字幕导出/">导出 SRT</button>
       <input type="file" id="sb-filein" accept=".srt,.vtt,.ass,.ssa" hidden>
     </div>
     <div id="sb-info" class="rv-dim">—</div>
@@ -267,11 +267,6 @@
     <div id="cf-file" class="rv-dim">配置文件：—</div>
     <div class="rv-row rv-note">音量 / 帧率 / 字幕外观等设置会<b>实时保存</b>到工程根的
       <code>审片台配置.json</code>，刷新或重开浏览器都还在。</div>
-    <div class="rv-row"><label>字幕轨</label><select id="sel-sub">
-      <option value="">关</option>
-      <option value="../06_成片输出/world.execute(me);.zh.srt">中文</option>
-      <option value="../06_成片输出/world.execute(me);.en.srt">English</option>
-    </select></div>
     <div class="rv-row"><label>成片对照源</label><select id="sel-ref">
       <option value="">无</option>
     </select></div>
@@ -309,7 +304,7 @@
   </div>
 </div>
 
-<!-- 悬停缩略图：必须挂在 body 下用 fixed —— 放��视口里会被 #rv-viewport 的 overflow:hidden 裁掉，
+<!-- 悬停缩略图：必须挂在 body 下用 fixed —— 放进 #rv-viewport 里会被它的 overflow:hidden 裁掉，
      也会被进度条盖住 -->
 <div id="rv-hover" hidden><canvas id="rv-hover-cv" width="320" height="180"></canvas><span id="rv-hover-t"></span></div>
 <!-- DevTools 式元素检查的悬浮提示（body 下，fixed 不受视口裁剪） -->

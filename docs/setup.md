@@ -87,6 +87,9 @@ pip install -r requirements.txt
 
 :: 1. Kiln 渲染引擎(v1.9 起唯一引擎,自动探测/部署)
 python scripts\setup_kiln.py
+::    ↳ 首次部署会从 artboard 发行页拉 kiln-cli-v0.14.1,**校验 sha256 通过才写 config**
+::    ↳ 升级已装引擎:python scripts\setup_kiln.py --force
+::    ↳ 换发行版时改 scripts\setup_kiln.py 的 KILN_VERSION / RELEASE_SHA256 / BASELINE 三处
 
 :: 2. FFmpeg(可选:GIF 高质量 + MP4 视频)
 python scripts\setup_ffmpeg.py

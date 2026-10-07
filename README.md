@@ -12,7 +12,7 @@
 <p align="center">
   <a href="#-成品样例"><img alt="samples" src="https://img.shields.io/badge/%E6%88%90%E5%93%81%E6%A0%B7%E4%BE%8B-15%20%E5%BC%A0-1f6feb"></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-ACL--1.0-8b5cf6"></a>
-  <img alt="engine" src="https://img.shields.io/badge/Kiln-v0.10.0-00a88f">
+  <img alt="engine" src="https://img.shields.io/badge/Kiln-v0.14.1-00a88f">
   <img alt="python" src="https://img.shields.io/badge/python-3.10%2B-3776ab">
   <img alt="selfcheck" src="https://img.shields.io/badge/selfcheck-12%20pass-2da44e">
 </p>
@@ -82,21 +82,32 @@ artboard 反着来——设计 token 锁住配色，HTML 承载文字，Kiln 单
 | *城市咖啡图鉴* — 数据长图 |
 
 > 渲染引擎：[GreenChennai/VellumBench](https://github.com/GreenChennai/VellumBench) 的
-> Kiln 导出核心（Rust，自研），五用例固定基准以浏览器渲染为基线平均 **97.76/100**，
-> 22 案例可编辑 PDF 对拍 **98.63/100**、文本一致率 100%。
+> Kiln 导出核心（Rust，自研），**当前基线 v0.14.1**。五用例固定基准以浏览器渲染为基线
+> 平均 **97.76/100**，22 案例可编辑 PDF 对拍 **98.63/100**、文本一致率 100%。
 
 ## 工作流水线
 
-- **开工先追问**：内置五问协议（用途/尺寸/风格/配色/素材），拒绝拿到文案就盲做；
+- **开工先追问**：内置 **Brief Gate 九字段检查单**（用途/尺寸/风格/配色/素材/必含文案/交付格式…，
+  三态标注），缺 ≥1 强制补齐一轮，拒绝拿到文案就盲做；
 - **单文件原生导出**：Kiln 引擎九格式零浏览器依赖，浏览器在位时走 Edge/Chrome 高保真车道，
-  缺席自动降级自研引擎并在结果里声明；
-- **机检门禁**：`check_overflow.py` 查文字越出容器、内容进字幕带、元素互相重叠，
-  3–5 秒零 token，每次重导前都跑；
+  缺席自动降级自研引擎并在结果里声明；导出进程带**进程树墙钟看门狗**，卡住会强杀并如实报错
+  （不再"卡十几分钟且杀不掉"）；
+- **两道机检门禁，每次重导前都跑**（零 token）：
+  - `check_slop.py` —— 纯静态 <0.3s，15 条规则（10 P0 + 5 P1）扫 AI 味七宗罪
+    （默认 indigo、紫蓝渐变、emoji 当图标、编造指标、填充文案…）+ 铁律 1/2 + 中文行高字距，
+    每条带可执行修法，支持 `<!-- slop-ignore: 规则id -->` 显式豁免；
+  - `check_overflow.py` —— 几何：文字越出容器、内容进字幕带、元素互相重叠，3–5 秒；
 - **说不清也能改**：「不够高级 / 太乱 / 做减法」走改稿协议——五维诊断 + 减法阶梯，定点修改不重跑；
 - **多稿同出（可选）**：用户说「多稿 4」才触发，4 方向 + 2×2 联络表，默认永远单稿；
 - **动图**：CSS `@keyframes` 逐帧求值直出 GIF/MP4，双模式——海报循环（P）/ 视频场景卡（S）；
-- **公众号图文分支（模式 W）**：交付可直接粘进微信编辑器的 HTML 长图文——内联样式 +
-  内联 SVG/SMIL 动效，双机检（白名单门禁 + 320px 窄屏门禁）守口，经 135 编辑器中转发布。
+- **交付后审阅（审片台）**：动效/视频卡交付后起 `tools/review-station/` 逐帧审，
+  元素拾取 + 意见落盘成 JSON——**意见文件就是给 Agent 的接口**，下一轮读它定点改；
+- **四条分支**（各有独立铁律与机检，按触发词自动路由）：
+  - **子技能 · 地图** —— 城市地图/路网/区位图/2.5D 与 3D 城市/地图动画播放器；
+  - **模式 W · 公众号图文** —— 交付可直接粘进微信编辑器的 HTML 长图文，内联样式 +
+    内联 SVG/SMIL 动效，双机检（白名单门禁 + 320px 窄屏门禁）守口，经 135 编辑器中转发布；
+  - **模式 H · H5 交互页** —— 移动端落地页/邀请函/长滚动叙事，交付可运行页面（不适用固定画布铁律）；
+  - **矢量交付** —— SVG/EPS/AI 可编辑 PDF/PPTX，Kiln 同一管线直出，中文是真文字节点不是转曲。
 
 ## 快速开始
 
@@ -144,6 +155,28 @@ python scripts\preflight.py
 ```
 
 打印环境自检报告：就绪几项、待补几项、每项怎么补。全部 ✓ 即可开工。
+
+## 交付后审阅（审片台）
+
+动效 / 视频卡 / 长动效交付之后，用户说"审片 / 挑问题 / 哪里不对劲"时起审片台：
+
+```bash
+python tools/review-station/review_station.py --root <项目>    # 算好 URL 并打开浏览器
+```
+
+- **逐帧看**：按 `SEEK(t)` 与成片同源取帧，不是录屏回放；
+- **元素拾取**：在成片上点元素，自动带出坐标与标签写建议；
+- **意见落盘成 JSON**（`审片意见.json`）——**这个文件就是给 Agent 的接口**，
+  下一轮直接读它定点改，不用用户再口头复述一遍；
+- **裁片段**交出去：按 `[t0,t1]` 从成片直出 mp4，已带 `-bf 0`（关 B 帧，避免部分播放器首帧黑）
+  与偶数尺寸 pad（yuv420p 硬要求）；
+- 三道门禁：`check_review_ui.py`（控件/DOM 契约）、`check_review_cache.py`（缓存隔离）、
+  `check_px_baseline.py`（像素基线回归）。
+
+口径与通用铁律见 [`references/review-loop.md`](references/review-loop.md)，
+工具 HTTP 契约见 [`tools/review-station/README.md`](tools/review-station/README.md)。
+
+> 审片台是**交付之后**的闭环，不属七步流水线；静态海报不需要它。
 
 ## 品类与尺寸
 
@@ -218,11 +251,20 @@ python scripts/export.py --source src --output out.png \
     --width 1080 --scale 2 --height 1440                       # 导出(主路径,九格式)
 python scripts/export.py --source src --output out.gif \
     --format GIF --fps 25 --max-wait 6                         # 动画时长 = max-wait
+python scripts/export.py --source src --output out.mp4 \
+    --format MP4 --fps 25 --max-wait 12 --timeout 1800         # 重页面:调大墙钟上限
 python scripts/export_fallback.py --source src/index.html \
     --output out.png --width 1080 --scale 2                    # 兜底(仅 PNG)
-python scripts/check_overflow.py src                           # 机检:越框 / 安全区 / 重叠
+python scripts/check_slop.py src                                # 机检①:AI 味/铁律/中文行高(纯静态)
+python scripts/check_overflow.py src                           # 机检②:越框 / 安全区 / 重叠
 python scripts/check_overflow.py src --safe-area 9x16 --overlap
 ```
+
+> **三个时间量别混**:`--max-wait` 是**动画总时长**(透传给引擎 `--duration`);
+> `--timeout` 是整棵进程树(含浏览器)的**墙钟上限**,撞了会强杀并报
+> `KILN_CLI_TIMEOUT`;引擎自己的 settle/截图预算(`--max-wait-budget`)默认**不下发** ——
+> 给了会把所有阶段收口到该值,重页面会静默降级成自研引擎的废图。
+> 引擎行为异常先查 [`docs/upstream-issues.md`](docs/upstream-issues.md)。
 
 **位图工序(从图到图)**：唯一入口 `imageops.py`，`--help` 列全，`help-map` 给场景映射。
 
@@ -305,6 +347,7 @@ artboard/
 │   ├── pipeline.md          #   流水线细则 + 动效规范
 │   ├── revision-protocol.md #   改稿决策(模糊愿望 → 五维诊断 → 减法阶梯)
 │   ├── multi-draft.md       #   多稿同出协议(备选模式,默认单稿)
+│   ├── review-loop.md       #   交付后审阅:意见文件即 Agent 接口 + 交互层铁律
 │   ├── map-studio.md        #   地图子技能:触发词 / 能力矩阵 / 实测命令(城市地图·路网·3D)
 │   ├── styles-catalog.md    #   123 风格方向速查
 │   ├── styles/ formats/     #   视觉风格分册 / 印刷品类规范
@@ -349,6 +392,8 @@ artboard/
 | [esther-design-system](https://github.com/esthersjw/esther-design-system) | CC BY-NC-SA | 暖底 / 去 AI 味思想(重写) |
 | [super-prototyping](https://github.com/ReScienceLab/super-prototyping) | Apache-2.0 | 复刻证据链方法论 |
 | [rembg](https://github.com/danielgatis/rembg) | MIT | 本地抠图引擎 |
+| [open-design](https://github.com/open-design) | Apache-2.0 | 成品 HTML linter 规则集(AI 味七宗罪判定)→ `check_slop.py` |
+| [hyperframes](https://github.com/) | Apache-2.0 | 动效确定性三件套(帧网格/settle 链)与 GIF/MP4 编码期望参数 |
 
 字体：思源黑体/宋体(Noto CJK) · 得意黑(Smiley Sans) · 霞鹜文楷(LXGW WenKai) ·
 站酷快乐体(ZCOOL KuaiLe) · MiSans(小米) · 阿里巴巴普惠体 3.0 · HarmonyOS Sans(华为)。

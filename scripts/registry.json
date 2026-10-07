@@ -1,6 +1,6 @@
 {
   "_comment": "generated, do not edit — 由 scripts/gen_script_index.py 重建",
-  "generated_at": "2026-10-07",
+  "generated_at": "2026-10-08",
   "scripts": [
     {
       "name": "_config.py",
@@ -119,6 +119,16 @@
       ]
     },
     {
+      "name": "_proc.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "子进程助手:**进程树**超时 + 安全的管道收口(共享模块)。",
+      "used_by": [
+        "docs/scripts.md",
+        "docs/upstream-issues.md"
+      ]
+    },
+    {
       "name": "_px_adjust.py",
       "group": "内部/维护",
       "internal": true,
@@ -234,7 +244,6 @@
       "purpose": "Build the map player HTML (assets/map/demo/map-player.html) from template + SVG ",
       "used_by": [
         "README.md",
-        "SKILL.md",
         "docs/scripts.md",
         "references/map-studio.md"
       ]
@@ -337,6 +346,7 @@
       "internal": false,
       "purpose": "成片像素基线回归:改过影片/动效代码后,确认出图与冻结基线**没被动到别处**。",
       "used_by": [
+        "README.md",
         "docs/scripts.md",
         "references/animation.md",
         "references/review-loop.md"
@@ -348,6 +358,7 @@
       "internal": false,
       "purpose": "缓存隔离审计:证明\"缓存/抽稀只影响预览,不影响成片内容与预览完整性\"。",
       "used_by": [
+        "README.md",
         "docs/scripts.md",
         "references/review-loop.md"
       ]
@@ -358,6 +369,7 @@
       "internal": false,
       "purpose": "审片台页面自检(不用浏览器):id 引用 / 页签配对 / 与影片页 DOM 是否一致。",
       "used_by": [
+        "README.md",
         "docs/scripts.md",
         "references/review-loop.md"
       ]
@@ -368,6 +380,7 @@
       "internal": false,
       "purpose": "artboard AI 味与铁律机检(静态,零渲染)。",
       "used_by": [
+        "README.md",
         "SKILL.md",
         "docs/scripts.md",
         "references/cjk-typography-css.md",
@@ -421,7 +434,6 @@
       "internal": false,
       "purpose": "Compute real shortest paths on the OSM road network (A*, spatial-hash snap).",
       "used_by": [
-        "SKILL.md",
         "docs/scripts.md",
         "references/map-studio.md"
       ]
@@ -566,7 +578,6 @@
       "purpose": "Fetch OSM vector layers (buildings/roads/water/green/rail) for a bbox via ONE",
       "used_by": [
         "README.md",
-        "SKILL.md",
         "docs/scripts.md",
         "references/map-studio.md"
       ]
@@ -688,7 +699,6 @@
       "purpose": "Stitch a flat map PNG from XYZ raster tiles — artboard map asset generator.",
       "used_by": [
         "README.md",
-        "SKILL.md",
         "docs/scripts.md",
         "references/map-studio.md"
       ]
@@ -742,7 +752,6 @@
       "internal": false,
       "purpose": "Probe reachable basemap tile sources with CORRECT slippy-map tile math.",
       "used_by": [
-        "SKILL.md",
         "docs/scripts.md",
         "references/map-studio.md"
       ]
@@ -767,7 +776,6 @@
       "internal": false,
       "purpose": "Render a pitched 2.5D/3D map (raster basemap + OSM building extrusions) to PNG.",
       "used_by": [
-        "SKILL.md",
         "docs/scripts.md",
         "references/map-studio.md"
       ]
@@ -779,7 +787,6 @@
       "purpose": "Fully vector, theme-driven true-3D render (no raster basemap at all).",
       "used_by": [
         "README.md",
-        "SKILL.md",
         "docs/scripts.md",
         "references/map-studio.md"
       ]
@@ -830,6 +837,7 @@
         "SKILL.md",
         "docs/scripts.md",
         "docs/setup.md",
+        "docs/upstream-issues.md",
         "references/export.md"
       ]
     },
@@ -844,6 +852,7 @@
         "docs/gzh-guide.md",
         "docs/scripts.md",
         "docs/setup.md",
+        "docs/upstream-issues.md",
         "references/export.md",
         "references/formats/gzh-cover.md",
         "references/vector-export.md"
@@ -865,7 +874,6 @@
       "internal": false,
       "purpose": "GeoJSON vector layers -> axonometric 2.5D SVG (buildings extruded, themeable).",
       "used_by": [
-        "SKILL.md",
         "docs/scripts.md",
         "references/map-studio.md"
       ]
@@ -877,7 +885,6 @@
       "purpose": "GeoJSON vector layers -> fully classed, themeable SVG map (1:1 to OSM data).",
       "used_by": [
         "README.md",
-        "SKILL.md",
         "docs/scripts.md",
         "references/map-studio.md"
       ]

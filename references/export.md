@@ -106,6 +106,11 @@ python scripts/export.py --source "<project>/src" --output "<project>/export/out
 python scripts/export.py --source "<project>/src" --output "<project>/export/out.mp4" \
   --width 1080 --scale 2 --format MP4 --fps 30 --max-wait 6
 
+# 重页面/长动画:调大墙钟上限(默认 900s)。逐帧动画实测约 0.9 帧/秒,
+# 1080x1440 @25fps x 15s = 375 帧 ≈ 427s —— 别等它自己撞死。
+python scripts/export.py --source "<project>/src" --output "<project>/export/out.gif" \
+  --width 1080 --format GIF --fps 25 --max-wait 15 --timeout 1800
+
 # PDF(CID 中文真文本,可选中可复制)
 python scripts/export.py --source "<project>/src" --output "<project>/export/out.pdf" \
   --width 1080 --format PDF
@@ -117,6 +122,21 @@ python scripts/export_fallback.py --source "<project>/src/index.html" \
   --output "<project>/export/out.png" --width 1080 --scale 2
 ```
 
+### 三个时间量(Kiln ≥0.14.1 起必须分清)
+
+| 脚本参数 | 传给引擎 | 语义 | 默认 |
+|---|---|---|---|
+| `--max-wait` | `--duration` | **动画总时长**(秒)。静态格式忽略 | 15 |
+| `--timeout` | — | **整棵进程树**(含浏览器孙进程)的墙钟上限;超时强杀并报 `KILN_CLI_TIMEOUT` | 900 |
+| `--max-wait-budget` | `--max-wait` | 浏览器车道 **settle/截图的总预算**;**0 = 不下发**(推荐) | 0 |
+
+⚠️ **`--max-wait-budget` 默认不传是有意的**。Kiln 0.14.1 把 `--max-wait` 从
+「静默忽略」改成**真接线**的每实例总 deadline(`set_overall_deadline`,settle 与全部
+CDP 长等待各自被 `min(默认上限, 剩余预算)` 收口)。给了小值会怎样,实测:
+`--max-wait 0.5` 跑重页面 → 浏览器车道直接失败 → **静默降级自研引擎**
+(`engine_fallback:true` + `degraded:true`),而自研引擎对真实海报页是废图。
+所以它**不是性能旋钮**;引擎行为异常先查 `docs/upstream-issues.md`。
+
 ## 输出解析
 
 export.py 输出**单行 JSON**:
@@ -125,15 +145,22 @@ export.py 输出**单行 JSON**:
   **`engine_fallback: true` 说明引擎降级过**(光栅格式已自动转兜底,矢量格式
   需人工核对);`warnings` 数组非空时检查(资源缺失/CMYK 跳过/引擎告警等);
 - `ok: false` → 看 `error`:
-  - `KILN_NOT_FOUND` → 跑 `scripts/setup_kiln.py`,或 config.json 填
+  - `KILN_NOT_FOUND` → 没装引擎。跑 `scripts/setup_kiln.py`,或 config.json 填
     `kiln_cli_exe`,或设 `ARTBOARD_KILN_CLI`;
+  - `KILN_TOO_OLD` → 装了但参数面过旧(响应带 `missing_flags`,当前要求
+    `--engine/--height/--vector/--duration`)。跑 `setup_kiln.py --force` 升级。
+    **不要**去手工传 Kiln 不认的参数 —— 旧 CLI 会静默忽略,现象是"传了没效果";
+  - `KILN_CLI_TIMEOUT` → 撞了 `--timeout`。先确认是**真慢**还是**挂死**:动图逐帧
+    本来就慢(见 UP-5),调大 `--timeout` 即可;静态单帧也超时才是引擎问题,查台账;
+  - `KILN_CANCELLED` → 导出期间在 stdin 敲了 `c`(Kiln 0.14.0 起的协作取消),
+    未留半截产物,重跑即可,不是故障;
   - `KILN_CLI_FAILED` → 看 stderr detail;急用 PNG 走兜底;
   - 其他 → 转告用户 detail。
 
 ## 已知行为(Kiln 语义)
 
-- **静态图(PNG/JPG)= 把有限动画「快进到终态」再截**,不是 t=0 首帧;`--max-wait` **只对 GIF/MP4 有意义**
-  (`scripts/export.py:202-203` 参数说明原文:「GIF/MP4 时作为动画总时长(秒),其余格式忽略」)。
+- **静态图(PNG/JPG)= 把有限动画「快进到终态」再截**,不是 t=0 首帧;`--max-wait`(动画时长)
+  **只对 GIF/MP4 有意义**。
   实测(2026-10-07,本机,Kiln 经 `scripts/export.py`,结果 JSON `engine:"browser"`、`frames:1`):
   - `.box{animation:toBlue 2s linear forwards}`(红→蓝)→ 出图 = 纯蓝 **RGB(0,0,255)**;
     `.fade{opacity:0→1, 2s linear forwards}` → 出图 = 纯绿 **RGB(0,255,0)**(不是首帧的透明态);

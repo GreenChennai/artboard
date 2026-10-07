@@ -46,6 +46,7 @@ import json
 import os
 import re
 import shutil
+import signal
 import socketserver
 import subprocess
 import sys
@@ -54,9 +55,12 @@ import threading
 import time
 import traceback
 import urllib.parse
+import uuid
 import webbrowser
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+# ffmpeg/ffprobe/taskkill 是 GUI 子系统 exe,不加这个每次调用都闪黑框
+_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0) if os.name == "nt" else 0
 
 # ── 路径(由 main() 按参数写入;__rv 挂载点用绝对路径常量占位) ──
 TOOL = os.path.dirname(os.path.abspath(__file__))          # tools/review-station
@@ -75,11 +79,31 @@ SHOTS = os.path.join(WORK, "_shot")
 SEGS = os.path.join(WORK, "片段")
 AUDIO = ""       # 显式 --audio;空 = 自动探测
 MP4 = ""         # 显式 --mp4;空 = 自动探测
+
+
+class BadRequest(Exception):
+    """请求体不合法 —— 写类 action 必须拒绝落盘,不能当空内容处理。"""
+
+
+def kill_tree(pid):
+    """强杀整棵进程树(Windows 上 Popen.kill() 只杀直接子进程)。"""
+    if os.name == "nt":
+        try:
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(pid)],
+                           capture_output=True, creationflags=_NO_WINDOW)
+            return
+        except Exception:                               # noqa: BLE001
+            pass
+    for sig in ("SIGKILL", "SIGTERM"):
+        try:
+            os.kill(pid, getattr(signal, sig))
+            return
+        except Exception:                               # noqa: BLE001
+            continue
 FPS = 30
 TITLE = ""
 SUB_EXT = (".srt", ".vtt", ".ass", ".ssa")
 MEDIA_EXT = (".mp3", ".m4a", ".wav", ".aac", ".ogg", ".flac", ".opus")
-PY = sys.executable
 JOBS = {}
 LOCK = threading.Lock()
 
@@ -137,9 +161,10 @@ def probe_duration(path):
         return 0.0
     try:
         r = subprocess.run([pb, "-v", "error", "-show_entries", "format=duration",
-                            "-of", "csv=p=0", path],
-                           capture_output=True, text=True, timeout=30,
-                           encoding="utf-8", errors="replace")
+                           "-of", "csv=p=0", path],
+                          capture_output=True, text=True, timeout=30,
+                          encoding="utf-8", errors="replace",
+                          creationflags=_NO_WINDOW)
         return float((r.stdout or "0").strip() or 0)
     except Exception:
         return 0.0
@@ -173,9 +198,18 @@ def find_audio():
 
 
 def find_mp4s():
-    """可作对照的成片:export/ 与运行期目录下的 mp4(按体积降序)。"""
-    hits = _scan([".mp4"], [os.path.join(ROOT, "export"), WORK, os.path.join(ROOT, "dist")],
-                 depth=2)
+    """可作对照的成片:export/ 与运行期目录下的 mp4(按体积降序)。
+
+    ⚠️ 必须排除工具自己吐出的东西(`片段/`、`字幕导出/`、`_shot/`):审片台把裁好的
+    片段也落在 WORK 下,`primary_mp4()` 又取体积最大的那个 —— 点几次「渲染此段」
+    之后,数据源会悄悄变成某个片段,取帧与对照全错。`_scan` 只跳过 `.`/`_` 开头的
+    目录,而「片段」「字幕导出」是中文名,躲不过去。
+    """
+    junk = (os.path.abspath(SEGS), os.path.abspath(SRT_OUT), os.path.abspath(SHOTS))
+    hits = [p for p in
+            _scan([".mp4"], [os.path.join(ROOT, "export"), WORK, os.path.join(ROOT, "dist")],
+                  depth=2)
+            if not any(os.path.abspath(p).startswith(j + os.sep) for j in junk)]
     hits.sort(key=lambda p: -os.path.getsize(p))
     if MP4 and os.path.isfile(MP4):
         hits = [MP4] + [p for p in hits if os.path.abspath(p) != os.path.abspath(MP4)]
@@ -313,15 +347,29 @@ class Handler(__import__("http.server", fromlist=["SimpleHTTPRequestHandler"]).S
         fs = self.translate_path(u.path)
         if not os.path.isfile(fs):
             return super().do_GET()
-        m = re.match(r"bytes=(\d*)-(\d*)", rng)
+        m = re.match(r"bytes=(\d*)-(\d*)\s*$", rng.strip())
         if not m:
             return super().do_GET()
+        if "," in rng:
+            # 多段 Range 本工具不支持;按整文件 200 回(单段 206 会让客户端
+            # 以为拿到了全部区间,拼出坏文件)
+            return super().do_GET()
         size = os.path.getsize(fs)
-        a = int(m.group(1)) if m.group(1) else 0
-        b = int(m.group(2)) if m.group(2) else size - 1
+        g1, g2 = m.group(1), m.group(2)
+        # `bytes=-N` 是**后缀**区间(末 N 字节),不是 `bytes=0-N`
+        if not g1:
+            if not g2:
+                return self.send_error(416)
+            a, b = max(0, size - int(g2)), size - 1
+        else:
+            a = int(g1)
+            b = int(g2) if g2 else size - 1
         a, b = max(0, a), min(size - 1, b)
         if a > b:
-            self.send_error(416)
+            self.send_response(416)
+            self.send_header("Content-Range", "bytes */%d" % size)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
             return
         self.send_response(206)
         self.send_header("Content-Type", self.guess_type(fs))
@@ -359,6 +407,10 @@ class Handler(__import__("http.server", fromlist=["SimpleHTTPRequestHandler"]).S
                 return self.send_error(500)
 
     def read_json(self):
+        """读请求体。**解析失败必须报错,不能返回 `{}`** —— 返回 `{}` 会让
+        notes/subs/config 的 POST 把它当"用户要存空内容",静默清空已落盘的
+        审片意见(Content-Length 与实际长度不符、代理截断、浏览器崩一下就会
+        触发,且不可恢复)。空 body 才是合法的 `{}`。"""
         try:
             n = int(self.headers.get("Content-Length") or 0)
         except Exception:                               # noqa: BLE001
@@ -369,8 +421,19 @@ class Handler(__import__("http.server", fromlist=["SimpleHTTPRequestHandler"]).S
         try:
             return json.loads(raw.decode("utf-8") or "{}")
         except Exception as e:                          # noqa: BLE001
-            print("[review] 请求体不是合法 JSON:%s" % e)
-            return {}
+            msg = "[review] 请求体不是合法 JSON(%d 字节):%s" % (n, e)
+            print(msg)
+            raise BadRequest(msg)
+
+    def read_json_or_400(self):
+        """给写类 action 用:坏 body 直接 400 拒写,绝不落盘。返回 (obj, status)，
+        status 非 None 时调用方必须原样 return。"""
+        try:
+            return self.read_json(), None
+        except BadRequest as e:
+            return self.j({"ok": False, "error": "BAD_JSON", "detail": str(e),
+                           "hint": "请求体被截断或不是 JSON;**没有写入任何文件**。"},
+                          400), 400
 
     # ---- API ----
     def api(self, u, method):
@@ -391,7 +454,9 @@ class Handler(__import__("http.server", fromlist=["SimpleHTTPRequestHandler"]).S
                 data, where = subs_load()
                 return self.j({"ok": True, "data": data, "file": where})
             if act == "subs" and method == "POST":
-                body = self.read_json()
+                body, bad = self.read_json_or_400()
+                if bad:
+                    return
                 try:
                     where = atomic_write(SUBS, json.dumps(body, ensure_ascii=False, indent=2))
                 except Exception as e:                  # noqa: BLE001
@@ -402,7 +467,9 @@ class Handler(__import__("http.server", fromlist=["SimpleHTTPRequestHandler"]).S
             if act == "config" and method == "GET":
                 return self.j({"ok": True, "data": read_json(CFG, {}) or {}, "file": rel(CFG)})
             if act == "config" and method == "POST":
-                body = self.read_json()
+                body, bad = self.read_json_or_400()
+                if bad:
+                    return
                 try:
                     where = atomic_write(CFG, json.dumps(body, ensure_ascii=False, indent=2))
                 except Exception as e:                  # noqa: BLE001
@@ -415,7 +482,9 @@ class Handler(__import__("http.server", fromlist=["SimpleHTTPRequestHandler"]).S
                 ns, where = notes_load()
                 return self.j({"ok": True, "notes": ns, "file": where})
             if act == "notes" and method == "POST":
-                body = self.read_json()
+                body, bad = self.read_json_or_400()
+                if bad:
+                    return
                 try:
                     where = notes_save(body.get("notes") or [])
                 except Exception as e:                  # noqa: BLE001
@@ -478,9 +547,9 @@ class Handler(__import__("http.server", fromlist=["SimpleHTTPRequestHandler"]).S
         return self.j({"ok": True, "file": where, "clipped": clipped,
                        "dropped": dropped, "dur": dur})
 
-    def j(self, obj):
+    def j(self, obj, status=200):
         b = json.dumps(obj, ensure_ascii=False).encode("utf-8")
-        self.send_response(200)
+        self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(b)))
         self.end_headers()
@@ -498,17 +567,26 @@ class Handler(__import__("http.server", fromlist=["SimpleHTTPRequestHandler"]).S
             return self.j({"ok": False, "error": "NO_FFMPEG",
                            "hint": "配置 config.json 的 ffmpeg 或设 ARTBOARD_FFMPEG"})
         os.makedirs(SHOTS, exist_ok=True)
-        stamp = "%d_%07.3f" % (int(os.path.getmtime(mp4)), t)
+        # 缓存键带 mtime **秒 + 字节数**:只按秒的话,同一秒内重导成片会命中旧 PNG。
+        st = os.stat(mp4)
+        stamp = "%d_%d_%07.3f" % (int(st.st_mtime), st.st_size, t)
         png = os.path.join(SHOTS, "f%s.png" % stamp)
         if not os.path.exists(png):
             cmd = [exe, "-y", "-v", "error", "-ss", "%.3f" % max(0.0, t), "-i", mp4,
                    "-frames:v", "1", "-f", "image2", png]
             r = subprocess.run(cmd, capture_output=True, timeout=180,
-                               encoding="utf-8", errors="replace")
-            if not os.path.exists(png):
+                               encoding="utf-8", errors="replace",
+                               creationflags=_NO_WINDOW)
+            if not os.path.exists(png) or os.path.getsize(png) == 0:
+                # ffmpeg 中途失败会留下 0 字节文件:不删掉的话,之后永远命中这张坏图
+                try:
+                    os.remove(png)
+                except OSError:
+                    pass
                 return self.j({"ok": False, "error": "SHOT_FAILED",
                                "detail": (r.stderr or "")[-300:]})
-        data = open(png, "rb").read()
+        with open(png, "rb") as f:
+            data = f.read()
         self.send_response(200)
         self.send_header("Content-Type", "image/png")
         self.send_header("Content-Length", str(len(data)))
@@ -573,10 +651,13 @@ def clip_srt(text, dur):
 
 def list_subfiles():
     """可编辑的字幕候选:工程里所有字幕文件(不写死探测顺序——原版 README 必改第 4 条)。"""
-    hits = _scan(SUB_EXT, [WORK, os.path.join(ROOT, "export"),
-                           os.path.join(ROOT, "src"), ROOT], depth=3)
+    hits = [p for p in
+            _scan(SUB_EXT, [WORK, os.path.join(ROOT, "export"),
+                            os.path.join(ROOT, "src"), ROOT], depth=3)
+            if not os.path.abspath(p).startswith(os.path.abspath(SRT_OUT) + os.sep)]
     return [{"name": os.path.basename(p), "path": rel(p), "size": os.path.getsize(p),
-             "mtime": int(os.path.getmtime(p)), "url": _url(p)} for p in hits]
+             "mtime": int(os.path.getmtime(p)), "url": _url(p)}
+            for p in hits if _url(p)]
 
 
 # ─────────────── 裁片段(后台任务) ───────────────
@@ -604,7 +685,9 @@ def start(cfg):
         crf = 18
     os.makedirs(SEGS, exist_ok=True)
     out = os.path.join(SEGS, "seg_%07.2f-%07.2f.mp4" % (t0, t1))
-    jid = "r%d" % int(time.time() * 1000 % 1e9)
+    # 毫秒时间戳会撞:同一毫秒内点两次「渲染此段」,后一条覆盖前一条,
+    # 先完成的那个把 state 写成 done,前端轮询到的是另一个任务的结果。
+    jid = "r" + uuid.uuid4().hex[:8]
     # 编码口径(来源:hyperframes 的 chunkEncoder,Apache-2.0;此处只取与"能播"相关的两条):
     #   · `-bf 0` —— 关掉 B 帧。B 帧会让流开头的 DTS 变负,部分浏览器/硬件解码器会卡首帧
     #     (音频先响、画面不动)。片段是要发出去给人看的,值这点体积代价;
@@ -617,16 +700,31 @@ def start(cfg):
            "-movflags", "+faststart", out]
     with LOCK:
         JOBS[jid] = {"id": jid, "state": "running", "t0": t0, "t1": t1,
-                     "out": rel(out), "pct": 0.0, "tail": "", "mp4": rel(mp4)}
+                     "out": rel(out), "pct": 0.0, "tail": "", "mp4": rel(mp4),
+                     "started": time.time()}
     p = subprocess.Popen(cmd, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                         text=True, encoding="utf-8", errors="replace")
+                         text=True, encoding="utf-8", errors="replace",
+                         creationflags=_NO_WINDOW)
     threading.Thread(target=watch, args=(jid, p, t1 - t0), daemon=True).start()
     print("[review] 裁片段 %s 的 %.2f–%.2fs -> %s" % (rel(mp4), t0, t1, rel(out)))
     return {"ok": True, "id": jid, "out": rel(out)}
 
 
 def watch(jid, proc, span):
-    """跟着 ffmpeg 的 `-progress pipe:1` 走:解析 out_time_us 算百分比。"""
+    """跟着 ffmpeg 的 `-progress pipe:1` 走:解析 out_time_us 算百分比。
+
+    墙钟看门狗:ffmpeg 卡死(磁盘满/IO 挂起)时 `for line in proc.stdout` 会
+    永远阻塞,JOBS[jid] 永远停在 running,前端 1.5s 一次无限轮询,JOBS 只增
+    不删。这里按段长 6 倍 + 60s 兜底强杀整棵进程树,口径与 `scripts/_proc.py`
+    一致(Windows 上 `Popen.kill()` 只杀直接子进程,必须 taskkill /T)。
+    """
+    budget = max(60.0, span * 6.0)
+
+    def _elapsed():
+        with LOCK:
+            return time.time() - JOBS.get(jid, {}).get("started", time.time())
+
+    timed_out = False
     try:
         for line in proc.stdout or []:
             line = line.strip()
@@ -635,14 +733,25 @@ def watch(jid, proc, span):
                 JOBS[jid]["tail"] = line[:160]
                 if m and span > 0:
                     JOBS[jid]["pct"] = min(100.0, float(m.group(1)) / 1e6 / span * 100.0)
-        rc = proc.wait()
+            if _elapsed() > budget:
+                timed_out = True
+                break
+        if timed_out:
+            kill_tree(proc.pid)
+            with LOCK:
+                JOBS[jid]["tail"] = ("超过 %.0fs 未收口,已强杀 ffmpeg 进程树;"
+                                     "%.1fs 片段正常应在 %.0fs 内完成"
+                                     % (budget, span, budget))
+        rc = proc.returncode if proc.poll() is not None else proc.wait(timeout=15)
     except Exception as e:                              # noqa: BLE001
         rc = -1
         with LOCK:
             JOBS[jid]["tail"] = "watch 异常:%s" % e
     with LOCK:
-        JOBS[jid]["state"] = "done" if rc == 0 else "error"
-        JOBS[jid]["pct"] = 100.0 if rc == 0 else JOBS[jid].get("pct", 0.0)
+        j = JOBS.get(jid)
+        if j is not None:               # 强杀/异常后可能已被清掉
+            j["state"] = "done" if rc == 0 else "error"
+            j["pct"] = 100.0 if rc == 0 else j.get("pct", 0.0)
 
 
 def job(jid):

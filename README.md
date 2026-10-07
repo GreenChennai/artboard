@@ -268,11 +268,30 @@ python scripts/upload_imgchr.py out/*.jpg --cookie "PHPSESSID=…" --urls-out ur
 **双击即出图 / 矢量 / 素材 / 维护**
 
 > 全量脚本清单是**生成物**:见 [`docs/scripts.md`](docs/scripts.md)
-> (由 `python scripts/gen_script_index.py` 重建;权威参数 = 各脚本 `--help`)。
+> (由 `python scripts/gen_script_index.py` 重建;权威参数 = 各脚本 `--help`,
+> 少数无 argparse 的维护脚本打印模块说明)。
 > 分册末尾的「本册用到的脚本」是就近索引;SKILL.md 只保留主线 5 条。
 
-<details>
-</details>
+## 地图模块(城市地图 / 路网 / 区位图 / 3D 城市 / 地图动画)
+
+Agent 侧的触发词、能力矩阵与实测命令见 **[`references/map-studio.md`](references/map-studio.md)**。
+五条主命令(技能根执行;首跑联网,之后走 `work/` 缓存离线可复跑):
+
+```bash
+python scripts/map_tiles.py --lat 23.1291 --lon 113.2644 --zoom 12 --width 1600 --height 1200 \
+    --style amap --points assets/map/points.guangzhou.json --out work/tmp/flat-gz-z12.png
+python scripts/fetch_osm_data.py --bbox 23.1055,113.3120,23.1300,113.3350 --out work/geo/cbd-gz
+python scripts/svg_map.py --base work/geo/cbd-gz --bbox 23.1055,113.3120,23.1300,113.3350 \
+    --width 1600 --theme all --points assets/map/points.cbd.json --out work/tmp/svg-cbd.svg
+python scripts/render_3d_vec.py --center 23.1145,113.3255 --camera-zoom 14.6 --pitch 63 --bearing -28 \
+    --theme assets/map/themes/dark-tech.json --base work/geo/cbd-gz --out work/tmp/v3d.png
+python scripts/build_player.py && python scripts/test_v7.py     # 动画播放器 + V1-V12 验收
+```
+
+- 底图:高德 XYZ 瓦片(GCJ-02),坐标入口一律 WGS-84,转换是**本地实现**(`scripts/_map_mercator.py`);
+- 浏览器:渲染走 `VB_BROWSER_PATH` > `_paths` 的 Chrome/Edge > Playwright 自带 chromium;
+- 合规:高德瓦片直连仅限内部演示/设计样张,商用请注册 key;OSM 矢量按 ODbL 署名;
+  公开出版地图需审图号(不在本技能范围)。
 
 ## 目录结构
 
@@ -286,18 +305,25 @@ artboard/
 │   ├── pipeline.md          #   流水线细则 + 动效规范
 │   ├── revision-protocol.md #   改稿决策(模糊愿望 → 五维诊断 → 减法阶梯)
 │   ├── multi-draft.md       #   多稿同出协议(备选模式,默认单稿)
+│   ├── map-studio.md        #   地图子技能:触发词 / 能力矩阵 / 实测命令(城市地图·路网·3D)
 │   ├── styles-catalog.md    #   123 风格方向速查
 │   ├── styles/ formats/     #   视觉风格分册 / 印刷品类规范
 │   └── …                    #   构图/排版/色彩/数据可视化/印刷/矢量化等 40+ 分册
 ├── scripts/                 # preflight / scaffold / export / check_overflow / imageops …
+│                            #   地图:map_tiles / fetch_osm_data / svg_map / svg_iso /
+│                            #        render_3d(_vec) / build_player / compute_route / test_v7
 ├── fonts/                   # 28 款开源中英文字体族(按需下载)
-├── assets/                  # vendor(ECharts/GSAP) · 图标 · 插画 · 各风格参考案例
+├── assets/                  # vendor(ECharts/GSAP/MapLibre) · 图标 · 插画 · 参考案例
+│   ├── map/                 #   地图:成品样张(samples) · 主题 JSON · 网点 · 播放器 demo
+│   └── …
 ├── tools/                   # asset-bridge(MV3 素材 Bridge) · config-editor(exe)
-└── docs/                    # setup / glossary / failures / samples / readme 图
+├── work/                    # 地图运行期产物(瓦片缓存/OSM 底料/临时渲染页),已 gitignore
+└── docs/                    # setup / glossary / failures / map(地图调研+术语) / samples
 ```
 
 > 仓库只收"实际性工作内容 + 必备指导文档"。`docs/adr/`、`docs/ITERATION.md`、
-> `docs/review/` 是本地留档，不进仓库。
+> `docs/review/`、`docs/map/ITERATION.md`、`docs/map/adr/`、`docs/map/legacy-patches/`
+> 是本地留档，不进仓库。
 
 ## 素材与版权
 

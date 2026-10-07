@@ -52,6 +52,18 @@ def cfg(key: str, default: str = "") -> str:
         return default
 
 
+def safe_segment(name: str) -> str:
+    """目录段消毒(单点在 _paths.py;这里做容错转发,保持本脚本可独立运行)。"""
+    try:
+        from _paths import safe_segment as _ss
+        return _ss(name)
+    except Exception:  # noqa: BLE001
+        s = (name or "").strip()
+        if not s or s in (".", "..") or ".." in s:
+            return ""
+        return "" if any(ch in s for ch in ("/", "\\", ":")) else s
+
+
 def emit(obj: dict) -> None:
     print(json.dumps(obj, ensure_ascii=False))
 
@@ -371,10 +383,11 @@ RELAX_LADDER = [("color", "放宽主色筛选"), ("transparent", "放宽透明�
 # ---------------- 主流程 ----------------
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     ap = argparse.ArgumentParser(description="全自动素材搜索(开页→搜→筛→下→去重→关页;0927 迭代)")
     ap.add_argument("--query", required=True, help="搜索关键词(多词空格分隔)")
     ap.add_argument("--theme", required=True, help="素材库主题目录名")
@@ -409,9 +422,13 @@ def main() -> int:
                     hint="先跑:python scripts/asset_hunt.py --query x --theme x --ensure-browser --visible,"
                          f"在弹出的窗口登录花瓣并把 port={HUNT_PORT} / token 填进扩展(一次即可)")
 
-    theme_dir = os.path.join(studio_dir(), "materials", args.theme)
+    theme_clean = safe_segment(args.theme)
+    if not theme_clean:
+        return fail("BAD_THEME",
+                    f"--theme 只能是单层目录名(非空,且不含 / \\ : ..): 收到 {args.theme!r}")
+    theme_dir = os.path.join(studio_dir(), "materials", theme_clean)
     os.makedirs(theme_dir, exist_ok=True)
-    report = {"ok": False, "cmd": "asset_hunt", "query": args.query, "theme": args.theme,
+    report = {"ok": False, "cmd": "asset_hunt", "query": args.query, "theme": theme_clean,
               "sites": {}, "files": [], "risk_files": [], "filtered": {}, "degraded": notes,
               "tabs_closed": [], "errors": []}
 
@@ -454,7 +471,7 @@ def main() -> int:
         emit(report)
         return 1
 
-    dl = download_items(pool_items, theme=args.theme)
+    dl = download_items(pool_items, theme=theme_clean)
     files = [os.path.basename(f["file"]) for f in dl.get("files", [])]
     report["risk_files"] = [os.path.basename(f["file"]) for f in dl.get("risk_files", [])]
     report["errors"].extend(f"{e.get('url', '')[:60]}: {e.get('error')}" for e in dl.get("errors", []))
@@ -471,7 +488,7 @@ def main() -> int:
             except OSError:
                 pass
         if small:
-            extra, fb_tabs = detail_fallback(small, args.theme, budget=6)
+            extra, fb_tabs = detail_fallback(small, theme_clean, budget=6)
             tab_ids.extend(fb_tabs)
             files += [os.path.basename(x["file"]) for x in extra]
             report["risk_files"] += [os.path.basename(x["file"]) for x in extra

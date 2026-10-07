@@ -39,7 +39,11 @@ def is_junction(path: str) -> bool:
 
 
 def collect_refs(src_dir: str):
-    """返回 (项目自身文件列表, 引用清单 {原始引用串: 解析后的绝对路径 或 None})。"""
+    """返回 (项目自身文件列表, 引用清单 {(引用所在文件, 引用串): 解析后绝对路径 或 None})。
+
+    引用按**所在文件自己的目录**解析:src/sub/deep.html 里的 `../fonts/x` 只有相对
+    src/sub/ 才算得对(此前统一按 src/ 根解析,嵌套层级的引用永远收不到,自然也不会被改写)。
+    """
     own, refs = [], {}
     for root, dirs, files in os.walk(src_dir):
         # 联接目录不作为项目文件遍历(其内容按引用收集)
@@ -53,11 +57,11 @@ def collect_refs(src_dir: str):
                 text = open(fp, encoding="utf-8", errors="ignore").read()
                 for rx in (RX_ATTR, RX_CSS_URL):
                     for m in rx.finditer(text):
-                        refs.setdefault(m.group(1).strip(), None)
+                        refs.setdefault((fp, m.group(1).strip()), None)
 
-    # 解析每个引用
+    # 解析每个引用(基准 = 该引用所在文件的目录)
     resolved = {}
-    for ref in refs:
+    for fp, ref in refs:
         r = ref.strip("'\"")
         real = None
         if r.startswith("file:///"):
@@ -66,10 +70,11 @@ def collect_refs(src_dir: str):
             if os.path.isfile(cand):
                 real = os.path.realpath(cand)
         else:
-            cand = os.path.normpath(os.path.join(src_dir, r.replace("/", os.sep)))
+            cand = os.path.normpath(
+                os.path.join(os.path.dirname(fp), r.replace("/", os.sep)))
             if os.path.isfile(cand):
                 real = os.path.realpath(cand)  # 穿透联接
-        resolved[ref] = real
+        resolved[(fp, ref)] = real
     return own, resolved
 
 
@@ -89,10 +94,11 @@ def classify(real_path: str) -> str | None:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     p = argparse.ArgumentParser()
     p.add_argument("project")
     p.add_argument("--out", default="")
@@ -110,16 +116,16 @@ def main() -> int:
 
     own, resolved = collect_refs(src_dir)
 
-    collected = {}   # 真实绝对路径 -> 包内 assets/ 相对路径
-    rewrite = {}     # 原始引用串 -> 改写后的相对引用
-    for ref, real in resolved.items():
+    collected = {}          # 真实绝对路径 -> 包内 assets/ 相对路径
+    rewrite_by_file = {}    # 引用所在文件 -> {原始引用串: 包内 assets/ 相对路径}
+    for (fp, ref), real in resolved.items():
         if not real:
             continue
         dest = classify(real)
         if not dest:
             continue
         collected[real] = dest
-        rewrite[ref] = dest
+        rewrite_by_file.setdefault(fp, {})[ref] = dest
 
     if args.include_fonts:
         fonts_root = os.path.join(SKILL_DIR, "fonts")
@@ -137,9 +143,20 @@ def main() -> int:
             if os.path.isfile(fp):
                 collected[fp] = f"assets/vendor/{fn}"
 
-    def html_for_pack(text: str) -> str:
-        for old_ref, new_ref in sorted(rewrite.items(), key=lambda kv: -len(kv[0])):
-            text = text.replace(old_ref, new_ref)
+    def pack_prefix(rel_dir: str) -> str:
+        """HTML/CSS 相对 src/ 的目录深度 → 回到包根 <slug>/ 所需的 ../ 层数。
+
+        包内固定布局是 <slug>/src/… 与 <slug>/assets/…:src 根的 HTML 要一层 `../`,
+        再深一层就得多一层。少这一层引用会落到 <slug>/src/assets/…(包内不存在)。
+        """
+        depth = len([p for p in rel_dir.replace("\\", "/").split("/")
+                     if p and p != "."])
+        return "../" * (depth + 1)
+
+    def html_for_pack(text: str, rel_dir: str, refs: dict) -> str:
+        prefix = pack_prefix(rel_dir)
+        for old_ref, new_ref in sorted(refs.items(), key=lambda kv: -len(kv[0])):
+            text = text.replace(old_ref, prefix + new_ref)
         return text
 
     # --out 只给文件名时 dirname 为 "",必须 abspath 兜底
@@ -149,9 +166,11 @@ def main() -> int:
         for fp in own:
             rel = os.path.relpath(fp, src_dir).replace(os.sep, "/")
             if fp.lower().endswith((".html", ".htm", ".css")):
+                rel_dir = rel.rsplit("/", 1)[0] if "/" in rel else ""
                 z.writestr(f"{slug}/src/{rel}",
                            html_for_pack(open(fp, encoding="utf-8",
-                                              errors="ignore").read()))
+                                              errors="ignore").read(),
+                                         rel_dir, rewrite_by_file.get(fp, {})))
             else:
                 z.write(fp, f"{slug}/src/{rel}")
             count += 1

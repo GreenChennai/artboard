@@ -41,10 +41,11 @@ def find_kiln() -> str:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     p = argparse.ArgumentParser(description="artboard → Kiln 矢量交付")
     p.add_argument("--source", required=True, help="项目目录 / HTML 文件")
     p.add_argument("--outdir", required=True, help="输出目录")

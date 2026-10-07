@@ -59,7 +59,7 @@
 3. **写分册**:按模板填,禁则至少 5 条——禁则越具体,出图越稳。
 4. **写案例**:在 `assets/cases/<slug>-case.html` 写一个完整参考实现(固定画布、
    只用库内字体、tokens 全走 `:root`),内容用虚构品牌。
-5. **渲染自检**:scaffold 冒烟项目 → 换入案例 → WPI 导出 → Read PNG 检查(走 pipeline Step 5–6)。
+5. **渲染自检**:scaffold 冒烟项目 → 换入案例 → Kiln 导出(`scripts/export.py`)→ Read PNG 检查(走 pipeline Step 5–6)。
 6. **登记**:SKILL.md 风格清单表加一行(名称/slug/一句话/推荐尺寸)。
 
 ## 3. 案例硬要求

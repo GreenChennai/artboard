@@ -44,10 +44,11 @@ def probe() -> str:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     ap = argparse.ArgumentParser(description="Kiln 引擎部署 / 升级")
     default_url = "https://github.com/GreenChennai/artboard/releases/download/kiln-cli-v0.10.0/Kiln-noGUI-CLI.exe"
     ap.add_argument("--from", dest="from_url", default=default_url,

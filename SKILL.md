@@ -1,7 +1,7 @@
 ---
 name: artboard
-description: Use when the user wants a finished graphic produced from copy or a reference image, or wants an existing design revised — 海报、banner、小红书封面、公众号封面、主 KV、信息长图、数据图、名片、A4 海报、三折页、易拉宝、PPT 页、二维码物料; 动态海报、GIF、MP4、口播信息卡、图解动画卡、科普动画卡等视频场景卡; 片头动画、片尾动画、内容概括动画、章节卡、转场卡等视频动效件(按口播/教程/vlog/短片/MV 配动效); H5 页面、移动端落地页、互动页、邀请函 H5 等轻量交互页(模式 H); 把文案变成图片、复刻一张设计图、换风格重做、改稿但说不清哪里不满意. 风格像 Illustrator/Photoshop 做的设计图,不是网页交互风. Not for 网页 UI、视频剪辑、纯 AI 生图. Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.17.0
+description: Use when the user wants a finished graphic produced from copy or a reference image, or wants an existing design revised — 海报、banner、小红书封面、公众号封面、主 KV、信息长图、数据图、名片、A4 海报、三折页、易拉宝、PPT 页、二维码物料; 动态海报、GIF、MP4、口播信息卡、图解动画卡、科普动画卡等视频场景卡; 片头动画、片尾动画、内容概括动画、章节卡、转场卡等视频动效件(按口播/教程/vlog/短片/MV 配动效); H5 页面、移动端落地页、互动页、邀请函 H5 等轻量交互页(模式 H); 地图/城市地图/路网/区位图/街道底图、2.5D 等轴测与 3D 城市、地图 KV、多网点分布图、地图动画(车流/通勤/导航)、地图播放器 H5(子技能 references/map-studio.md); 印刷/打样/烫金/UV/模切/专色/裁切线等印前工艺; 公众号文章/微信图文/秀米排版(模式 W); SVG/EPS/AI/可编辑 PDF 等矢量工程文件交付; 抠图/调色/滤镜/压缩/水印/切片等位图工序; 图标/几何图形/极简插画; 多稿同出/给几个方案; 品牌色/logo/VI 一致性; 把文案变成图片、复刻一张设计图、换风格重做、改稿但说不清哪里不满意. 风格像 Illustrator/Photoshop 做的设计图,不是网页交互风. Not for 网页 UI、视频剪辑、纯 AI 生图. Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
+version: 1.18.0
 ---
 
 # artboard · HTML 海报工作室
@@ -12,6 +12,14 @@ PNG/JPG/GIF/MP4/PDF/SVG/EPS/AI/PPTX 九格式。浏览器在位时 PNG/PDF/AI �
 系统 Edge/Chrome 高保真车道,缺席自动降级自研引擎并在结果里声明;
 动画逐帧求值,中文真文本。外部矢量稿改回 HTML 走 kiln-cli import
 (**正常流水线无此步**)。
+
+> **子技能:地图模块(城市地图 / 路网 / 区位图 / 3D 城市 / 地图动画)** —— 工具已并入
+> 本技能 `scripts/`(`map_tiles.py` 平面瓦片拼接、`fetch_osm_data.py` OSM 矢量、
+> `svg_map.py` / `svg_iso.py` 主题化 2D / 2.5D、`render_3d.py` / `render_3d_vec.py` 真 3D、
+> `build_player.py` 动画播放器、`compute_route.py` 寻路、`probe_tiles.py` 源探测、
+> `test_v7.py` 验收),运行期产物落 `work/`(已 gitignore),成品样张在 `assets/map/samples/`。
+> 用户要"地图/路网/区位图/城市配图/地图动画"时,**必读 `references/map-studio.md`**
+> (触发词、能力矩阵、实测命令、合规口径全在那里)。
 
 > **分支:模式 W(微信公众号图文)** —— 交付物是**可直接粘进微信编辑器的 HTML**,
 > 不是图片、不走 Kiln 图片导出。约束更硬(只能内联样式、动效只能内联 SVG+SMIL、
@@ -92,8 +100,15 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 
 | 资源 | 路径 | 何时才读 |
 |---|---|---|
+| **地图模块(子技能)** | references/map-studio.md | 做城市地图/路网/区位图/街道底图/2.5D 与 3D 城市/地图 KV/网点分布图/地图动画播放器时(**必读**;触发词、能力矩阵、实测命令、合规) |
 | **H5 交互页(模式 H)** | references/h5-interactive.md | 做移动端落地页/互动页/邀请函 H5/长滚动叙事时(**必读**;viewport/安全区/触摸目标/CWV/微信内行为) |
 | 项目总览 / 安装 | README.md | 需要安装、依赖、目录结构等仓库级信息时 |
+| **环境与依赖部署** | docs/setup.md | 预检报缺件、要装 Kiln/ffmpeg/模型、配 Bridge 或换机器重建环境时 |
+| **公众号实操指南** | docs/gzh-guide.md | 模式 W 要按步骤做图文/双封面,或主题怎么选、怎么发时(与 wechat-article.md 配套) |
+| **故障速查** | docs/failures.md | 导出/机检报错、结果不对劲,想先查是不是已知坑时 |
+| 公众号规范摘要 | docs/gzh-spec-summary.md | 只想快速查微信白名单/尺寸/字号口径,不想读整册 wechat-article.md 时 |
+| 图标与素材许可 | docs/svg-licenses.md | 用了 assets 里的图标/插画要交付、需核对署名与许可时 |
+| Kiln 上游缺陷台账 | docs/upstream-issues.md | Kiln 行为异常(静默回退/降级)时先看是否已登记的已知缺陷 + 绕行 |
 | **脚本总表(生成物)** | docs/scripts.md(源:`scripts/registry.json`) | 找不到某脚本在哪册时查全表;参数权威=脚本 `--help` |
 | 设计护栏(硬规则) | references/guardrails.md | **每次出图必读**(一次) |
 | 流水线细则 | references/pipeline.md | 流程不确定时 |
@@ -173,7 +188,8 @@ python $S/check_overflow.py <proj>/src        # 机检:越框/安全区(出图�
 4. 文案逐字来自用户,不编造数据与条款。
 5. **自检只在两个时机触发**:①首版 HTML 完成时;②用户要求检查时。之后的用户改稿一律定点修改,不自动自检不派子代理(省时省 token)。**机检 `check_overflow.py` 不受此限**——每次重导前都跑(零 token 成本,3–5s,改文案最易引入溢出)。改稿怎么定部位:明确指令按 `pipeline.md` 改稿协议速查;说不清的模糊愿望走 `references/revision-protocol.md`。
 6. 动图**分两模式**(数值细则见 references/animation.md §〇):
-   **模式 P 海报循环**——无缝循环,终态必须仍是合格静态海报;
+   **模式 P 海报循环**——无缝循环;静态版必须另出**有限动画**版(静态导出=快进到终态,
+   `infinite` 的静态相位不确定),该版本的终态须仍是合格静态海报;
    **模式 S 视频场景卡**(口播桥/图解卡)——五段式一次性时间轴,全 finite 禁 infinite、
    必须有出场,导出 MP4。
 7. **电商/食品/吉祥物类海报必须有真实素材**——产品本体只能用户提供;爬虫图自动带 `版权风险-` 前缀,交付时列出并提醒更换;抠图默认模型链禁用 bria-rmbg(商用付费)。

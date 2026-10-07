@@ -9,6 +9,9 @@ __pycache__/
 Thumbs.db
 dist/
 
+# 地图模块运行期产物:瓦片缓存 / OSM 矢量底料 / 临时渲染页 / 源探测图,全部可重建
+work/
+
 # PyInstaller 构建残留(打包 config-editor 时产生)
 .build/
 .pkgtest/
@@ -28,3 +31,9 @@ assets/cases/show2-*.html
 docs/adr/
 docs/ITERATION.md
 docs/review/
+
+# 地图模块的过程留档(与上面同口径:迭代台账 / ADR / 一次性补丁脚本)
+# 注:docs/map/ 下的调研与术语文档是使用性资料,**进仓库**。
+docs/map/ITERATION.md
+docs/map/adr/
+docs/map/legacy-patches/

@@ -1,5 +1,132 @@
 # Changelog
 
+## v1.18.0 — 地图模块并入 + 两轮审计缺陷收口(2026-10-07)
+
+> 依据:两名只读审计员的全量报告(脚本 18 项 / 文档-代码一致性 23 项)+ 地图模块
+> (原 `map-studio`)整体并入。全部结论都带复现命令,修完逐条实测。
+
+### Added · 地图模块整体并入(不再是独立的附属模块)
+- **脚本**:`map_tiles.py`(高德瓦片平面拼接+网点)、`fetch_osm_data.py`(OSM 五层矢量)、
+  `svg_map.py` / `svg_iso.py`(主题化 2D / 2.5D 等轴测 SVG)、`render_3d.py` /
+  `render_3d_vec.py`(真 3D:栅格底图 / 全矢量主题)、`svg_preview.py`(SVG→PNG)、
+  `compute_route.py`(A\* 寻路)、`build_player.py`(自包含动画播放器)、
+  `probe_tiles.py`(底图源探测)、`test_v7.py`(V1-V12 自动化验收);
+  内部层新增 `_map_common.py`(浏览器/代理/缓存/临时页单点)与 `_map_mercator.py`(瓦片数学 +
+  **本地** WGS-84 ↔ GCJ-02 实现)。
+- **子技能卡片**:`references/map-studio.md` —— 触发词、能力矩阵、实测命令、踩坑速记、
+  合规口径、文档索引;SKILL.md 资源索引与 frontmatter 触发词同步接入。
+- **资产**:成品样张 30 件 → `assets/map/samples/`;主题 JSON → `assets/map/themes/`;
+  网点/路径 → `assets/map/`;播放器模板与产物 → `assets/map/demo/`;
+  MapLibre GL v5.9.0(BSD-3)vendor → `assets/vendor/maplibre/`(渲染页零 CDN)。
+- **运行期产物**统一落 `<技能根>/work/`(瓦片缓存 / OSM 底料 / 临时渲染页 / 源探测图),已进 .gitignore;
+  历史留档 `docs/map/ITERATION.md`、`docs/map/adr/`、`docs/map/legacy-patches/` 也按仓库口径本地留档,
+  调研与术语文档进仓库。
+- **路由**:SKILL.md 资源索引新增 6 行 docs/ 路由(setup / gzh-guide / failures /
+  gzh-spec-summary / svg-licenses / upstream-issues),消除"文档存在但无入口"。
+
+### Fixed · 地图模块(并入时发现的真 bug,均已实测)
+- **3D/SVG 截图硬编码 Chrome 路径** → 本机只有 Edge,原实现 `--executable_path` 指向不存在的文件,
+  `render_3d` / `render_3d_vec` / `svg_preview` **必然启动失败**。改为
+  `VB_BROWSER_PATH` > `_paths`(Chrome/Edge)> Playwright 自带 chromium 三级回退,实测 Edge 出图成功。
+- **`mercator` 依赖 pip 包 eviltransform**(本机未装 → 任何 GCJ 转换必崩)→ 改本地实现,
+  与 eviltransform 对拍 8 点最大偏差 1.1e-7 度(≈1cm),往返误差 0;`requirements.txt` 不再需要它。
+- **临时渲染页写进仓库根**(`_render_3d.html` / `_render_3d_vec.html`)→ 移入 `work/tmp/`。
+- **`__BLD_URL__` 用 `basename` 拼绝对 `/assets/`** → 换目录即 404;改为按技能根相对解析(`repo_url`)。
+- **`--base`/`--theme`/`--points` 默认值指向已不存在的旧路径** → 全部改到新布局,并为缺图层/缺建筑
+  文件加**可读前置报错**(原来只有 MapLibre 控制台 404)。
+- `build_player.py` 的 SVG 尺寸替换写死 `width="1600" height="1917"`(换 bbox 后**静默不改**)→
+  改为按属性正则替换;`test_v7.py` 补 argparse(`--help` 不再触发整轮验收)+ `--no-shots`;
+  `probe_tiles.py` 补 argparse/`__main__` 防护(原先 import 即联网探测)。
+- `map_tiles.py` / `fetch_osm_data.py` 的 `json.dump(open(...))` 句柄泄漏、`fetch_osm_data --out` 深层目录
+  不存在即崩、调色板瓦片触发 Pillow 警告 → 一并修。
+- **3D 渲染瓦片留洞**(俯仰相机视野超出预缓存窗口,MapLibre 静默 404 留洞)→ 本地服务改
+  **按需补抓**缺失瓦片(落同一缓存,同视角可离线复跑),并修并发下的 accept 队列溢出
+  (`request_queue_size 5→128`,实测并发补抓时浏览器报 `ERR_CONNECTION_REFUSED`);
+  render 页面的 `/favicon.ico` 一律空响应,不再污染 `CONSOLE ERRORS`。
+- 播放器验收回归:`build_player` → `test_v7.py` **V1-V12 全绿**(与并入前产物逐字节一致,仅构建时间戳不同)。
+
+### Fixed · 全库审计缺陷(18 项脚本 + 23 项文档,节选 P0/P1)
+- **P0** `imageops stitch` 必抛 `NameError`(`_img_compose.py` 缺 PIL `Image` import)→ 顶部统一导入;
+  同函数 `args.out` 是 str 却调 `write_bytes` 的第二处缺陷一并修。
+- **P0** `imageops convert --colors` 引用的 `_quantize` 全库未定义(选项从未实现却被登记进 `--help`)→ 实现。
+- **P1** `export_fallback.py` 把视口**高度设成宽度**(1080×1440 封面默认导出成 1080×1080)→ 修;
+  `pack.py` 资源引用少一层 `../`(打包产物 HTML 引用全失效)→ 按文件深度重算;
+  `scaffold.py` 生成的 `.poster` 丢 `height`(自家 doctor 立刻判 degraded)与 `slug` 未消毒(可逃出 studio);
+  `doctor.py` 缺分量时整条跳过(漏报)、`check_svg.py` 三处(第 13 条路径起静默免检 / fill-only 假阳性 /
+  坏 viewBox 崩溃并中断整批)、`fetch_font.py` 多文件清单只下第一个却报 OK、
+  `fetch_asset.py` 恒 `ok:true` + `--theme` 可逃出 studio、`qr.py` 绕过唯一代理出口、
+  `_config.py` 非字符串配置被静默丢弃 + 带 BOM 的 config.json 全盘失效、
+  `cutout.py --prefetch` 缺 `import subprocess`、`pixel.py` blend 尺寸不同即崩 + `--list-modes` 不可用 +
+  三条失败路径无 JSON 信封、`gen_script_index.py --help` 会**真重写**生成物、
+  `check_h5.py` 触摸目标检查是不可达死分支、5 个脚本 stdout 按 GBK 编码(中文 JSON 变乱码)、
+  `calc_size/beat_sheet/inspect_ref` 5 处输入校验缺位(裸 traceback)。
+- **文档**:`export.md`/`pipeline.md` 的 `export_fallback -o`、`doctor.py` 缺位置参数、
+  `export_local.py --help`、`materials.md` 缺 `--theme` 等"照抄即失败"的示例;`gzh-guide.md` 主题口径
+  (4 套旧名 → 6 套 `ink/night/warm/grass/red/mono`,真相源指向 `_gzh_theme.py`);
+  `glossary.md` 把已退役矢量流水线当现行(SSIM → `ai_fidelity --min-score 97`);
+  `setup.md` 正文里的 BEL 控制字符 + 工作目录口径分裂;裸 `WPI` 退役残留 8 处。
+
+### Fixed · 静态导出求值点(实测推翻旧文档)
+- 实测(2026-10-07,Kiln 浏览器车道,`export.py`):**静态导出把有限动画快进到终态**
+  (红→蓝 2s `forwards` → 出图纯蓝;带 1s 延迟同样到终态),**不是** `export.md` 曾写的 "t=0 首帧";
+  **无限循环动画**不报错但出的图相位**不确定**(2s 周期三次独立导出实测 ≈0.43/0.45/0.55s 相位)。
+- **GIF/MP4 的捕获起点也不是 0s**:帧数确实 = `fps × --max-wait`,但内容对齐被前移
+  —— 200–400px 页面实测 ≈0.9–1.0s,1080×1920 实测 **≈1.0–1.25s**(渐变探针 R 通道逐帧反推,
+  两条独立动画互校);动画结束后余帧冻结在终态。故"前置静置 ≥2.0s"仍是硬规则,
+  且 ≤15s 只是设计预算(`--max-wait` 可超,不是引擎上限)。
+- 据此修正 `export.md` / `animation.md` / `glossary.md` / `pipeline.md` / `effects.md` /
+  `video-motion.md`,并把模式 P 的规则改为:"静态版要确定性就用**有限版本**(终态必须仍是合格海报);
+  确要无限循环则必须另出有限静态图,或保证任意相位都合格"(SKILL.md 铁律 6 同步)。
+- **新登记上游缺陷 UP-3(Kiln GIF 车道 `steps()` 错帧)**:`steps(1,end)` 硬跳变动画在 GIF 输出里
+  要么全程停在 `from` 色、要么落到无关颜色;**同页同参数 MP4 正确**(已用 ffmpeg 独立解码 +
+  MP4 对照排除读取误差,详见 `docs/upstream-issues.md`)。绕行:卡点用连续时序函数或改出 MP4。
+
+### Changed · 自检门禁补盲区(`scripts/selfcheck.py`)
+- `refs`:支持 `../` 相对引用(按文件所在目录解析)——历史上 `references/styles/*.md` 的
+  `../../fonts/…` 一类错误**结构性地查不到**;新增项目级投放脚本豁免(`导出.py`)。
+- `route`:覆盖范围从 `references/**` 扩到 `docs/*.md`,路由数 54 → 64(暴露并补上 6 个无入口文档)。
+- `stale`:从"仅 references/ 一层 + 6 个精确键"改为递归 `references/**` + `docs/*.md` 且**含裸 `wpi`**,
+  带"WPI 时代概念,v1.9 起消亡"注记的历史行仍豁免。
+- `cfg`:新增 `EXTERNAL_KEYS` 豁免表(在 `scripts/` 之外被消费的键),消掉长期 WARN;
+  `bridge_port: 0`(= 随机端口)的判定改按整数 >0,不再被 `str()` 口径误成"固定端口 0"。
+- `smoke`:`gen_script_index.py` 改用 `--check`(原 `--help` 会写盘,自检自称"只读"却弄脏工作区);
+  `jsonfail` 用例新增 pixel/imageops 的 4 条失败路径。
+- `--help` 契约补全:`preflight` / `junction` / `fetch_model` / `config_gui` / `export_local` /
+  `gen_script_index` 现在都秒回用法(此前分别表现为:跑整轮预检 / 零输出 / 报未知模块 /
+  **弹 Tk 窗口挂死** / 报 `[X]` 退出 2 / 静默重写生成物)。
+- 统一 stdout+stderr UTF-8 样板到全部脚本(原先 5 个脚本管道输出为 GBK,中文 JSON 消费方报
+  `UnicodeDecodeError`)。
+
+### Fixed · 收尾轮(接上轮中断点)
+- **`imageops stitch`/`montage` 输入缺失或损坏仍裸 traceback**(破坏"失败路径末行必为 JSON"
+  契约)→ 新增 `_img_compose._load_inputs`,缺失/读失败统一回 `INPUT_NOT_FOUND` / `READ_FAILED`
+  信封;`jsonfail` 门禁新增该用例。
+- **`gen_script_index.py` 生成物"用途"列吐源码碎片**(`import argparse` / `last = ""`):
+  `docstring_purpose` 从正则改 **ast**(正则对 `r"""` 前缀与 >4000 字窗口两个真实形态失手);
+  生成器补**二轮收敛**(`docs/scripts.md` 自身参与提及扫描,首轮写盘后立刻 `--check` 必报过期);
+  表头注记"少数无 argparse 的脚本打印模块说明"。
+- **`fetch_font.py --help` / `export_local.py --help` 契约补全**(前者把 `--help` 当字体目录名报
+  "清单中无此目录";后者用法文本在管道下是 GBK 字节)。
+- `animation.md` 两处裸 `WPI` 补退役注记;`docs/map/` 四份调研/术语文档的并入前旧路径
+  (`tools/` `demo/` `assets/*.png` `tiles/cache/` …)全部改到新布局,并删去两处已不存在的样张引用
+  (改注明"可由命令重跑")。
+- 自检门禁:`refs` 覆盖 `docs/map/*.md`(925 处引用);`docs/map/ITERATION.md`、`docs/map/adr/`、
+  `docs/map/legacy-patches/` 按过程文档豁免(与 `.gitignore` 同口径);`jsonfail` 新增
+  `doctor --json` / `gzh_cover merge` 两条用例。
+- `doctor.py --fix-meta --json` 的 `[OK] 已回写 N 个` 人类行改走 stderr(此前污染 stdout 的
+  单行 JSON 契约),`fixed` 计数进 JSON;`gzh_cover.py` 的 `merge` 帮助文案与模块 docstring 改口
+  —— 合并图走 `kiln img stitch`(**需要 Kiln**),原写"Pillow 拼接 / 不需要引擎"与实现不符;
+  拼接成功但 kiln JSON 解析失败时回读产物用 PIL 取尺寸(`ok:true` 必有 width/height)。
+
+### Verified
+- 地图链路端到端实测:平面 PNG(900×600,z13,AMap 瓦片 + 4 网点 + 版权条)、
+  OSM 五层抓取(523 建筑 / 270 道路 / 17 轨道 / 13 绿地 / 1 水系)、`svg_map --theme all` 四主题、
+  `svg_iso` 等轴测、`render_3d` 与 `render_3d_vec`(Edge,3840×2160)、`svg_preview`、
+  `compute_route`(1316 节点 / 82→26 点简化 / 1457m)、`probe_tiles`、`build_player` + `test_v7` V1-V12 全绿。
+- 审计缺陷逐条复现对照(修前现象 → 修后现象),证据见各修复报告;
+  自检:`refs / route / stale / cfg / smoke / jsonfail / deploy / materials / golden / scriptdocs` 全绿。
+- 仓库自检 `scripts/selfcheck.py` 最终结果见提交说明(FAIL 0)。
+
 ## v1.17.0 — 代理开关 + 素材站扩展(2026-09-27)
 
 ### Fixed · 代理模型(用户实测痛点:残留死代理致首轮下载必败)

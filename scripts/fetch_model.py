@@ -52,11 +52,16 @@ def set_config(key: str, path: str) -> str:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     args = sys.argv[1:]
+    if "-h" in args or "--help" in args:
+        print(__doc__)
+        print("用法: python scripts/fetch_model.py [vqa|ocr ...]   # 空参 = 列部署状态")
+        return 0
     if not args:
         for name, m in MODULES.items():
             d = cfg(m["path_key"], m["default_dir"])

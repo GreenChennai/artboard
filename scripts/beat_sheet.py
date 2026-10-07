@@ -53,10 +53,11 @@ def snap_list(seconds: str, fps: int) -> list[dict]:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     ap = argparse.ArgumentParser(description="BPM→帧 卡点表(模式 V;见 video-motion.md §五)")
     ap.add_argument("--bpm", type=float, help="曲速(与 --list 二选一)")
     ap.add_argument("--fps", type=int, default=25, help="帧率,默认 25(动画 fps 档见 animation.md)")
@@ -72,12 +73,22 @@ def main() -> int:
     if args.bpm and args.bpm <= 0:
         print(json.dumps({"ok": False, "error": "USAGE", "hint": "--bpm 必须为正"}, ensure_ascii=False))
         return 2
+    if args.fps <= 0:
+        print(json.dumps({"ok": False, "error": "USAGE",
+                          "hint": f"--fps 必须为正整数(收到 {args.fps})"}, ensure_ascii=False))
+        return 2
 
     if args.bpm:
         points = build_points(args.bpm, args.fps, max(args.subdiv, 1), max(args.bars, 1))
         beat_ms = round(60000.0 / args.bpm / max(args.subdiv, 1), 1)
     else:
-        points = snap_list(args.list, args.fps)
+        try:
+            points = snap_list(args.list, args.fps)
+        except ValueError:  # 此前 "0.5,abc" 直接吐 traceback
+            print(json.dumps({"ok": False, "error": "USAGE",
+                              "hint": f'--list 只能是逗号分隔的数字(秒),如 "0.5,1.0";'
+                                      f" 收到 {args.list!r}"}, ensure_ascii=False))
+            return 2
         beat_ms = None
     print(json.dumps({"ok": True, "cmd": "beat_sheet",
                       "bpm": args.bpm or None, "fps": args.fps,

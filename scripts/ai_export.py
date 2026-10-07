@@ -53,10 +53,11 @@ def find_kiln() -> str:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     p = argparse.ArgumentParser(description="artboard → Kiln 一键矢量导出")
     p.add_argument("source", nargs="?", help="项目目录 / HTML 文件（兼容旧用法）")
     p.add_argument("--source", dest="source_flags", action="append", default=[],

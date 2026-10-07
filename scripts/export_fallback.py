@@ -35,10 +35,11 @@ def serve(directory: str) -> tuple[http.server.ThreadingHTTPServer, str]:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
 
     p = argparse.ArgumentParser(description="artboard 兜底 PNG 导出")
     p.add_argument("--source", required=True)
@@ -81,11 +82,17 @@ def main() -> int:
     if out_dir:
         os.makedirs(out_dir, exist_ok=True)
 
+    # 视口高度:显式 --height > 0 优先;未给时**不能**拿宽度顶(修前写成
+    # args.width:full_page 截图的高度下限就是视口高,凡是 100vh 型画布都被压成
+    # 正方形——1080×1440 封面导出成 1080×1080)。未给高时按竖版海报口径 1440,
+    # 非 1080×1440 类画幅(banner/square/…)务必显式传 --height。
+    vp_height = args.height if args.height > 0 else 1440
+
     with sync_playwright() as pw:
         browser = pw.chromium.launch(channel=channel, headless=True)
         try:
             ctx = browser.new_context(
-                viewport={"width": args.width, "height": args.width},
+                viewport={"width": args.width, "height": vp_height},
                 device_scale_factor=args.scale,
             )
             page = ctx.new_page()

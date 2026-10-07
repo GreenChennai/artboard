@@ -78,7 +78,9 @@ def fetch(d: str, entry: dict) -> str:
             url = entry["url"].format(**spec)
             dest = os.path.join(FONTS_DIR, d, spec["f"])
             get(url, dest)
-        return f"OK: {len(entry['expand'])} 个文件已下载"
+        ok, missing = local_state(entry, d)
+        return (f"OK: {len(entry['expand'])} 个文件已下载" if ok
+                else f"PARTIAL: 仍缺 {missing}")
 
     url = entry.get("url")
     if not url:
@@ -121,16 +123,33 @@ def fetch(d: str, entry: dict) -> str:
         ok, missing = local_state(entry, d)
         return "OK" if ok else f"PARTIAL: 仍缺 {missing}"
     else:
-        get(url, os.path.join(FONTS_DIR, d, entry["files"][0]))
-        return "OK"
+        # 无 zip/expand 时可能仍有多个 files(如 fanmei/insomnia-fangsong 的多字重):
+        # 必须逐个下载,下完回查 local_state 才不会「只落 1 个却报 OK」。
+        files = [f for f in entry.get("files", []) if f]
+        if len(files) <= 1:
+            get(url, os.path.join(FONTS_DIR, d, files[0] if files else
+                                  os.path.basename(url)))
+        else:
+            for name in files:
+                get(url, os.path.join(FONTS_DIR, d, name))
+        ok, missing = local_state(entry, d)
+        return "OK" if ok else f"PARTIAL: 仍缺 {missing}"
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     targets = sys.argv[1:]
+    # --help 契约:本脚本用位置参数当字体目录名,--help 会被当成目录 →「清单中无此目录」。
+    # 自检/文档都以 `--help` 为参数权威入口,故显式处理(与 gen_script_index 同款)。
+    if any(a in ("-h", "--help") for a in targets):
+        print(__doc__.strip())
+        print("\n用法: python fetch_font.py            查看各目录本地状态(缺失清单)")
+        print("      python fetch_font.py <目录名>...  下载这些目录缺失的字体")
+        return 0
     manifest = load_manifest()
 
     if not targets:
@@ -155,7 +174,9 @@ def main() -> int:
         except Exception as exc:  # noqa: BLE001
             results.append({"dir": d, "error": f"{type(exc).__name__}: {str(exc)[:160]}"})
 
-    ok = all("error" not in r for r in results)
+    # PARTIAL 也算失败:状态说「仍缺文件」时不能再回 ok:true / 退出 0(否则又是假成功)
+    ok = all("error" not in r and not str(r.get("status", "")).startswith("PARTIAL")
+             for r in results)
     emit({"ok": ok, "results": results,
           "hint": "下载后用 add_font.py 登记新目录;查看状态直接跑 fetch_font.py 不带参数"})
     return 0 if ok else 1

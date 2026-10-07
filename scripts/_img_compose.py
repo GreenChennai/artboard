@@ -10,10 +10,37 @@ import pathlib
 from _img_core import (encode_image, fail, input_expand, ok_envelope,
                        out_path_for, parse_color, resample_of, result_item)
 
+# Pillow 三件套提到模块顶部:此前各函数各自 import,cmd_stitch 漏了 → 任何
+# `imageops.py stitch` 都 NameError。降级导入保住 imageops.py deps 的 NO_PILLOW
+# 优雅路径(imageops 在模块级 import 本模块,硬 import 会让缺 Pillow 时连 deps 都起不来)。
+try:
+    from PIL import Image, ImageDraw, ImageFilter
+except ImportError:  # pragma: no cover — 缺 Pillow 时由 _img_core.load_pillow 兜底报错
+    Image = ImageDraw = ImageFilter = None  # type: ignore[assignment]
+
 
 def _open(p):
-    from PIL import Image
     return Image.open(p)
+
+
+def _load_inputs(paths, cmd: str) -> list:
+    """stitch / montage 的共读输入:缺失或损坏一律 `SystemExit(fail(...))`。
+
+    此前这两处直接 `[_open(p) ...]`,文件不存在时裸 FileNotFoundError 穿透到
+    顶层 —— 破坏 imageops 的"失败路径末行必为合法 JSON"契约(selfcheck.jsonfail),
+    上层脚本链会因末行不可解析而整条断掉。card/watermark 走的是逐图 error 项模式,
+    这两个命令是"多图合一"语义,缺一张就没有可交付产物,故按命令级失败处理。
+    """
+    missing = [p for p in paths if not p.is_file()]
+    if missing:
+        head = "、".join(str(p) for p in missing[:3]) + ("…" if len(missing) > 3 else "")
+        raise SystemExit(fail(cmd, "INPUT_NOT_FOUND", f"输入不是文件: {head}",
+                              hint="检查路径拼写;目录输入会递归展开,单文件须真实存在"))
+    try:
+        return [_open(p).convert("RGB") for p in paths]
+    except Exception as exc:  # noqa: BLE001 — OSError / UnidentifiedImageError 统一收口
+        raise SystemExit(fail(cmd, "READ_FAILED", f"{type(exc).__name__}: {exc}",
+                              hint="损坏或扩展名不符的文件;先跑 imageops.py probe 体检"))
 
 
 def _shadow_layer(size, radius, shadow: str) -> tuple:
@@ -23,7 +50,6 @@ def _shadow_layer(size, radius, shadow: str) -> tuple:
     `W + blur * 4` 必然 `TypeError: int + str`。
     层内图形画在 (2b, 2b),故调用方按 `pad - 2b + dx` 贴合即可对齐。
     """
-    from PIL import Image, ImageDraw, ImageFilter
     parts = [p.strip() for p in shadow.split(",")]
     if len(parts) != 4:
         raise SystemExit(fail("card", "BAD_SHADOW",
@@ -47,7 +73,6 @@ def cmd_card(args) -> int:
     results = []
     for src in input_expand(args):
         try:
-            from PIL import Image, ImageDraw
             img = _open(src).convert("RGBA")
             before = src.stat().st_size
             radius = int(args.radius or 0)
@@ -92,7 +117,7 @@ def cmd_watermark(args) -> int:
     results = []
     for src in input_expand(args):
         try:
-            from PIL import Image, ImageDraw, ImageFont
+            from PIL import ImageFont  # 仅此处与 _label_font 用字体,故留在函数内
             img = _open(src).convert("RGBA")
             before = src.stat().st_size
             layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
@@ -153,9 +178,10 @@ def cmd_watermark(args) -> int:
 
 def cmd_stitch(args) -> int:
     """C4:拼接(横/纵;通用补位,公众号双封面仍走 gzh_cover.py)。"""
-    imgs = [_open(p).convert("RGB") for p in input_expand(args)]
-    if len(imgs) < 2:
+    paths = input_expand(args)
+    if len(paths) < 2:
         raise SystemExit(fail("stitch", "USAGE", "至少两张图"))
+    imgs = _load_inputs(paths, "stitch")
     gap = int(args.gap or 0)
     direction = args.direction or "h"
     if direction == "h":
@@ -176,11 +202,17 @@ def cmd_stitch(args) -> int:
         for i in imgs:
             canvas.paste(i, (0, y))
             y += i.height + gap
-    src0 = input_expand(args)[0]
-    out = args.out or out_path_for(src0, args, "stitch", "png")
+    src0 = paths[0]
+    # 修 NameError 后暴露的第二处:--out 传进来是 str,直接 .write_bytes 必
+    # AttributeError;与 card/watermark/montage 一致地转 pathlib.Path
+    out = pathlib.Path(args.out) if args.out else out_path_for(src0, args, "stitch", "png")
     data, meta = encode_image(canvas, "png", 95)
-    out.write_bytes(data)
-    from _img_core import result_item
+    try:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_bytes(data)
+    except OSError as e:
+        return fail("stitch", "WRITE_FAILED", detail=f"{out}: {e}",
+                    hint="检查输出路径与权限,或改用 --out 指定可写位置")
     results = [result_item(src0, out, src0.stat().st_size, data, engine=meta["engine"])]
     return ok_envelope("stitch", results)
 
@@ -210,7 +242,6 @@ def cmd_montage(args) -> int:
     """C5:网格拼图(多稿联络表 contact sheet;与 stitch 同族,一表看全 N 稿)。
     行为契约:图数 < 格数 → 空格留底色(warn 不报错);图数 > 格数 → 报错并给建议网格;
     各图等比缩进格子居中(不裁内容——联络表要"看全");--label 在每格左上角叠 A/B/C/D…。"""
-    from PIL import Image, ImageDraw
     paths = input_expand(args)
     if len(paths) < 1:
         raise SystemExit(fail("montage", "USAGE", "至少一张图(多稿联络表通常 4 张)",
@@ -231,7 +262,7 @@ def cmd_montage(args) -> int:
                               f"{len(paths)} 张图放不进 {rows}x{cols}={cells} 格",
                               hint=f"{len(paths)} 图建议 --grid {_suggest_grid(len(paths))}"
                                    f";或加大网格留空格"))
-    imgs = [_open(p).convert("RGB") for p in paths]
+    imgs = _load_inputs(paths, "montage")
     gap = int(args.gap or 0)
     margin = int(getattr(args, "margin", 0) or 0)
     cw = max(i.width for i in imgs)

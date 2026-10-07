@@ -37,10 +37,11 @@ def write_config_ffmpeg(path: str) -> str:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     p = argparse.ArgumentParser()
     p.add_argument("--dir", default="")
     args = p.parse_args()

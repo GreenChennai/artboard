@@ -3,12 +3,15 @@
 Pillow>=10.0
 playwright>=1.40
 pypdfium2>=4.0
+requests>=2.31
 
 
 # 说明:
 # - v1.9 起导出主路径为 Kiln 原生引擎(单文件,零 Python 依赖),本清单仅供
 #   兜底路径(export_fallback.py)与机检(check_overflow.py)使用 playwright
 # - Pillow 用于 CMYK 打印交付、公众号封面合并等纯像素工序
+# - requests 用于地图模块取瓦片/OSM(fetch_osm_data / map_tiles / probe_tiles);
+#   WGS-84 ↔ GCJ-02 已是本地实现(scripts/_map_mercator.py),**不需要** eviltransform
 
 # ---- 按需安装(不在主线,但对应脚本会用到)----
 # rembg[cpu]  >=2.0   cutout.py 抠图(未装则报 NO_REMBG)

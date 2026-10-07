@@ -76,15 +76,18 @@ def check_file(path: str, min_touch: int, budget_kb: int) -> list[dict]:
     for st in inline:
         for _kind, val in RE_DIM.findall(st):
             dims.append(float(val))
-    big = [d for d in dims if d >= min_touch]
-    if dims and not big:
-        add("TOUCH_TARGET", "FAIL",
-            f"交互元素显式尺寸均 < {min_touch}px(WCAG 2.5.5 AAA 线 {min_touch};最低 24)")
-    elif not dims:
+    # 判据:dims 里**存在** < min_touch 的显式尺寸就提示(此前写成 min(big) < min_touch,
+    # 而 big 的元素都 >= min_touch,该分支永假 → 这项检查从未生效)。
+    small = [d for d in dims if d < min_touch]
+    if not dims:
         add("TOUCH_TARGET_UNKNOWN", "WARN",
             "未能从样式判定触摸目标尺寸(确认主交互 ≥44×44,次要 ≥24×24)")
-    elif min(big) < min_touch:
-        add("TOUCH_TARGET_SMALL", "WARN", f"存在 {min(big):.0f}px 的显式尺寸 < {min_touch}px(次要控件须有间距补偿)")
+    elif len(small) == len(dims):
+        add("TOUCH_TARGET", "FAIL",
+            f"交互元素显式尺寸均 < {min_touch}px(WCAG 2.5.5 AAA 线 {min_touch};最低 24)")
+    elif small:
+        add("TOUCH_TARGET_SMALL", "WARN",
+            f"存在 {min(small):.0f}px 的显式尺寸 < {min_touch}px(次要控件须有间距补偿)")
 
     # ⑤ 图片尺寸与 alt
     for tag in RE_IMG.findall(html):
@@ -113,10 +116,11 @@ def check_file(path: str, min_touch: int, budget_kb: int) -> list[dict]:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
 
     class P(argparse.ArgumentParser):
         def error(self, message):

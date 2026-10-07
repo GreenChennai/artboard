@@ -1,14 +1,15 @@
 """artboard 任务预检:渲染环境一次查清,输出人类可读清单 + 单行 JSON。
 
 检查项与严重级:
-  FATAL — WPI 不可用且无兜底浏览器:静态导出无法进行,终止。
-  WARN  — ffmpeg 缺失:GIF 降级 Pillow、MP4 不可用;任务含动图时先向用户要路径。
+  FATAL — config.json 无法解析,或 Kiln 与兜底浏览器双双缺失:无法出图,终止。
+  WARN  — Kiln 缺失(走兜底)、ffmpeg 缺失(GIF 降级 Pillow、MP4 不可用)。
   WARN  — 字体/vendor 资产缺失:提示补齐。
 
-用法: python preflight.py [--quick]
+用法: python scripts/preflight.py      # 无参数;--help 看用法
 退出码: 0=可开工; 1=存在 FATAL。
 """
 
+import argparse
 import json
 import os
 import shutil
@@ -32,10 +33,18 @@ def emit(results: list[dict]) -> None:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+    # 只有 -h/--help 这一个参数:本预检不带选项,但 `--help` 必须能秒回用法,
+    # 不能再被当成"跑一遍完整预检"(README 承诺"权威参数 = 各脚本 --help")。
+    ap = argparse.ArgumentParser(
+        description="artboard 任务预检:渲染环境一次查清(人类可读清单 + 单行 JSON)",
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--version", action="version", version="artboard preflight")
+    ap.parse_args()
     results: list[dict] = []
 
     def add(name: str, level: str, detail: str, hint: str = "") -> None:
@@ -163,7 +172,12 @@ def main() -> int:
 
     # 7.3.1 MCP / Bridge 通道(默认关闭;开启见 references/mcp-assets.md)
     mcp_on = cfg("mcp_enabled")
-    fixed_port = cfg("bridge_port", 0) or 0
+    # bridge_port 的 0 = 随机端口(config.example.json 的约定);cfg() 现在会把
+    # JSON 数字回传成字符串("0" 是真值),所以这里必须按整数判 >0,不能按真值判。
+    try:
+        fixed_port = int(cfg("bridge_port", 0) or 0)
+    except (TypeError, ValueError):
+        fixed_port = 0
     add("MCP/Bridge 通道", "PASS",
         ("已启用" if mcp_on else "未启用(默认)")
         + (f";Bridge 固定端口 {fixed_port}" if fixed_port else ";Bridge 随机端口"),

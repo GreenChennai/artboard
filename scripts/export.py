@@ -178,10 +178,11 @@ def run_playwright_fallback(args) -> tuple[int, dict]:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
 
     p = argparse.ArgumentParser(description="artboard → Kiln 导出")
     p.add_argument("--source", required=True, help="项目目录 / HTML 文件")

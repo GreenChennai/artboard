@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import ast
 import datetime
 import glob
 import io
@@ -32,17 +33,26 @@ SCAN_GLOBS = ["SKILL.md", "README.md", "references/**/*.md", "docs/*.md", "fonts
 
 
 def docstring_purpose(path: str) -> str:
-    """docstring 首个非空行(模块 docstring 优先;取到 80 字)。"""
-    with io.open(path, encoding="utf-8", errors="replace") as f:
-        text = f.read(4000)
-    m = re.match(r'^\s*(?:#.*\n)*\s*"""(.*?)"""', text, re.S)
-    if not m:
-        m = re.match(r"^\s*(?:#.*\n)*\s*'''(.*?)'''", text, re.S)
-    if m:
-        for line in m.group(1).strip().splitlines():
-            line = line.strip()
-            if line:
-                return line[:80]
+    """模块 docstring 首个非空行(取到 80 字)。
+
+    用 ast 而不是正则:此前正则在两个真实形态上失手,生成物"用途"列出过
+    源码碎片(`import argparse` / `last = ""`)或空白 ——
+    ① 带前缀的 docstring(`r` + 三引号,fetch_model.py / config_gui.py):三引号前
+       多一个字母,正则认不出;
+    ② docstring 长于 4000 字读取窗口(check_mobile_width.py / upload_imgchr.py):
+       窗口里找不到收尾三引号,回溯后把收尾引号当开头,截出正文之后的源码。
+    ast 不执行代码,只是解析;语法错误时返回空(产物渲染为「—」,不猜)。
+    """
+    try:
+        with io.open(path, encoding="utf-8", errors="replace") as f:
+            tree = ast.parse(f.read())
+        doc = ast.get_docstring(tree) or ""
+    except (OSError, SyntaxError, ValueError):
+        doc = ""
+    for line in doc.strip().splitlines():
+        line = line.strip()
+        if line:
+            return line[:80]
     return ""
 
 
@@ -93,7 +103,8 @@ def write_outputs(reg: dict) -> tuple[str, str]:
     lines = ["# artboard 脚本总表(生成物)",
              "",
              f"> 由 `scripts/gen_script_index.py` 生成 @ {reg['generated_at']};**不要手改**。",
-             "> 权威参数 = 各脚本 `--help`;分册末尾「本册用到的脚本」是就近索引。",
+             "> 权威参数 = 各脚本 `--help`;少数无 argparse 的脚本(junction/preflight/export_local 等)"
+            "打印模块说明与用法;分册末尾「本册用到的脚本」是就近索引。",
              ""]
     for internal, label in ((False, "脚本"), (True, "内部 / 维护(白名单,不进 Agent 上下文)")):
         rows = [e for e in reg["scripts"] if e["internal"] == internal]
@@ -101,7 +112,7 @@ def write_outputs(reg: dict) -> tuple[str, str]:
                   "| 脚本 | 用途(=docstring 首行) | 被哪些文档提到 |", "|---|---|---|"]
         for e in rows:
             docs = "、".join(e["used_by"][:6]) + ("…" if len(e["used_by"]) > 6 else "")
-            purpose = e["purpose"].replace("python", "")  # 防生成物行被判为「python … .py」调用(selfcheck refs)
+            purpose = (e["purpose"] or "—").replace("python", "")  # 防生成物行被判为「python … .py」调用(selfcheck refs)
             lines.append(f"| {e['name']} | {purpose} | {docs or '—'} |")
         lines.append("")
     docs_path = os.path.join(SKILL, "docs", "scripts.md")
@@ -111,7 +122,26 @@ def write_outputs(reg: dict) -> tuple[str, str]:
 
 
 def main() -> int:
-    check = "--check" in sys.argv
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+    # 参数必须在**写盘之前**判定:此前 `--help` 不被识别,会被当成无参调用,
+    # 真的重写 registry.json + docs/scripts.md(smoke 自检因此弄脏工作区)。
+    argv = [a for a in sys.argv[1:]]
+    if any(a in ("-h", "--help") for a in argv):
+        print(__doc__.strip())
+        print("\n参数:\n  (无)      重新生成 scripts/registry.json + docs/scripts.md\n"
+              "  --check   只校验生成物是否过期(退出码 1 = 过期)")
+        return 0
+    unknown = [a for a in argv if a != "--check"]
+    if unknown:
+        print(json.dumps({"ok": False, "error": "USAGE",
+                          "hint": f"未知参数 {unknown};本脚本只接受 --check(校验)或无参(重建)"},
+                         ensure_ascii=False))
+        return 2
+    check = "--check" in argv
     reg = build()
     reg_path = os.path.join(SCRIPTS, "registry.json")
     if check:
@@ -130,6 +160,13 @@ def main() -> int:
                           "count": len(reg["scripts"])}, ensure_ascii=False))
         return 0
     rp, dp = write_outputs(reg)
+    # 收敛一轮:docs/scripts.md 自身也在 mention 扫描范围内(它列出全部脚本名),
+    # 故首轮 build 基于"写盘前"的旧文档;写盘后 mention 集会变,`--check` 会立刻
+    # 报 REGISTRY_STALE(自检门禁永远绿不了)。重算一次,变了就再写(二轮必收敛)。
+    reg2 = build()
+    if reg2["scripts"] != reg["scripts"]:
+        reg = reg2
+        rp, dp = write_outputs(reg)
     orphan = [e["name"] for e in reg["scripts"] if not e["internal"] and not e["used_by"]]
     print(json.dumps({"ok": True, "cmd": "gen_script_index", "registry": rp, "docs": dp,
                       "count": len(reg["scripts"]), "internal": sum(1 for e in reg["scripts"] if e["internal"]),

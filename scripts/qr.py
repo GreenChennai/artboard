@@ -13,11 +13,10 @@
 import argparse
 import json
 import os
-import subprocess
 import sys
 import urllib.parse
 
-from _config import cfg
+from _config import proxy_active
 
 PROXY = None  # 惰性读取
 
@@ -27,9 +26,13 @@ def emit(obj: dict) -> None:
 
 
 def proxy() -> str | None:
+    """代理唯一出口:_config.proxy_active()(proxy_enabled 开才用,否则直连)。
+
+    禁止在这里直读 cfg("proxy") —— config.json 里残留的死代理会让草料 API 必定失败。
+    """
     global PROXY
     if PROXY is None:
-        PROXY = cfg("proxy") or None
+        PROXY = proxy_active() or None
     return PROXY
 
 
@@ -94,10 +97,11 @@ def decode_api(url: str) -> dict:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
 

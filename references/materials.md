@@ -69,8 +69,8 @@ S="<skill>/scripts"
 # 自动档:pexels → pixabay → 爬虫补位(key 已配用户级环境变量)
 python $S/fetch_asset.py --query "coffee cup dark background" --theme promo-coffee --download --limit 6
 # 指定来源 / 竖图 / 插画
-python $S/fetch_asset.py --query "咖啡拉花特写" --source pexels --orientation portrait --download
-python $S/fetch_asset.py --query "mascot cute" --source pixabay --image-type illustration --download
+python $S/fetch_asset.py --query "咖啡拉花特写" --theme promo-coffee --source pexels --orientation portrait --download
+python $S/fetch_asset.py --query "mascot cute" --theme promo-mascot --source pixabay --image-type illustration --download
 ```
 - 输出单行 JSON:`downloaded[]` 含 file/source/license/author/risk。
 - 落盘:`<studio>/materials/<theme>/`,同目录自动维护 `CREDITS.md`(文件|来源|作者|授权|来源页|日期)。
@@ -101,7 +101,7 @@ python $S/cutout.py hero.jpg --quality high --dml
   `https://github.com/danielgatis/rembg/releases/download/v0.0.0/<模型>.onnx` 放进对应目录即可(pooch 校验 hash 通过不重下)。
 - **选图经验(实测)**:主体与背景明度差越大抠图越稳;黑杯子配暗底抠出来也没法合成进深色海报
   (主体会融进背景)——深色海报优先选亮主体或玻璃/暖色主体,或干脆用实拍原图做底不抠图。
-- 中文文件名素材可直接进 `src/img/` 并在 CSS `url()` 引用(实测 WPI 静态服务无碍);`版权风险-` 前缀**不许因引用方便而改名**。
+- 中文文件名素材可直接进 `src/img/` 并在 CSS `url()` 引用(实测 Kiln 浏览器车道渲染无碍:`--source <项目>/src` 导出后中文名图片正常出图);`版权风险-` 前缀**不许因引用方便而改名**。
 
 ## 4. 本地插画包与矢量素材源(状态以磁盘为准,2026-09 核对)
 

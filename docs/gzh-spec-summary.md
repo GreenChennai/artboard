@@ -49,7 +49,10 @@
 1. 零依赖自研解析器(不引 python-markdown/Node)← 部署环境无该依赖,且组件样式表完全自控;
 2. 列表不用 `<ul>/<ol>` 而用 section 逐项排 ← 规避编辑器对列表样式的重置(doocs/md 对 li 也做 `display:block` 处理);
 3. 分割线用 border-top section ← doocs/md 用 transform scale 实现 0.5px 线,公众号编辑器对 transform 支持不稳,取 border 兜底;
-4. 主色 4 套主题 ← doocs/md `--md-primary-color` 单主色变量思路的静态化(微信蓝 #576b95 为 default);
+4. 主色 6 套统一主题 ← doocs/md `--md-primary-color` 单主色变量思路的静态化;
+   迭代后期收敛到唯一色源 `scripts/_gzh_theme.py`(ink/night/warm/grass/red/mono);
+   本文 2026-09 初稿写的"微信蓝 #576b95 为 default"已作废——旧名 `default` 现是 `ink` 的
+   弃用别名,主色 `#3b82f6`;
 5. `gzh_article.py check` 的白名单 = §一硬规则的机器化。
 
 ### 来源清单(排版)

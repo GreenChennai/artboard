@@ -145,6 +145,11 @@ def check(path: str) -> dict:
 
 
 def main() -> int:
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     ap = argparse.ArgumentParser(description="Brief Gate 开工前检查单机检(细则见 references/intake.md)")
     ap.add_argument("file", help="design-prompt.txt 路径")
     args = ap.parse_args()

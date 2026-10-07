@@ -50,23 +50,25 @@
 | 孤字 | 段落末行仅 1 个汉字——排版硬禁(typography-rules.md) |
 | tabular-nums | 等宽数字;数据列必须使用以垂直对齐 |
 | 反 AI 味自检 | 12 条交付前清单(guardrails.md §5) |
-| 矢量枢纽 | HTML 先打印成 Chromium 单页矢量 PDF,再衍生 SVG/EPS/转曲 PDF(ADR 0006) |
-| 转曲(outline) | 文字变字形轮廓路径;矢量交付产物一律转曲,防换机换字体走样(ADR 0007) |
-| -print.pdf | Chromium 原生打印 PDF:文字内嵌可编辑,AI 打开可改字(需装同款字体) |
-| -outline.pdf | ghostscript 转曲 PDF:任何机器视觉一致,文字不可选 |
-| AI 兼容 PDF | Illustrator 可直接打开编辑的 PDF;真 .ai = 在 AI 里打开它另存一次(ADR 0008) |
-| SSIM 验收 | 转换产物栅格化后与基准截图算结构相似度,≥0.95 合格 ≥0.99 优秀(vector-export.md) |
+| 矢量枢纽 | **(WPI 时代概念,v1.9 起消亡)** HTML 先打印成 Chromium 单页矢量 PDF,再衍生 SVG/EPS/转曲 PDF(ADR 0006);现行 SVG/PDF/EPS/AI/PPTX 由 Kiln 原生直出,无此中转(vector-export.md §2) |
+| 转曲(outline) | 文字变字形轮廓路径。**不再强制**:Kiln 路线下 SVG/PDF/AI/PPTX 保留真文本可整句编辑,只有 EPS 的中文仍可能轮廓化(旧口径「矢量交付产物一律转曲」随 v1.9 消亡;vector-export.md §1–2 + §5 验收清单) |
+| 真文本(CID) | v1.9 起矢量产物的文本形态:PDF/AI 用 CIDFontType2/Identity-H,可选中可复制、可在 Illustrator 改字;EPS 为 Latin 真文本 + 中文轮廓(vector-export.md §1) |
+| -print.pdf | **(WPI 时代概念,v1.9 起消亡)** Chromium 原生打印 PDF;现行 PDF 由 Kiln 直出即 CID 真文本,不受 `-print` 命名约定约束 |
+| -outline.pdf | **(WPI 时代概念,v1.9 起消亡)** ghostscript 转曲 PDF;现行链已不依赖 ghostscript / pikepdf(全链退役),也不再强制转曲(vector-export.md §2) |
+| AI 兼容 PDF | Illustrator 可直接打开编辑的 PDF(PDF 兼容流,保留 CID 真文本);真 .ai = 在 AI 里打开它另存一次(ADR 0008) |
+| AI 保真度门禁 | 转换产物栅格化后与基准 PNG 按 MAD 算相似度;**默认阈值 ≥97.0**(`scripts/ai_fidelity.py:37` 的 `--min-score 97.0`)——取代 WPI 时代的 SSIM ≥0.95/0.99 |
+| SSIM 验收 | **(WPI 时代概念,v1.9 起消亡)** 结构相似度验收(≥0.95 合格 / ≥0.99 优秀)随浏览器基线退役;现行保真度走上游 `bench/fidelity.py` 与本技能 `scripts/ai_fidelity.py`(vector-export.md §2) |
 | 矢量安全清单 | 16 种 CSS 原语转换实测表;**五条禁令**:硬切透明渐变 / mix-blend-mode / 渐变字 / conic-gradient / 渐变 alpha-stop 压圆角(vector-export.md §5) |
 | 矢量直出 | v1.9 起 Kiln 原生直出 SVG/PDF/EPS/AI/PPTX(真文本可编辑),替代旧 WebHtml2VectorEdit 转换核心 |
 | kiln import | v1.9 起的逆向:外部 PDF/AI → 场景图 → 规范化 HTML(kiln-cli import 子命令) |
 | OCG | PDF 可选内容组;ai.pdf 的图层载体,Acrobat/浏览器可开关 |
 | 蒙层 | 图片之后的同级渐变遮罩,单独成层保证盖在照片上 |
 | 面板底色克隆 | 分层手术:有底色又含内容的元素,底色剥离进图形层,本体转结构 |
-| 模式 P(海报循环) | 动效分册的循环模式:无缝循环 2–6s,首帧=末帧,终态=合格静态海报(animation.md §〇) |
+| 模式 P(海报循环) | 动效分册的循环模式:无缝循环 2–6s,首帧=末帧;**静态版要确定性必须来自"有限动画的合格终态"**(`infinite` 的静态相位不确定,实测 2026-10-07),见 animation.md §〇/§一 |
 | 模式 S(场景卡) | 动效分册的视频模式:插进口播之间的信息卡/图解卡,五段式一次性时间轴,全 finite,必须有出场 |
 | 五段式 | 模式 S 时间轴契约:前置静置→入场→持住→出场→收尾静置(ADR-0012) |
-| 前置静置 | 五段式第一段:空卡 ≥2.0s;v1.9 起纯作构图留白(Kiln 时间轴 t=0 即首帧,无录制偏移) |
-| 录制偏移 | (WPI 时代概念,v1.9 起消亡)Kiln 逐帧求值 t=0 即首帧,无录制偏移 |
+| 前置静置 | 五段式第一段:空卡 ≥2.0s;v1.9 起不再从真实时间轴实时采样,但仍要**吸收捕获起点偏移**(实测 2026-10-07:GIF/MP4 捕获起点在 CSS 时间轴 ≈1.0s 处;**200–400px 0.9–1.0s / 1080×1920 1.0–1.25s**),故 ≥2.0s 照旧是硬规则 |
+| 录制偏移 | (WPI 时代概念,v1.9 起消亡)旧 WPI 从「页面加载完成后的稳定点」实时采样、比 CSS 时间轴 0s 晚 1.7–1.9s(1080×1920),并靠连续稳定帧 early_stop 提前停;Kiln 改为逐帧求值、总长由 `--max-wait` 决定(帧数 = fps × max-wait)。**机制换了不等于偏移消失**:实测 2026-10-07 捕获起点仍在 CSS 时间轴 ≈1.0s 处(1080×1920 1.0–1.25s)。**另**:静态导出的"快进到有限动画终态"是另一回事,别与录制偏移混为一谈 |
 | 出场三原则 | 比入场短(0.4–0.6s)、方向延续(入向=出向)、stagger 反序(后进先出) |
 | 语义断行 | 中文标题断点手动给:两行=两个 `.tl` span;断点选语法边界,禁止词中间劈开(typography-rules.md §一) |
 | 逐行三合一 | 视频卡标题逐行 span:断行、换色、入场 stagger 三者共用同一 span 边界 |

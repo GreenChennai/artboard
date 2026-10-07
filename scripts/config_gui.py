@@ -94,7 +94,7 @@ def load_config() -> dict:
     for path in (CONFIG_PATH, EXAMPLE):
         if os.path.isfile(path):
             try:
-                return json.load(open(path, encoding="utf-8"))
+                return json.load(open(path, encoding="utf-8-sig"))
             except Exception:
                 pass
     return {}
@@ -212,7 +212,8 @@ class App(tk.Tk):
         # 与 config.json 的其它键合并(不丢手工写过的内容)
         if os.path.isfile(CONFIG_PATH):
             try:
-                with open(CONFIG_PATH, encoding="utf-8") as f:
+                # utf-8-sig:带 BOM 的 config.json 也能读出旧键参与合并
+                with open(CONFIG_PATH, encoding="utf-8-sig") as f:
                     old = json.load(f)
                 if isinstance(old, dict):
                     old.update(data)
@@ -246,6 +247,17 @@ class App(tk.Tk):
 
 
 if __name__ == "__main__":
+    # -h/--help 必须在这里拦下:否则会直接进 Tk 主循环,在无桌面/CI 场景**挂死**
+    # (自检冒烟因此改用 --locate)。
+    if "-h" in sys.argv or "--help" in sys.argv:
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+        print(__doc__ or "artboard 配置编辑器(Tk GUI)")
+        print("用法: python scripts/config_gui.py [--locate]")
+        print("      --locate  打印定位结果后退出(排障/自检用,不弹窗)")
+        raise SystemExit(0)
     # 排障/自检:打印定位结果后退出(不弹窗)。
     #   python scripts/config_gui.py --locate
     #   tools\config-editor\artboard-config-editor.exe --locate

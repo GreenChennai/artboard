@@ -234,6 +234,11 @@ def check_file(fp, strict=False):
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     ap = argparse.ArgumentParser(description="微信公众号 HTML / 内联 SVG 动效机检")
     ap.add_argument("paths", nargs="+", help="HTML 文件或目录")
     ap.add_argument("--json", action="store_true", help="输出 JSON")

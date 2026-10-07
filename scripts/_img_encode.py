@@ -27,6 +27,20 @@ def _flatten(img, bg_hex: str):
     return img, False
 
 
+def _quantize(img, colors):
+    """E1 的 `--colors N`:调色板量化(ADAPTIVE)到 ≤N 色,再回 RGBA 交编码器。
+
+    此前 `cmd_convert` 引用本函数但全仓库从未定义 → `convert --colors` 必 NameError
+    (被宽 except 吞成 results[].error)。输出回 RGBA,故 png/jpg/webp 等格式都生效;
+    png 无损,产物颜色数确实 ≤N;有损格式只是"量化这一步到 N 色",编码会再引入噪点。
+    """
+    from PIL import Image
+    n = int(colors)
+    if n < 2:
+        raise ValueError(f"--colors 须 ≥2(1 色请用 card/watermark 的纯色底),收到 {colors}")
+    return img.convert("P", palette=Image.ADAPTIVE, colors=n).convert("RGBA")
+
+
 def _parse_target(s: str) -> int:
     s = s.strip().upper()
     if s.endswith("KB"):
@@ -206,11 +220,16 @@ def cmd_strip_meta(args) -> int:
                 warns.append("ICC_STRIPPED")
             fmt = (src.suffix.lstrip('.') or "png").lower()
             fmt = {"jpg": "jpeg"}.get(fmt, fmt)
-            out = args.out or out_path_for(src, args, "strip",
-                                           "jpg" if fmt == "jpeg" else fmt)
+            # --out 传进来是 str:旧代码在 str 上调 .stat() 必 AttributeError;
+            # 与 card/stitch/montage 一致地转 pathlib.Path,缺 --out 走 out_path_for
+            out = pathlib.Path(args.out) if args.out else out_path_for(
+                src, args, "strip", "jpg" if fmt == "jpeg" else fmt)
+            out.parent.mkdir(parents=True, exist_ok=True)
             img.save(out)
-            item = result_item(src, out, before, out.stat().st_size,
-                               warnings=warns)
+            # result_item 第 4 位是 data(bytes),旧代码传 out.stat().st_size(int)
+            # → "object of type 'int' has no len()";落盘后回读真实字节数
+            data = out.read_bytes()
+            item = result_item(src, out, before, data, warnings=warns)
             results.append(item)
         except SystemExit:
             raise

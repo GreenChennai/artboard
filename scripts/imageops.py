@@ -130,7 +130,10 @@ def _add_encode(sub) -> None:
     g.add_argument("--icc", choices=["keep", "strip", "srgb"], default="keep")
     g.add_argument("--exif", choices=["keep", "strip"], default="strip")
     g.add_argument("--dpi"); g.add_argument("--progressive", action="store_true")
-    g.add_argument("--optimize", action="store_true"); g.add_argument("--colors", type=int)
+    g.add_argument("--optimize", action="store_true")
+    g.add_argument("--colors", type=int,
+                   help="调色板量化到 N 色(≥2;ADAPTIVE;png/jpg/webp 等所有 --to 通用,"
+                        "png 无损故产物颜色数 ≤N,有损格式为量化后近似)")
     _add_global(g)
 
     g = sub.add_parser("compress", help="E2 目标体积压缩(二分逼近)")
@@ -279,8 +282,10 @@ def _cmd_deps(_args) -> int:
                 "pillow": {"available": pill},
                 "ffmpeg": caps,
                 "optional_py": {m: _have(m) for m in ("numpy", "cv2", "smartcrop")},
-                "externals": {"oxipng": core.ffmpeg_path() and None,
-                              "imagemagick": None,
+                # 全仓库 grep:"externals.oxipng" 只有这一处生产、零消费(此前是
+                # `core.ffmpeg_path() and None` —— 恒 None 且拿 ffmpeg 路径当 oxipng 探测),
+                # 故直接删除该字段;imagemagick 保留(同样是"存在则用"的占位说明)。
+                "externals": {"imagemagick": None,
                               "note": "外部 CLI 仅『存在则用』;convert 会被 Windows 冒名(NTFS convert)"},
             }}
     core.emit(info)
@@ -489,15 +494,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv=None) -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     args = build_parser().parse_args(argv)
     if not core.load_pillow():
         return core.fail(args.cmd, "NO_PILLOW", "Pillow 未安装",
                          hint="pip install -r requirements.txt")
-    args.cmd = args.cmd
     return args.func(args)
 
 

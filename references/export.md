@@ -132,24 +132,51 @@ export.py 输出**单行 JSON**:
 
 ## 已知行为(Kiln 语义)
 
-- **动画 = 逐帧求值**:GIF/MP4 按 @keyframes + animation 声明逐帧渲染,
-  `--max-wait` 即五段式总时长;静态图求值到 t=0(首帧),不依赖浏览器收敛;
+- **静态图(PNG/JPG)= 把有限动画「快进到终态」再截**,不是 t=0 首帧;`--max-wait` **只对 GIF/MP4 有意义**
+  (`scripts/export.py:202-203` 参数说明原文:「GIF/MP4 时作为动画总时长(秒),其余格式忽略」)。
+  实测(2026-10-07,本机,Kiln 经 `scripts/export.py`,结果 JSON `engine:"browser"`、`frames:1`):
+  - `.box{animation:toBlue 2s linear forwards}`(红→蓝)→ 出图 = 纯蓝 **RGB(0,0,255)**;
+    `.fade{opacity:0→1, 2s linear forwards}` → 出图 = 纯绿 **RGB(0,255,0)**(不是首帧的透明态);
+  - 带延迟的 `.b{animation:toBlue 2s linear 1s forwards}`(总 3s 才到终态)同样 = 纯蓝 ——
+    **延迟不影响"快进到终态"**;
+  - **`infinite` 动画不收敛,静态相位不确定**:`.c{animation:toBlue 2s linear infinite}` 连导三次分别为
+    RGB(198,0,57) / (200,0,55) / (185,0,70),换算相位 ≈0.45s / 0.43s / 0.55s(2s 周期)——
+    静态交付(封面/缩略图)不要依赖 `infinite`(见 `animation.md` §一【硬】、§五);
+- **动画(GIF/MP4)= 逐帧求值 + 固定时长**:帧数 = `--fps` × `--max-wait`
+  (实测 `--format GIF --fps 10 --max-wait 2` → 20 帧、每帧 100ms;`--max-wait 6` → 60 帧;
+  结果 JSON `engine:"browser-anim"`)。**但第一帧不是动画的 0% 态**:捕获起点在 CSS 时间轴
+  **≈1.0s 处**(200–400px 页面实测 **0.9–1.0s** / **1080×1920 交叉验证 1.0–1.25s**,均 2026-10-07),
+  动画结束后的余帧冻结在终态。三组独立样例的推导:
+  - 200×200、4s 无延迟动画:第 30 帧(3.0s)到纯蓝 → 起点 = 4.0 − 3.0 = **1.0s**;
+  - 同页 2s 延迟 + 4s 动画:第 50 帧(5.0s)到纯蓝 → 起点 = 6.0 − 5.0 = **1.0s**
+    (运动起点落在第 ~10 帧 = 2.0s 延迟 − 1.0s,自洽);
+  - **1080×1920 渐变探针**(`--format GIF --fps 4 --max-wait 8`:两条 4s 红→蓝,`.a` 无延迟 / `.b` +2s 延迟):
+    R 通道序列 `[190,190,158,142,…,45,29,13,13,13,…]`(每帧 0.25s,调色板步长 16 ≈ 255/16);
+    首帧 R=190 → 进度 0.255 → CSS ≈1.02s;末步 R=13 → 进度 0.949 → CSS ≈3.80s(第 11 帧,捕获 2.75s)
+    → 起点 ≈1.05s;`.b` 独立算出同一值 ⇒ 该画幅上 **1.0–1.25s**;
+  ⇒ **从 0s 起播的入场,前约 1s 会被截掉**(对策见 `animation.md` §八 前置静置 ≥2.0s;
+  最坏值 1.25s 时仍留 ≥0.75s 余量,故该硬规则照旧保留);
 - 超大画布守门:单边 >32768px 或像素面积超限时显式报错(不静默截断);
 - MP4 无 ffmpeg 自动降级 GIF 流并告警;GIF 永远可出(内置量化器);
 - `--scale 4/8` 仅特殊需求用(印刷);常规 2。
+
+> **车道**:`scripts/export.py` **没有** `--engine` 参数(实跑 `--engine native` →
+> `error: unrecognized arguments`,`[exit code: 2]`);浏览器/自研车道由 Kiln 内部决定,
+> 结果 JSON 的 `engine` 字段回报实际车道(静态有浏览器时 `browser`,动画为 `browser-anim`)。
+> 故本文的静态/动画语义均按**浏览器车道**记(车道细节见 `docs/glossary.md`「Kiln 双车道」)。
 
 ## 本册用到的脚本
 
 | 脚本 | 何时用 | 一行示例 |
 |---|---|---|
 | `export.py` | 导出主路径 | `python scripts/export.py --source … --output …` |
-| `export_fallback.py` | 无 Kiln 兜底(仅 PNG) | `python scripts/export_fallback.py --source src/index.html -o o.png` |
+| `export_fallback.py` | 无 Kiln 兜底(仅 PNG) | `python scripts/export_fallback.py --source <项目>/src/index.html --output <项目>/export/out.png` |
 | `make_bats.py` | 双击导出 bat | `python scripts/make_bats.py <项目> --embed` |
-| `export_local.py` | 本机直出变体 | `python scripts/export_local.py --help` |
+| `export_local.py` | 项目内一键导出(被 `scaffold.py` 投放为 `<项目>/src/导出.py`) | 在项目 `src/` 目录下双击 `导出.py`(或在该目录跑 `python 导出.py`)——**没有命令行参数,也不能在技能 `scripts/` 下运行** |
 | `pack.py` | 交付自包含打包 | `python scripts/pack.py <slug>` |
 | `slim_project.py` | 项目瘦身 | `python scripts/slim_project.py --help` |
 | `setup_kiln.py` | Kiln 引擎部署 | `python scripts/setup_kiln.py` |
 | `setup_ffmpeg.py` | ffmpeg 部署 | `python scripts/setup_ffmpeg.py` |
-| `doctor.py` | 环境诊断 | `python scripts/doctor.py` |
+| `doctor.py` | 存量项目体检(扫 studio 目录) | `python scripts/doctor.py <studio_dir>` |
 
 > 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

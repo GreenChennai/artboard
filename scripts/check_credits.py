@@ -41,10 +41,11 @@ def read_credits_files(credits_path: str) -> set[str]:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     ap = argparse.ArgumentParser(description="素材版权复核(img ↔ CREDITS 对账;详见脚本头)")
     ap.add_argument("img_dir", help="项目 src/img 目录")
     ap.add_argument("--credits", default="", help="CREDITS.md 路径(缺省自动找)")

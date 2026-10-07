@@ -126,8 +126,12 @@ python scripts/check_credits.py "<项目>/src/img"               # CREDITS 对�
 python scripts/asset_hunt.py --query x --theme x --ensure-browser --visible
 
 # 日常:一条命令全自动(默认 --headless=new 后台,不抢用户浏览器)
-python scripts/asset_hunt.py --query "咖啡 拉花" --theme promo-coffee --limit 8     [--transparent] [--orientation portrait|landscape] [--color "#2f6fed"]     [--strict] [--sites huaban,svgrepo,pexels,pixabay]
+python scripts/asset_hunt.py --query "咖啡 拉花" --theme promo-coffee --limit 8     [--transparent] [--orientation any|landscape|portrait] [--color "#2f6fed"]     [--strict] [--sites huaban,svgrepo,pexels,pixabay]
 ```
+
+> `--orientation` 的取值**按各脚本自己的 argparse 抄,别互相搬**(值写错 argparse 直接报错退出):
+> `asset_hunt.py` = `any`(默认,不限)/ `landscape` / `portrait`;
+> `fetch_asset.py` = `""`(默认,不限)/ `landscape` / `portrait` / **`square`**(多一个方图)。
 
 - 狩猎 hub:**固定端口 8811 + 固定长效 token**(config `bridge_hunt_token`,首次自动生成)
   → 扩展凭据永久有效,配合 alarms 自愈 = **绑定一次,登录常态化**(D9);

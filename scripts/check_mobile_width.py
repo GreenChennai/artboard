@@ -77,6 +77,11 @@ def collect(paths, exclude=()):
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     ap = argparse.ArgumentParser(description="手机窄屏横向溢出的机检")
     ap.add_argument("paths", nargs="+", help="HTML 文件或目录")
     ap.add_argument("--widths", default=",".join(map(str, DEFAULT_WIDTHS)),

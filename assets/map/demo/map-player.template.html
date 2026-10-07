@@ -1,0 +1,1748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>矢量地图 · 动画预设播放器 v7.2</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#0b0d14; color:#e8e6f2; font-family:'Source Han Sans SC','Microsoft YaHei',sans-serif;
+         display:flex; gap:22px; padding:28px 30px 40px; min-height:100vh; align-items:flex-start; }
+  .left { flex:1; min-width:0; }
+  h1 { font-size:24px; font-weight:900; letter-spacing:.05em; margin-bottom:4px; }
+  .sub { color:#8f89a8; font-size:13px; margin-bottom:16px; }
+  .stage { background:#12151f; border:1px solid #232842; border-radius:12px; padding:14px; }
+  .mapwrap { position:relative; overflow:hidden; border-radius:6px; cursor:grab;
+             height:min(78vh, 980px); background:var(--bgc,#10131c); }
+  .mapwrap.dragging { cursor:grabbing; }
+  .mapwrap canvas { position:absolute; left:0; top:0; width:100%; height:100%; }
+  .mapwrap canvas#fx { pointer-events:none; }
+  #datasrc { position:absolute; left:-99999px; top:0; width:300px; height:300px; overflow:hidden; }
+  .hud { position:absolute; right:10px; top:10px; display:flex; gap:8px; z-index:5; }
+  .hud button { background:rgba(14,11,30,.82); color:#cfd3ea; border:1px solid rgba(255,255,255,.18);
+                border-radius:8px; padding:6px 12px; font:600 12.5px 'Source Han Sans SC',sans-serif;
+                cursor:pointer; backdrop-filter:blur(3px); }
+  .hud button:hover { border-color:#4a547a; }
+  .zoomtag { position:absolute; left:10px; bottom:10px; z-index:5; font:600 12px 'Source Han Sans SC',sans-serif;
+             color:#8f89a8; background:rgba(14,11,30,.75); border:1px solid rgba(255,255,255,.14);
+             border-radius:7px; padding:4px 10px; pointer-events:none; }
+  .meta { margin-top:12px; font-size:13px; color:#8f89a8; line-height:1.7; }
+
+  .panel { width:300px; flex-shrink:0; position:sticky; top:28px;
+           background:#12151f; border:1px solid #232842; border-radius:14px; padding:18px; }
+  .panel h2 { font-size:15px; font-weight:700; color:#cfd3ea; margin-bottom:4px; letter-spacing:.06em;
+              display:flex; justify-content:space-between; align-items:baseline; }
+  #fps { font-size:12px; color:#6f6a86; font-weight:400; }
+  .ver { color:#2ee6a8; font-size:11.5px; margin-bottom:10px; }
+  .perf { font-size:11.5px; color:#6f6a86; margin-bottom:12px; line-height:1.6; }
+  .grp-t { font-size:12px; color:#6f6a86; letter-spacing:.14em; margin:14px 0 8px; }
+  .row { display:flex; align-items:center; justify-content:space-between; gap:10px;
+         padding:9px 12px; border:1px solid #232842; border-radius:10px;
+         background:#161a28; margin-bottom:8px; }
+  .row .txt b { display:block; font-size:14px; font-weight:600; color:#e8e6f2; }
+  .row .txt i { display:block; font-style:normal; font-size:11.5px; color:#8f89a8; margin-top:2px; }
+  .sw { position:relative; display:inline-block; vertical-align:middle; width:40px; height:22px;
+        flex-shrink:0; cursor:pointer; }
+  .sw input { display:none; }
+  .sw em { position:absolute; inset:0; background:#252b42; border-radius:999px; transition:.2s; }
+  .sw em::after { content:''; position:absolute; left:3px; top:3px; width:16px; height:16px;
+                  border-radius:50%; background:#7d7a95; transition:.2s; }
+  .sw input:checked + em { background:#2e5f52; }
+  .sw input:checked + em::after { transform:translateX(18px); background:#2ee6a8; }
+  select { background:#1b2033; color:#e8e6f2; border:1px solid #2c3354; border-radius:8px;
+           padding:6px 8px; font-size:13px; margin-top:8px; width:100%; }
+  .btn { width:100%; background:#1b2033; color:#cfd3ea; border:1px solid #2c3354; border-radius:8px;
+         padding:8px; font:600 13px 'Source Han Sans SC',sans-serif; cursor:pointer; margin-top:8px; }
+  .btn:hover { border-color:#4a547a; }
+  input[type=range] { width:100%; accent-color:#2ee6a8; margin-top:8px; }
+  .rglab { display:flex; justify-content:space-between; font-size:11px; color:#6f6a86; margin-top:6px; }
+</style>
+</head>
+<body>
+  <div class="left">
+    <h1>矢量地图 · 动画预设播放器 <span style="color:#2ee6a8">v7 · 目标导航 A* + IDM</span></h1>
+    <div class="sub">拖动平移 · <b style="color:#cfd3ea">Alt+滚轮</b> 以鼠标为原点缩放 · 双击或 ⌂ 复位 —— 车流:全部从地图边缘驶入,A* 按交通规则穿城(直行免费/转弯罚/同名大道零罚/禁掉头/环岛禁逆行),35% 带城中途经点兜一圈再从对侧驶出;IDM 跟驰+路口让行;蚂蚁线:虚线相位流。</div>
+    <div class="stage">
+      <div class="mapwrap" id="mapwrap"><canvas id="base"></canvas><canvas id="fx"></canvas>
+        <div class="hud"><button id="reset" title="复位视图">⌂ 复位</button></div>
+        <div class="zoomtag" id="zoomtag">100%</div>
+        <div id="datasrc">__SVG__</div>
+      </div>
+    </div>
+    <div class="meta">双层 Canvas 渲染:静态层仅视图变化时重绘,动态层每帧;加载期路口图
+      (端点聚类+走廊缝合),车流出生即规划全程,IDM 跟驰;蚂蚁线=虚线相位流 + 半分辨率 bloom。</div>
+  </div>
+
+  <div class="panel">
+    <h2>动画预设 <span id="fps">-- fps</span></h2>
+    <div class="ver">v7.2 · __BUILD__ · 目标导航 A* + IDM · 虚线相位蚂蚁线 · bloom</div>
+    <div id="errbox" style="display:none;white-space:pre-wrap;font:11px/1.5 Consolas,monospace;color:#ff8f8f;background:#241418;border:1px solid #552830;border-radius:8px;padding:8px 10px;margin-bottom:12px;max-height:120px;overflow:auto"></div>
+    <div class="perf">开关可叠加;缩放 ≥140% 时网点标注展开引线卡。</div>
+
+    <div class="grp-t">道路</div>
+    <div class="row"><span class="txt"><b>光效律动</b><i>全路网蚂蚁线 · 柔光虚线流(bloom)</i></span>
+      <label class="sw"><input type="checkbox" data-fx="pulse"><em></em></label></div>
+    <div class="row" style="display:block"><span class="txt"><b>寻路动画 A→B</b><i>真实最短路 · 圆滑轨迹+彗尾+能量流</i></span>
+      <label class="sw"><input type="checkbox" data-fx="route"><em></em></label>
+      <select id="routeSel"></select></div>
+    <div class="row"><span class="txt"><b>车流彗星</b><i>边缘驶入 · A* 穿城 · 环岛禁逆行</i></span>
+      <label class="sw"><input type="checkbox" data-fx="traffic" checked><em></em></label></div>
+    <input type="range" min="20" max="200" value="100" id="trafficN">
+    <div class="rglab"><span>车流数量 · 边缘驶入穿城,部分兜一圈后从对侧驶出</span></div>
+
+    <div class="grp-t">建筑</div>
+    <div class="row"><span class="txt"><b>重点标注</b><i>自动选最高楼 · 引线铭牌</i></span>
+      <label class="sw"><input type="checkbox" data-fx="spot" checked><em></em></label></div>
+    <div class="row" style="display:block"><span class="txt"><b>随机巡检</b><i>节奏与并发数量可调</i></span>
+      <label class="sw"><input type="checkbox" data-fx="patrol"><em></em></label></div>
+    <div style="border:1px solid #232842; border-radius:10px; background:#161a28; padding:10px 12px; margin:-4px 0 8px;">
+      <div class="rglab" style="margin:0 0 6px;"><span>节奏 <b id="patrolIvV">500</b>ms/批</span><span>并发 <b id="patrolNV">4</b> 栋</span></div>
+      <input type="range" min="200" max="1500" step="100" value="500" id="patrolIv" style="margin-top:0">
+      <input type="range" min="1" max="15" value="4" id="patrolN" style="margin-top:2px">
+    </div>
+    <div class="row"><span class="txt"><b>网点涟漪</b><i>各网点周期 ping</i></span>
+      <label class="sw"><input type="checkbox" data-fx="ping"><em></em></label></div>
+
+    <div class="grp-t">全局</div>
+    <div class="row" style="display:block"><span class="txt"><b>入场生长</b><i>道路逐级画出→建筑浮现</i></span>
+      <label class="sw"><input type="checkbox" data-fx="boot"><em></em></label>
+      <button class="btn" id="replay">↻ 重播入场</button></div>
+  </div>
+
+<script>
+window.ROUTES = __ROUTES__;
+window.ZONES = __ZONES__;
+window.__stat = {planned: 0, exit: 0, faded: 0};
+var svg = document.querySelector('#datasrc svg');
+var base = document.getElementById('base');
+var bctx = base.getContext('2d');
+var cv = document.getElementById('fx');
+var ctx = cv.getContext('2d');
+var wrap = document.getElementById('mapwrap');
+var VBW = 1600, VBH = 1917;
+var dpr = Math.min(window.devicePixelRatio || 1, 2);
+var CAN_FILTER = (typeof bctx.filter === 'string');
+
+/* ===== 视口 ===== */
+var view = { k: 1, x: 0, y: 0 };
+var viewAuto = true;               // 用户交互前 fit() 自动居中(修复默认左上裁切)
+var geo = { Ws: 0, Hs: 0, Mw: 0, Mh: 0, s0: 0 };
+var staticDirty = true;
+function fit() {
+  var r = wrap.getBoundingClientRect();
+  if (!r.width) return;
+  geo.Ws = r.width; geo.Hs = r.height;
+  geo.Mw = geo.Ws * 1.25;
+  geo.Mh = geo.Mw * VBH / VBW;
+  geo.s0 = geo.Mw / VBW;
+  base.width = cv.width = Math.round(geo.Ws * dpr);
+  base.height = cv.height = Math.round(geo.Hs * dpr);
+  glowCv.width = Math.max(2, Math.round(cv.width * GLOW_SCALE));
+  glowCv.height = Math.max(2, Math.round(cv.height * GLOW_SCALE));
+  if (viewAuto) { view.k = 1; view.x = (geo.Ws - geo.Mw) / 2; view.y = (geo.Hs - geo.Mh) / 2; }
+  clampView();
+  staticDirty = true;
+  applyView();
+}
+function clampView() {
+  var k0 = Math.max(geo.Ws / geo.Mw, geo.Hs / geo.Mh);
+  view.k = Math.max(k0, Math.min(6, view.k));
+  view.x = Math.max(geo.Ws - geo.Mw * view.k, Math.min(0, view.x));
+  view.y = Math.max(geo.Hs - geo.Mh * view.k, Math.min(0, view.y));
+}
+function resetView() {
+  view.k = 1;
+  view.x = (geo.Ws - geo.Mw) / 2;
+  view.y = (geo.Hs - geo.Mh) / 2;
+  viewAuto = true;
+  clampView(); applyView();
+}
+function applyView() {
+  var zt = document.getElementById('zoomtag');
+  if (zt) zt.textContent = Math.round(view.k * 100) + '%';
+}
+function worldToScreen(px, py) {
+  return [view.x + view.k * geo.s0 * px, view.y + view.k * geo.s0 * py];
+}
+function screenToWorld(sx, sy) {
+  return [(sx - view.x) / (view.k * geo.s0), (sy - view.y) / (view.k * geo.s0)];
+}
+function setWorldTransform(c) {
+  c.setTransform(dpr * view.k * geo.s0, 0, 0, dpr * view.k * geo.s0, dpr * view.x, dpr * view.y);
+}
+function viewRect() {   // 可见世界矩形(带 60 单位余量)
+  var a = screenToWorld(0, 0), b = screenToWorld(geo.Ws, geo.Hs);
+  return [a[0] - 60, a[1] - 60, b[0] + 60, b[1] + 60];
+}
+function bbHit(bb, vr) {
+  return bb[0] < vr[2] && bb[0] + bb[2] > vr[0] && bb[1] < vr[3] && bb[1] + bb[3] > vr[1];
+}
+
+/* ===== 主题色(SVG 隐藏但可解析 CSS 变量)===== */
+var _cvt = null, _cvtAt = 0;
+var FX_BY_THEME = { 'dark-tech': '#2ee6a8', 'blueprint': '#9be1ff', 'paper': '#c2412e', 'mono': '#111111' };
+function cvt() {
+  var now = performance.now();
+  if (!_cvt || now - _cvtAt > 500) { _cvt = getComputedStyle(svg); _cvtAt = now; }
+  return _cvt;
+}
+function col(name, fallback) {
+  var v = cvt().getPropertyValue(name).trim();
+  return v || fallback || '#2ee6a8';
+}
+function fxColor() {
+  var th = svg.getAttribute('data-theme') || 'dark-tech';
+  return FX_BY_THEME[th] || '#2ee6a8';
+}
+function showErr(m) {
+  var b = document.getElementById('errbox');
+  if (!b) return;
+  b.style.display = 'block';
+  b.textContent += '[err] ' + m + '\n';
+}
+window.addEventListener('error', function (e) {
+  showErr((e.error && e.error.message) ? e.error.message : (e.message || 'unknown'));
+});
+
+/* ===== 发光精灵 ===== */
+var spriteCache = {};
+function glowSprite(color) {
+  if (spriteCache[color]) return spriteCache[color];
+  var s = document.createElement('canvas');
+  s.width = s.height = 64;
+  var g = s.getContext('2d');
+  var grd = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grd.addColorStop(0, color);
+  grd.addColorStop(0.25, color);
+  grd.addColorStop(1, 'rgba(0,0,0,0)');
+  g.globalAlpha = 0.85;
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 64, 64);
+  spriteCache[color] = s;
+  return s;
+}
+function drawGlow(c2, color, x, y, r, alpha) {
+  var sp = glowSprite(color);
+  c2.globalAlpha = alpha;
+  c2.drawImage(sp, x - r, y - r, r * 2, r * 2);
+}
+
+/* ===== 几何缓存(全部带 AABB 供剔除)===== */
+var ROAD_CLASSES = ['service','living_street','pedestrian','unclassified','residential',
+                    'tertiary','secondary','primary','trunk','motorway'];
+var RANK = {};
+ROAD_CLASSES.forEach(function (c, i) { RANK[c] = i; });
+var RSTYLE = {
+  service:[1.6,'--r-service'], living_street:[2.6,'--r-residential'], pedestrian:[2.6,'--r-residential'],
+  unclassified:[2.6,'--r-residential'], residential:[2.6,'--r-residential'],
+  tertiary:[3.4,'--r-tertiary'], secondary:[4.4,'--r-secondary'], primary:[5.6,'--r-primary'],
+  trunk:[6.8,'--r-trunk'], motorway:[8,'--r-motorway']
+};
+var CASE_W = {primary:7.6, trunk:8.8, motorway:10};
+var PULSE_ORDER = ['motorway','trunk','primary','secondary','tertiary'];
+var ROADS = [];          // {cls, p2d, bb}
+var CASES = [];
+var GRN = [], WTR = [], RAIL = [], BLD = [];
+var ANT_ORDER = [];      // 按等级降序(深缩放蚂蚁逐路剔除)
+(function buildCaches() {
+  function bbOf(p) { var b = p.getBBox(); return [b.x, b.y, b.width, b.height]; }
+  function p2dOf(d) { return new Path2D(d); }
+  svg.querySelectorAll('#green path').forEach(function (p) {
+    GRN.push({p2d: p2dOf(p.getAttribute('d')), bb: bbOf(p)});
+  });
+  svg.querySelectorAll('#water path').forEach(function (p) {
+    var isLine = p.classList.contains('wline');
+    var w = isLine ? (parseFloat((p.getAttribute('style') || '10').replace(/[^\d.]/g, '')) || 10) : 0;
+    WTR.push({p2d: p2dOf(p.getAttribute('d')), bb: bbOf(p), line: isLine, w: w});
+  });
+  svg.querySelectorAll('#rail path').forEach(function (p) {
+    RAIL.push({p2d: p2dOf(p.getAttribute('d')), bb: bbOf(p)});
+  });
+  svg.querySelectorAll('#casings path').forEach(function (p) {
+    var hit = null;
+    p.classList.forEach(function (c) { if (hit === null && c.indexOf('case-') === 0) hit = c.slice(5); });
+    if (hit) CASES.push({cls: hit, p2d: p2dOf(p.getAttribute('d')), bb: bbOf(p)});
+  });
+  svg.querySelectorAll('#roads path').forEach(function (p) {
+    var hit = null;
+    p.classList.forEach(function (c) { if (hit === null && c.indexOf('hw-') === 0) hit = c.slice(3); });
+    var cls = hit || 'residential';
+    var len = p.getTotalLength();
+    var step = 3, n = Math.ceil(len / step) + 2;
+    var xs = new Float32Array(n), ys = new Float32Array(n);
+    for (var i = 0; i < n; i++) {
+      var pt = p.getPointAtLength(Math.min(i * step, len));
+      xs[i] = pt.x; ys[i] = pt.y;
+    }
+    var W = {motorway:8, trunk:6, primary:5, secondary:3, tertiary:2, residential:1};
+    var w = W[cls] || 1;
+    var el = {cls: cls, p2d: p2dOf(p.getAttribute('d')), bb: bbOf(p), svgLen: len, len: len,
+              oneway: parseInt(p.getAttribute('data-ow') || '0', 10),
+              name: p.getAttribute('data-name') || '', __id: ROADS.length,
+              xs: xs, ys: ys, step: step, n: n, wt: w,
+              sx: xs[0], sy: ys[0], ex: xs[n-1], ey: ys[n-1]};
+    ROADS.push(el);
+  });
+  svg.querySelectorAll('#buildings path').forEach(function (p) {
+    var hit = null;
+    p.classList.forEach(function (c) { if (hit === null && c.indexOf('bld-') === 0) hit = c; });
+    var b = p.getBBox();
+    BLD.push({p2d: p2dOf(p.getAttribute('d')), cls: hit || 'bld-l',
+              h: parseFloat(p.getAttribute('data-h')) || 10, name: p.getAttribute('data-name') || '',
+              bb: [b.x, b.y, b.width, b.height],
+              cx: b.x + b.width/2, cy: b.y + b.height/2, top: b.y});
+  });
+  var SHADOWS = [];
+  svg.querySelectorAll('#shadows path').forEach(function (p) {
+    SHADOWS.push({p2d: p2dOf(p.getAttribute('d')), bb: bbOf(p)});
+  });
+  window.__SHADOWS = SHADOWS;
+  ANT_ORDER = ROADS.slice().sort(function (a, b) {
+    return (RANK[b.cls] || 5) - (RANK[a.cls] || 5);
+  });
+})();
+/* 弧长查表(均匀 step LUT):位置 + 行进方向单位切向(v7 全路线轨迹统一接口) */
+function trajAt(tr, s) {
+  if (s < 0) s = 0; else if (s > tr.len) s = tr.len;
+  var i = Math.min(tr.n - 2, s / tr.step | 0), t = s / tr.step - i;
+  var x = tr.xs[i] + (tr.xs[i + 1] - tr.xs[i]) * t, y = tr.ys[i] + (tr.ys[i + 1] - tr.ys[i]) * t;
+  var tx = tr.xs[i + 1] - tr.xs[i], ty = tr.ys[i + 1] - tr.ys[i];
+  var l = Math.hypot(tx, ty) || 1;
+  return [x, y, tx / l, ty / l];
+}
+/* 折线上 i 处"朝数组增长方向"的单位切向(中心差分,过弯自动平均) */
+function fwdTan(xs, ys, i) {
+  var a = Math.max(0, i - 5), b = Math.min(xs.length - 1, i + 5);
+  if (a === b) b = Math.min(xs.length - 1, a + 1);
+  var tx = xs[b] - xs[a], ty = ys[b] - ys[a], l = Math.hypot(tx, ty) || 1;
+  return [tx / l, ty / l];
+}
+function mixWhite(hex, k) {
+  var r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+  return 'rgb(' + Math.round(r + (255 - r) * k) + ',' + Math.round(g + (255 - g) * k) + ','
+       + Math.round(b + (255 - b) * k) + ')';
+}
+/* 折线等弧长重采样 → 均匀 LUT */
+function arcResample(xs, ys, step) {
+  var cum = [0], i;
+  for (i = 1; i < xs.length; i++) cum.push(cum[i - 1] + Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]));
+  var L = cum[cum.length - 1];
+  var n = Math.max(2, Math.ceil(L / step) + 1);
+  var rx = new Float32Array(n), ry = new Float32Array(n), w = 0;
+  for (i = 0; i < n; i++) {
+    var t = L * i / (n - 1);
+    while (w < cum.length - 2 && cum[w + 1] < t) w++;
+    var sg = cum[w + 1] - cum[w] || 1, f = (t - cum[w]) / sg;
+    rx[i] = xs[w] + (xs[w + 1] - xs[w]) * f;
+    ry[i] = ys[w] + (ys[w + 1] - ys[w]) * f;
+  }
+  return {xs: rx, ys: ry, n: n, len: L};
+}
+/* Chaikin 拐角切割(寻路折线圆滑,偏差 ≤2px) */
+function chaikin(pts) {
+  if (pts.length < 3) return pts;
+  var out = [pts[0]];
+  for (var i = 0; i < pts.length - 1; i++) {
+    var a = pts[i], b = pts[i + 1];
+    out.push([a[0] * .75 + b[0] * .25, a[1] * .75 + b[1] * .25]);
+    out.push([a[0] * .25 + b[0] * .75, a[1] * .25 + b[1] * .75]);
+  }
+  out.push(pts[pts.length - 1]);
+  return out;
+}
+function resamplePoly(pts, step) {
+  var cum = [0], i;
+  for (i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  var L = cum[cum.length - 1];
+  if (!L) return pts.slice();
+  var n = Math.max(2, Math.ceil(L / step) + 1), out = [], w = 0;
+  for (var j = 0; j < n; j++) {
+    var t = L * j / (n - 1);
+    while (w < cum.length - 2 && cum[w + 1] < t) w++;
+    var sg = cum[w + 1] - cum[w] || 1, f = (t - cum[w]) / sg;
+    out.push([pts[w][0] + (pts[w + 1][0] - pts[w][0]) * f, pts[w][1] + (pts[w + 1][1] - pts[w][1]) * f]);
+  }
+  return out;
+}
+function rgba(hex, a) {
+  return 'rgba(' + parseInt(hex.slice(1,3),16) + ',' + parseInt(hex.slice(3,5),16) + ','
+       + parseInt(hex.slice(5,7),16) + ',' + a + ')';
+}
+/* ===== v7 渲染基建:半分辨率 glow 层(免费 bloom,UnrealBloom 降级)+ 自适应质量 ===== */
+var GLOW_SCALE = 0.35;
+var glowCv = document.createElement('canvas');
+var glowCtx = glowCv.getContext('2d');
+var Q = { bloom: true, ribbonN: 24 };
+var emaMs = 16.7, qChk = 0;
+function clearGlow() {
+  glowCtx.setTransform(1, 0, 0, 1, 0, 0);
+  glowCtx.clearRect(0, 0, glowCv.width, glowCv.height);
+  var s = dpr * GLOW_SCALE * view.k * geo.s0;
+  glowCtx.setTransform(s, 0, 0, s, dpr * GLOW_SCALE * view.x, dpr * GLOW_SCALE * view.y);
+  glowCtx.lineCap = 'round'; glowCtx.lineJoin = 'round';
+  glowCtx.globalCompositeOperation = 'lighter';
+  glowCtx.globalAlpha = 1;
+}
+function flushGlow() {
+  if (!Q.bloom) return;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = 0.8;
+  ctx.drawImage(glowCv, 0, 0, geo.Ws, geo.Hs);
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+}
+/* 缎带彗尾 v7:轨迹弧长采样 → 法线偏移变宽多边形 → 头尾线性渐变;
+   w(u)=W0(1-u)^0.7+0.3(饱满尾),主画 fx + glow 层宽晕(bloom) */
+function fillRibbon(c2, Lp, Rp, head, tail, fc, alpha) {
+  var grad = c2.createLinearGradient(head[0], head[1], tail[0], tail[1]);
+  grad.addColorStop(0, rgba(fc, Math.min(1, alpha)));
+  grad.addColorStop(.55, rgba(fc, alpha * .42));
+  grad.addColorStop(1, rgba(fc, 0));
+  c2.beginPath();
+  c2.moveTo(Lp[0], Lp[1]);
+  for (var i = 2; i < Lp.length; i += 2) c2.lineTo(Lp[i], Lp[i + 1]);
+  for (var j = Rp.length - 2; j >= 0; j -= 2) c2.lineTo(Rp[j], Rp[j + 1]);
+  c2.closePath();
+  c2.fillStyle = grad;
+  c2.fill();
+}
+function ribbon(c2, g2, tr, s, fc, opts) {
+  var N = opts.n || Q.ribbonN, TRAIL = opts.trail, W0 = opts.w0, op = opts.alpha;
+  if (op <= 0 || TRAIL <= 1 || s <= 0.5) return;
+  var head = trajAt(tr, s);
+  var Lp = [], Rp = [], tail = null;
+  for (var j = 0; j <= N; j++) {
+    var t = j / N;
+    var sm = trajAt(tr, s - t * TRAIL);
+    var w = (W0 * Math.pow(1 - t, 0.7) + 0.3) * 0.5;
+    Lp.push(sm[0] - sm[3] * w, sm[1] + sm[2] * w);
+    Rp.push(sm[0] + sm[3] * w, sm[1] - sm[2] * w);
+    if (j === N) tail = sm;
+  }
+  fillRibbon(c2, Lp, Rp, head, tail, fc, op);
+  if (g2 && Q.bloom) fillRibbon(g2, Lp, Rp, head, tail, fc, op * 0.2);
+}
+/* ===== 蚂蚁线分组:等级合并 Path2D ×2 相位桶(整层 dash 相位流动) ===== */
+var ANT_GROUPS = [];
+(function buildAntGroups() {
+  PULSE_ORDER.forEach(function (cls) {
+    var paths = [new Path2D(), new Path2D()], cnt = 0;
+    ROADS.forEach(function (rd, idx) {
+      if (rd.cls !== cls) return;
+      paths[idx % 2].addPath(rd.p2d);
+      cnt++;
+    });
+    if (cnt) ANT_GROUPS.push({paths: paths, W: RSTYLE[cls][0], minor: false});
+  });
+  var minor = [new Path2D(), new Path2D()], mc = 0;
+  ROADS.forEach(function (rd, idx) {
+    if (PULSE_ORDER.indexOf(rd.cls) >= 0) return;
+    minor[idx % 2].addPath(rd.p2d);
+    mc++;
+  });
+  if (mc) ANT_GROUPS.push({paths: minor, W: 2.1, minor: true});
+})();
+
+var POIS = [];
+svg.querySelectorAll('#labels .poi').forEach(function (g) {
+  var c = g.querySelector('circle'), t = g.querySelector('text');
+  var name = t ? t.textContent : '';
+  POIS.push({x: c.cx.baseVal.value, y: c.cy.baseVal.value, name: name,
+             zone: window.ZONES[name.replace(/ /g, '')] || ''});
+});
+
+/* ===== 状态 ===== */
+var fx = { pulse:false, route:false, traffic:true, spot:true, patrol:false, ping:false, boot:false };
+var st = {
+  traffic: { parts: [], target: 100 },
+  routeIdx: 0,
+  spotPick: -1,
+  patrol: { items: [], next: 0, iv: 500, n: 4 },
+  pings: [], pingNext: 0,
+  boot: { t0: null }
+};
+var SPD = {motorway:150, trunk:130, primary:115, secondary:95, tertiary:80, residential:60};
+
+function addPing(x, y, r0, dur) {
+  r0 = r0 || 10; dur = dur || 1500;
+  st.pings.push({x:x, y:y, r0:r0, grow:r0*3.2+26, born:performance.now(), dur:dur});
+  st.pings.push({x:x, y:y, r0:r0, grow:r0*3.2+26, born:performance.now()+dur*0.42, dur:dur});
+}
+/* ===== v7 路口图(调研 docs/research-v7-route-ants.md §3.1):
+   ① 端点 26px 聚类(OSMnx consolidate 直译:网格桶+并查集)
+   ② 度 2 唯一续接缝合成长走廊(OSMnx simplify 思想)→ 决策点只剩真路口
+   ③ 走廊 = 有向图的边;转向曲线在规划期生成,运行期零路口决策 ===== */
+var CORR = [], CORR_POOL = [], RING_OF = [], EXITS = [], EXITS_OF = {}, ENTRY_POOL = [];
+var OUT_AT = new Map(), BOUNDARY_N = new Set(), nodePos = new Map();
+/* 贴边判定用走廊自身端点坐标(节点簇质心可深入内部 26px,不可靠) */
+function isEdgeXY(x, y) {
+  return Math.min(x, VBW - x, y, VBH - y) <= 14;
+}
+var CLSW = {motorway: 8, trunk: 8, primary: 8, secondary: 3, tertiary: 3};
+var CAR_LEN = 12, S0_MIN = 10, A_MAX = 120, B_COMF = 140, B_MAX = 280, CAR_GID = 0;
+window.__GRAPH = {nodes: 0, corridors: 0, pool: 0, chains: 0, bridges: 0};
+/* 路口转向曲线:入点/入切向 → 出点/出切向 三次贝塞尔(控制点沿切向前方,近折角退化),
+   12 采样 → 等弧长 8 点;straight = 切向点积(1=直行) */
+function bezPts(p0x, p0y, t0x, t0y, p3x, p3y, t3x, t3y) {
+  var g = Math.hypot(p3x - p0x, p3y - p0y) || 1;
+  var reach = Math.min(g * 0.42, 46);
+  var c1x = p0x + t0x * reach, c1y = p0y + t0y * reach;
+  var c2x = p3x - t3x * reach, c2y = p3y - t3y * reach;
+  var raw = [], N = 12, i;
+  for (i = 0; i <= N; i++) {
+    var t = i / N, u = 1 - t;
+    raw.push([u * u * u * p0x + 3 * u * u * t * c1x + 3 * u * t * t * c2x + t * t * t * p3x,
+              u * u * u * p0y + 3 * u * u * t * c1y + 3 * u * t * t * c2y + t * t * t * p3y]);
+  }
+  var cum = [0];
+  for (i = 1; i <= N; i++) cum.push(cum[i - 1] + Math.hypot(raw[i][0] - raw[i - 1][0], raw[i][1] - raw[i - 1][1]));
+  var L = cum[N] || 1, out = [], w = 0, M = 8;
+  for (i = 0; i < M; i++) {
+    var tg = L * i / (M - 1);
+    while (w < N - 1 && cum[w + 1] < tg) w++;
+    var sg = cum[w + 1] - cum[w] || 1, f = (tg - cum[w]) / sg;
+    out.push([raw[w][0] + (raw[w + 1][0] - raw[w][0]) * f, raw[w][1] + (raw[w + 1][1] - raw[w][1]) * f]);
+  }
+  return {pts: out, straight: t0x * t3x + t0y * t3y, len: L};
+}
+(function buildGraph() {
+  var N = ROADS.length, i, r;
+  /* ① 端点聚类 */
+  var uf = new Int32Array(2 * N);
+  for (i = 0; i < 2 * N; i++) uf[i] = i;
+  function find(a) { while (uf[a] !== a) { uf[a] = uf[uf[a]]; a = uf[a]; } return a; }
+  function uni(a, b) { a = find(a); b = find(b); if (a !== b) uf[b] = a; }
+  var cell = 64, bk = new Map();
+  function bkey(x, y) { return (Math.floor(x / cell) + 4096) * 16384 + (Math.floor(y / cell) + 4096); }
+  for (r = 0; r < N; r++) {
+    [[ROADS[r].sx, ROADS[r].sy, 2 * r], [ROADS[r].ex, ROADS[r].ey, 2 * r + 1]].forEach(function (e) {
+      var k = bkey(e[0], e[1]);
+      if (!bk.has(k)) bk.set(k, []);
+      bk.get(k).push(e);
+    });
+  }
+  bk.forEach(function (arr) {
+    for (var a = 0; a < arr.length; a++) for (var b = a + 1; b < arr.length; b++)
+      if (Math.hypot(arr[a][0] - arr[b][0], arr[a][1] - arr[b][1]) <= 26) uni(arr[a][2], arr[b][2]);
+  });
+  var nodeOf = new Int32Array(2 * N);
+  for (r = 0; r < N; r++) { nodeOf[2 * r] = find(2 * r); nodeOf[2 * r + 1] = find(2 * r + 1); }
+  for (r = 0; r < N; r++) {
+    [[ROADS[r].sx, ROADS[r].sy, 2 * r], [ROADS[r].ex, ROADS[r].ey, 2 * r + 1]].forEach(function (e) {
+      var nid = find(e[2]);
+      if (!nodePos.has(nid)) nodePos.set(nid, [e[0], e[1]]);
+    });
+  }
+  nodePos.forEach(function (p, nid) {
+    if (p[0] < 10 || p[0] > VBW - 10 || p[1] < 10 || p[1] > VBH - 10) BOUNDARY_N.add(nid);
+  });
+  /* ② 原始路段级有向邻接(oneway 门控) */
+  function tangOf(rd, dir, atEnd) {
+    var a, b;
+    if (!atEnd) { a = dir > 0 ? 0 : rd.n - 1; b = dir > 0 ? Math.min(5, rd.n - 1) : Math.max(0, rd.n - 6); }
+    else { a = dir > 0 ? rd.n - 1 : 0; b = dir > 0 ? Math.max(0, rd.n - 6) : Math.min(5, rd.n - 1); }
+    var tx = rd.xs[b] - rd.xs[a], ty = rd.ys[b] - rd.ys[a];
+    var l = Math.hypot(tx, ty) || 1;
+    return [tx / l, ty / l];
+  }
+  var outR = new Map(), inR = new Map();
+  for (r = 0; r < N; r++) {
+    if (ROADS[r].oneway !== -1) {
+      var a1 = outR.get(nodeOf[2 * r]) || []; a1.push({r: r, dir: 1}); outR.set(nodeOf[2 * r], a1);
+      var b1 = inR.get(nodeOf[2 * r + 1]) || []; b1.push({r: r, dir: 1}); inR.set(nodeOf[2 * r + 1], b1);
+    }
+    if (ROADS[r].oneway !== 1) {
+      var a2 = outR.get(nodeOf[2 * r + 1]) || []; a2.push({r: r, dir: -1}); outR.set(nodeOf[2 * r + 1], a2);
+      var b2 = inR.get(nodeOf[2 * r]) || []; b2.push({r: r, dir: -1}); inR.set(nodeOf[2 * r], b2);
+    }
+  }
+  function startPoint(r2, d2) { return d2 > 0 ? [ROADS[r2].sx, ROADS[r2].sy] : [ROADS[r2].ex, ROADS[r2].ey]; }
+  function endPoint(r2, d2) { return d2 > 0 ? [ROADS[r2].ex, ROADS[r2].ey] : [ROADS[r2].sx, ROADS[r2].sy]; }
+  /* ③ 度 2 唯一续接:对齐 ≥0.92 且显著高于次优(<0.75)才缝 */
+  var nextOf = new Map();
+  for (r = 0; r < N; r++) {
+    var dirs = ROADS[r].oneway === 1 ? [1] : ROADS[r].oneway === -1 ? [-1] : [1, -1];
+    for (var di = 0; di < dirs.length; di++) {
+      var dir = dirs[di];
+      var eN = nodeOf[dir > 0 ? 2 * r + 1 : 2 * r];
+      var et = tangOf(ROADS[r], dir, true);
+      var ep = endPoint(r, dir);
+      var cands = outR.get(eN) || [];
+      var best = null, bestA = -2, second = -2;
+      for (var ci = 0; ci < cands.length; ci++) {
+        var c = cands[ci];
+        if (c.r === r) continue;                       // 不掉头
+        var sp = startPoint(c.r, c.dir);
+        if (Math.hypot(sp[0] - ep[0], sp[1] - ep[1]) > 60) continue;
+        var st = tangOf(ROADS[c.r], c.dir, false);
+        var align = et[0] * st[0] + et[1] * st[1];
+        if (align > bestA) { second = bestA; bestA = align; best = c; }
+        else if (align > second) second = align;
+      }
+      if (best && bestA >= 0.92 && second < 0.75) nextOf.set(r * 2 + (dir > 0 ? 0 : 1), best);
+    }
+  }
+  /* ④ 走廊生长:从链头(无前驱)走到链尾;环上残留段各自成廊 */
+  var hasBack = new Set();
+  nextOf.forEach(function (nx, k) { hasBack.add(nx.r * 2 + (nx.dir > 0 ? 0 : 1)); });
+  var used = new Set(), nChains = 0;
+  function keyOf(r2, d2) { return r2 * 2 + (d2 > 0 ? 0 : 1); }
+  function makeCorridor(segs) {
+    var xs = [], ys = [], roads = [], nBridges = 0, i, j;
+    var first = segs[0];
+    var sNode = nodeOf[first.dir > 0 ? 2 * first.r : 2 * first.r + 1];
+    function pushPt(x, y) {
+      xs.push(x); ys.push(y);
+    }
+    for (i = 0; i < segs.length; i++) {
+      var m = segs[i], rd = ROADS[m.r];
+      roads.push(m.r);
+      var cnt = rd.n;
+      for (j = 0; j < cnt; j++) {
+        var idx = m.dir > 0 ? j : cnt - 1 - j;
+        var px = rd.xs[idx], py = rd.ys[idx];
+        if (xs.length && j === 0) {
+          /* 只在段缝处检查缺口(段内采样间距≈3px 不算缺口) */
+          var lx = xs[xs.length - 1], ly = ys[ys.length - 1];
+          var gap = Math.hypot(px - lx, py - ly);
+          if (gap > 2.5) {
+            /* 分离车道缺口:贝塞尔短桥缝进走廊几何 */
+            var idx2 = m.dir > 0 ? Math.min(cnt - 1, idx + 5) : Math.max(0, idx - 5);
+            var tOx = rd.xs[idx2] - px, tOy = rd.ys[idx2] - py;
+            var tl = Math.hypot(tOx, tOy) || 1;
+            var tIn = fwdTan(xs, ys, xs.length - 1);
+            var bs = bezPts(lx, ly, tIn[0], tIn[1], px, py, tOx / tl, tOy / tl);
+            for (var q = 1; q < bs.pts.length; q++) pushPt(bs.pts[q][0], bs.pts[q][1]);
+            nBridges++;
+            continue;
+          }
+        }
+        pushPt(px, py);
+      }
+    }
+    var res = arcResample(xs, ys, 3);
+    var cls = ROADS[segs[0].r].cls, bestRank = -1, wt = 1, name = '', longest = -1;
+    for (i = 0; i < segs.length; i++) {
+      var rr = ROADS[segs[i].r];
+      if ((RANK[rr.cls] || 0) > bestRank) { bestRank = RANK[rr.cls] || 0; cls = rr.cls; }
+      if (rr.wt > wt) wt = rr.wt;
+      if (rr.name && rr.len > longest) { longest = rr.len; name = rr.name; }
+    }
+    var last = segs[segs.length - 1];
+    var eNode = nodeOf[last.dir > 0 ? 2 * last.r + 1 : 2 * last.r];
+    var crv = fwdTan(xs, ys, 0)[0] * fwdTan(xs, ys, xs.length - 1)[1]
+            - fwdTan(xs, ys, 0)[1] * fwdTan(xs, ys, xs.length - 1)[0];
+    var minx = res.xs[0], miny = res.ys[0], maxx = minx, maxy = miny;
+    for (i = 1; i < res.n; i++) {
+      if (res.xs[i] < minx) minx = res.xs[i]; if (res.xs[i] > maxx) maxx = res.xs[i];
+      if (res.ys[i] < miny) miny = res.ys[i]; if (res.ys[i] > maxy) maxy = res.ys[i];
+    }
+    var cor = {id: CORR.length, xs: res.xs, ys: res.ys, step: 3, n: res.n, len: res.len,
+               cls: cls, wt: wt, name: name, roads: roads, sNode: sNode, eNode: eNode,
+               curve: crv,
+               sx: res.xs[0], sy: res.ys[0], ex: res.xs[res.n - 1], ey: res.ys[res.n - 1],
+               bb: [minx, miny, maxx - minx + 1, maxy - miny + 1]};
+    CORR.push(cor);
+    var ol = OUT_AT.get(sNode) || [];
+    ol.push({c: cor.id});
+    OUT_AT.set(sNode, ol);
+    if (res.len >= 220) CORR_POOL.push(cor);
+    window.__GRAPH.bridges += nBridges;
+  }
+  for (r = 0; r < N; r++) {
+    var dirs2 = ROADS[r].oneway === 1 ? [1] : ROADS[r].oneway === -1 ? [-1] : [1, -1];
+    for (var dj = 0; dj < dirs2.length; dj++) {
+      var k0 = keyOf(r, dirs2[dj]);
+      if (used.has(k0) || hasBack.has(k0)) continue;
+      nChains++;
+      var segs = [{r: r, dir: dirs2[dj]}];
+      used.add(k0);
+      var cr = r, cd = dirs2[dj], guard = 0;
+      while (guard++ < 48) {
+        var nx = nextOf.get(keyOf(cr, cd));
+        if (!nx || used.has(keyOf(nx.r, nx.dir))) break;
+        segs.push(nx);
+        used.add(keyOf(nx.r, nx.dir));
+        cr = nx.r; cd = nx.dir;
+      }
+      makeCorridor(segs);
+    }
+  }
+  for (r = 0; r < N; r++) {
+    var dirs3 = ROADS[r].oneway === 1 ? [1] : ROADS[r].oneway === -1 ? [-1] : [1, -1];
+    for (var dk = 0; dk < dirs3.length; dk++) {
+      if (!used.has(keyOf(r, dirs3[dk]))) { used.add(keyOf(r, dirs3[dk])); makeCorridor([{r: r, dir: dirs3[dk]}]); }
+    }
+  }
+  /* ⑤ 环岛检测:同向弯曲、总长 80-700px 的小环 → ringOf(入环先定出口,杜绝绕圈/原路返回) */
+  for (i = 0; i < CORR.length; i++) RING_OF[i] = -1;
+  function findRing(node, startId, path, onPath, budget) {
+    var outs = OUT_AT.get(node) || [], i2;
+    for (i2 = 0; i2 < outs.length; i2++) {
+      var ci2 = outs[i2].c;
+      if (ci2 === startId) { if (path.length >= 2) return true; continue; }
+      if (onPath[ci2]) continue;
+      var cc = CORR[ci2];
+      if (cc.len > budget || cc.curve * CORR[startId].curve <= 0) continue;
+      if (sharesRoad(cc, CORR[path[path.length - 1]])) continue;
+      path.push(ci2); onPath[ci2] = true;
+      if (findRing(cc.eNode, startId, path, onPath, budget - cc.len)) return true;
+      path.pop(); onPath[ci2] = false;
+    }
+    return false;
+  }
+  var nRings = 0;
+  for (var s2 = 0; s2 < CORR.length; s2++) {
+    var c0 = CORR[s2];
+    if (RING_OF[s2] >= 0 || Math.abs(c0.curve) < 0.05) continue;
+    if ((OUT_AT.get(c0.sNode) || []).length < 2 || (OUT_AT.get(c0.eNode) || []).length < 2) continue;
+    var rpath = [s2], ronPath = {};
+    ronPath[s2] = true;
+    if (findRing(c0.eNode, s2, rpath, ronPath, 900 - c0.len)) {
+      for (i = 0; i < rpath.length; i++) RING_OF[rpath[i]] = nRings;
+      nRings++;
+    }
+  }
+  /* 环方向统一:与环同路但反向弯曲的走廊 = 逆行环,一律禁行(A* 不可通行) */
+  var ringDir = {}, roadRing = {};
+  for (i = 0; i < CORR.length; i++) {
+    if (RING_OF[i] < 0) continue;
+    var rg0 = RING_OF[i];
+    if (!(rg0 in ringDir)) ringDir[rg0] = CORR[i].curve > 0 ? 1 : -1;
+    for (var rj = 0; rj < CORR[i].roads.length; rj++) roadRing[CORR[i].roads[rj]] = rg0;
+  }
+  var nBanned = 0;
+  for (i = 0; i < CORR.length; i++) {
+    if (RING_OF[i] >= 0) continue;
+    var crb = CORR[i];
+    for (rj = 0; rj < crb.roads.length; rj++) {
+      var rg = roadRing[crb.roads[rj]];
+      if (rg !== undefined && crb.curve * ringDir[rg] < 0) { crb.banned = true; nBanned++; break; }
+    }
+  }
+  var keptPool = [];
+  for (i = 0; i < CORR_POOL.length; i++) if (!CORR_POOL[i].banned) keptPool.push(CORR_POOL[i]);
+  CORR_POOL = keptPool;
+  /* ⑥ 可达性过滤:从边界反向 BFS(含掉头排除),到不了任何出口的走廊不进车流池 */
+  var IN_AT = new Map();
+  for (i = 0; i < CORR.length; i++) {
+    var il = IN_AT.get(CORR[i].eNode) || [];
+    il.push(CORR[i]);
+    IN_AT.set(CORR[i].eNode, il);
+  }
+  var reach = {};
+  var frontier = [];
+  for (i = 0; i < CORR.length; i++) {
+    if (isEdgeXY(CORR[i].ex, CORR[i].ey)) { reach[i] = true; frontier.push(CORR[i]); }
+  }
+  while (frontier.length) {
+    var nextF = [];
+    for (i = 0; i < frontier.length; i++) {
+      var fc2 = frontier[i];
+      var preds = IN_AT.get(fc2.sNode) || [];
+      var tp = fwdTangent(fc2, false);
+      for (var fj = 0; fj < preds.length; fj++) {
+        var pc = preds[fj];
+        if (reach[pc.id] || pc.banned || sharesRoad(pc, fc2)) continue;
+        var pp = fwdTangent(pc, true);
+        if (pp[0] * tp[0] + pp[1] * tp[1] < -0.55) continue;   // 与 A* 同规则:禁急折返转移
+        reach[pc.id] = true;
+        nextF.push(pc);
+      }
+    }
+    frontier = nextF;
+  }
+  keptPool = [];
+  for (i = 0; i < CORR_POOL.length; i++) if (reach[CORR_POOL[i].id]) keptPool.push(CORR_POOL[i]);
+  CORR_POOL = keptPool;
+  /* 目的地集合:可达的边界走廊(司机的可能去向) */
+  for (i = 0; i < CORR.length; i++)
+    if (reach[CORR[i].id] && isEdgeXY(CORR[i].ex, CORR[i].ey)) EXITS.push(CORR[i]);
+  /* 入口走廊:车流全部从地图边缘驶入(sNode 贴边、向城内、可达、非禁行) */
+  for (i = 0; i < CORR.length; i++) {
+    var ce = CORR[i];
+    if (ce.banned || !reach[ce.id] || !isEdgeXY(ce.sx, ce.sy)) continue;
+    if (ce.len < 80 || isEdgeXY(ce.ex, ce.ey)) continue;
+    ENTRY_POOL.push(ce);
+  }
+  /* 每条车流走廊的可达出口表(正向 BFS,与 A* 同规则):目的地只从真能开到的出口里选 */
+  var PLAN_POOL = CORR_POOL.slice();
+  for (i = 0; i < ENTRY_POOL.length; i++)
+    if (!EXITS_OF[ENTRY_POOL[i].id]) PLAN_POOL.push(ENTRY_POOL[i]);
+  for (i = 0; i < PLAN_POOL.length; i++) {
+    var src = PLAN_POOL[i], seenC = {}, list = [], queue = [src];
+    seenC[src.id] = true;
+    for (var qi = 0; qi < queue.length; qi++) {
+      var qc2 = queue[qi];
+      if (isEdgeXY(qc2.ex, qc2.ey)) list.push(qc2);
+      var souts = OUT_AT.get(qc2.eNode) || [];
+      var tq = fwdTangent(qc2, true);
+      for (var qj = 0; qj < souts.length; qj++) {
+        var sn = CORR[souts[qj].c];
+        if (sn.banned || seenC[sn.id] || sharesRoad(sn, qc2)) continue;
+        var tsq = fwdTangent(sn, false);
+        if (tq[0] * tsq[0] + tq[1] * tsq[1] < -0.55) continue;   // 与 A* 同规则:禁急折返转移
+        seenC[sn.id] = true;
+        queue.push(sn);
+      }
+    }
+    EXITS_OF[src.id] = list;
+  }
+  /* 入口再过滤:可达出口 ≥3 才是真通城的门(边缘短街开进去就出去,不当入口);过少逐级放宽保底 */
+  var keptE = [];
+  for (i = 0; i < ENTRY_POOL.length; i++) {
+    var el = EXITS_OF[ENTRY_POOL[i].id] || [];
+    if (el.length >= 3) keptE.push(ENTRY_POOL[i]);
+  }
+  if (keptE.length >= 6) ENTRY_POOL = keptE;
+  else {
+    keptE = [];
+    for (i = 0; i < ENTRY_POOL.length; i++)
+      if ((EXITS_OF[ENTRY_POOL[i].id] || []).length >= 2) keptE.push(ENTRY_POOL[i]);
+    if (keptE.length >= 3) ENTRY_POOL = keptE;
+  }
+  window.__GRAPH.nodes = nodePos.size;
+  window.__GRAPH.corridors = CORR.length;
+  window.__GRAPH.pool = CORR_POOL.length;
+  window.__GRAPH.chains = nChains;
+  window.__GRAPH.rings = nRings;
+  window.__GRAPH.banned = nBanned;
+  window.__GRAPH.unreachable = N - Object.keys(reach).length;
+  window.__CORR = CORR;
+})();
+/* ===== v7 规划与物理:带权随机游走 → 全路线单轨迹 → IDM-lite 跟驰 ===== */
+function sharesRoad(a, b) {
+  for (var i = 0; i < a.roads.length; i++)
+    for (var j = 0; j < b.roads.length; j++) if (a.roads[i] === b.roads[j]) return true;
+  return false;
+}
+function fwdTangent(cor, atEnd) {
+  return atEnd ? fwdTan(cor.xs, cor.ys, cor.n - 1) : fwdTan(cor.xs, cor.ys, 0);
+}
+/* ===== v7.2 确定性导航:出生定目的地(边界出口),A* 一次算定全程 =====
+   代价 = 路长×等级因子 + 转向罚(直行免费/转弯按角度/同名大道零罚);U-turn 不展开;
+   逆行环走廊已 banned。路线完全由交通规则与代价决定,无随机成分 */
+var CLSF = {motorway: .92, trunk: .92, primary: .92, secondary: 1, tertiary: 1};
+function clsFactor(cls) { return CLSF[cls] || 1.08; }
+/* 转向罚:直行免费,转弯按角度;align < -0.55(>123°急折返)在展开处直接禁行
+   (折返会生成勾回的虚空桥 + 180° 调头,视觉穿帮) */
+function turnPenA(align) {
+  return align > 0.985 ? 0 : 12 + 40 * (1 - align);
+}
+/* 目的地:可达出口里优先"远端"(距出生 ≥0.42×对角线 → 真穿城,不在边缘蹭进蹭出);
+   35% 车辆带城中途经点(两段 A*:入口→途经点→出口,城里兜一圈再走)。
+   司机去哪有自由;选定后 A* 路径完全由交通规则决定 */
+function astarRoute(c0) {
+  var exl = EXITS_OF[c0.id] || [];
+  var pick = [], i;
+  if (exl.length > 1) {
+    var sorted = exl.slice().sort(function (a, b) {
+      return Math.hypot(b.ex - c0.sx, b.ey - c0.sy) - Math.hypot(a.ex - c0.sx, a.ey - c0.sy);
+    });
+    for (i = 0; i < sorted.length && i < 3; i++) pick.push(sorted[i]);   // 最远的 3 个可达出口
+  } else pick = exl;
+  var dest = pick.length ? pick[Math.random() * pick.length | 0] : null;
+  if (dest && Math.random() < 0.35) {
+    var via = pickVia();
+    if (via && via.id !== c0.id && via.id !== dest.id) {
+      var leg1 = astarOne(c0, via);
+      if (leg1) {
+        var leg2 = astarOne(via, dest);
+        if (leg2) return {route: leg1.route.concat(leg2.route.slice(1)), exit: true};
+      }
+    }
+  }
+  if (dest) {
+    var r = astarOne(c0, dest);
+    if (r) return r;
+  }
+  var r2 = astarOne(c0, null);
+  return r2 || {route: [c0], exit: false};
+}
+function astarOne(c0, target) {
+  function h(c) {
+    var p = nodePos.get(c.eNode);
+    if (target) return Math.hypot(p[0] - target.ex, p[1] - target.ey) * 0.92;
+    return Math.min(p[0], VBW - p[0], p[1], VBH - p[1]) * 0.92;  // 多目标:到边界直线距
+  }
+  var g = {}, came = {}, closed = {}, open = [];
+  function push(node) {
+    open.push(node);
+    var i = open.length - 1;
+    while (i > 0) {
+      var p2 = (i - 1) >> 1;
+      if (open[p2].f <= open[i].f) break;
+      var tmp = open[p2]; open[p2] = open[i]; open[i] = tmp;
+      i = p2;
+    }
+  }
+  function pop() {
+    var top = open[0], last = open.pop();
+    if (open.length) {
+      open[0] = last;
+      var i = 0;
+      for (;;) {
+        var l = i * 2 + 1, r2 = l + 1, m = i;
+        if (l < open.length && open[l].f < open[m].f) m = l;
+        if (r2 < open.length && open[r2].f < open[m].f) m = r2;
+        if (m === i) break;
+        var tmp2 = open[m]; open[m] = open[i]; open[i] = tmp2;
+        i = m;
+      }
+    }
+    return top;
+  }
+  g[c0.id] = 0;
+  push({f: h(c0), c: c0.id});
+  var found = false, goalId = -1, guard = 0;
+  while (open.length && guard++ < 20000) {
+    var cur = pop(), cid = cur.c;
+    if (closed[cid]) continue;
+    closed[cid] = true;
+    var ce = CORR[cid];
+    if (target ? ce.id === target.id : isEdgeXY(ce.ex, ce.ey)) { found = true; goalId = cid; break; }
+    var outs = OUT_AT.get(ce.eNode) || [];
+    var ta = fwdTangent(ce, true);
+    for (var i = 0; i < outs.length; i++) {
+      var s = CORR[outs[i].c];
+      if (s.banned || closed[s.id]) continue;
+      if (sharesRoad(s, ce)) continue;                      // U-turn 不展开
+      var tb = fwdTangent(s, false);
+      var align = ta[0] * tb[0] + ta[1] * tb[1];
+      if (align < -0.55) continue;                          // 急折返禁行(虚空桥/180° 穿帮)
+      var pen = (ce.name && s.name === ce.name) ? 0 : turnPenA(align);   // 同名大道零罚
+      var ng = g[cid] + s.len * clsFactor(s.cls) + pen;
+      if (ng < (g[s.id] === undefined ? 1e18 : g[s.id])) {
+        g[s.id] = ng;
+        came[s.id] = cid;
+        push({f: ng + h(s), c: s.id});
+      }
+    }
+  }
+  if (!found) return null;
+  var route = [], n = goalId;
+  while (n !== undefined && n !== null) { route.push(CORR[n]); n = came[n]; }
+  route.reverse();
+  return {route: route, exit: true};
+}
+/* 带权随机游走到边界节点:等级权 8:3:1(FHWA 流量比)× 同级续接 × 直行偏好 × 驶向边缘;
+   禁重访/掉头;1 步前瞻剔除死头;死头豁免允许掉头 */
+/* 全路线单轨迹:走廊 LUT 顺接 + 路口贝塞尔短桥,3px 等弧长 LUT;
+   turns = 转向事件(弧长位置,切向点积)供转弯制动;spans = 走廊弧长区间供跟驰分桶 */
+function buildTraj(plan) {
+  var xs = [], ys = [], turns = [], spans = [], acc = 0;
+  function pushPt(x, y) {
+    if (xs.length) acc += Math.hypot(x - xs[xs.length - 1], y - ys[ys.length - 1]);
+    xs.push(x); ys.push(y);
+  }
+  for (var i = 0; i < plan.route.length; i++) {
+    var cor = plan.route[i];
+    spans.push({s0: acc, s1: 0, b0: 0, key: cor.id});
+    if (xs.length) {
+      var lx = xs[xs.length - 1], ly = ys[ys.length - 1];
+      var gap = Math.hypot(cor.sx - lx, cor.sy - ly);
+      var tIn = fwdTan(xs, ys, xs.length - 1);
+      var tOut = fwdTan(cor.xs, cor.ys, 0);
+      if (gap > 2.5) {
+        var bs = bezPts(lx, ly, tIn[0], tIn[1], cor.sx, cor.sy, tOut[0], tOut[1]);
+        for (var q2 = 1; q2 < bs.pts.length; q2++) pushPt(bs.pts[q2][0], bs.pts[q2][1]);
+        turns.push({s: Math.max(0, acc - bs.len * 0.5), straight: bs.straight});
+        spans[spans.length - 1].b0 = bs.len;   // 本 span 头部是路口桥(贴路检测跳过)
+      } else {
+        var al = tIn[0] * tOut[0] + tIn[1] * tOut[1];
+        if (al < 0.985) turns.push({s: Math.max(0, acc - 2), straight: al});
+      }
+    }
+    for (var j = (xs.length ? 1 : 0); j < cor.n; j++) pushPt(cor.xs[j], cor.ys[j]);
+    spans[spans.length - 1].s1 = acc;
+  }
+  var res = arcResample(xs, ys, 3);
+  turns.sort(function (a, b) { return a.s - b.s; });
+  return {xs: res.xs, ys: res.ys, step: 3, n: res.n, len: res.len, turns: turns, spans: spans};
+}
+function newCar(cor) {
+  var plan = astarRoute(cor);
+  var tr = buildTraj(plan);
+  var v0 = (SPD[cor.cls] || 55) * (0.8 + Math.random() * 0.45);
+  return {gid: ++CAR_GID, tr: tr, s: 0, v: v0 * 0.35, v0: v0, cls: cor.cls,
+          T: 1.0 + Math.random() * 0.5, spanI: 0, exit: plan.exit,
+          fading: false, dieT: 0, age: 0, dead: false, leader: null};
+}
+/* 出生配给(v7.3 通勤模型):车流全部从地图边缘入口驶入,A* 穿城,从远侧出口离开;
+   35% 车辆带城中途经点(兜一圈再出)。缺口配给选入口(目标保有量 ∝ 等级权×路长),
+   入口前 80px 有车则跳过(防出生重叠) */
+function pickVia() {
+  var diag = Math.hypot(VBW, VBH), tries = 0;
+  while (tries++ < 8 && CORR_POOL.length) {
+    var v = CORR_POOL[Math.random() * CORR_POOL.length | 0];
+    var mx = v.bb[0] + v.bb[2] / 2, my = v.bb[1] + v.bb[3] / 2;
+    if (mx > VBW * 0.2 && mx < VBW * 0.8 && my > VBH * 0.2 && my < VBH * 0.8 && v.len >= 200) return v;
+  }
+  return CORR_POOL.length ? CORR_POOL[Math.random() * CORR_POOL.length | 0] : null;
+}
+/* 匝道信号(ramp metering):只拦"真堵"——前 300px 内有停/慢车(v<30,55px 内),
+   或出生点紧邻有车(前 130px 内 42px);正常快流不拦 */
+function trajCrowded(tr, parts) {
+  var pts = [], i;
+  for (i = 0; i < tr.n && i * tr.step < 300; i += 25) pts.push([tr.xs[i], tr.ys[i]]);
+  var near2 = 55 * 55, tight2 = 42 * 42, tightArc = 130;
+  for (var j = 0; j < parts.length; j++) {
+    var q = parts[j];
+    if (!q.tr) continue;
+    var ii = Math.min(q.tr.n - 2, (q.s / q.tr.step) | 0);
+    var px = q.tr.xs[ii], py = q.tr.ys[ii];
+    var slow = q.v < 30;
+    for (i = 0; i < pts.length; i++) {
+      var dx = pts[i][0] - px, dy = pts[i][1] - py;
+      var d2 = dx * dx + dy * dy;
+      if (slow && d2 < near2) return true;
+      if (i * 25 < tightArc && d2 < tight2) return true;
+    }
+  }
+  return false;
+}
+function deficitSpawn(q) {
+  var pool = ENTRY_POOL.length ? ENTRY_POOL : CORR_POOL;
+  if (!pool.length) { q.dead = false; q.tr = null; return; }
+  var parts = st.traffic.parts, target = st.traffic.target, i;
+  var cnt = new Map();
+  var crowded = {};
+  for (i = 0; i < parts.length; i++) {
+    var p3 = parts[i];
+    if (!p3.tr || !p3.tr.spans) continue;
+    var sp3 = p3.tr.spans[Math.min(p3.spanI, p3.tr.spans.length - 1)];
+    if (p3.s - sp3.s0 < 80) crowded[sp3.key] = true;
+    cnt.set(sp3.key, (cnt.get(sp3.key) || 0) + 1);
+  }
+  var totalW = 0;
+  for (i = 0; i < pool.length; i++) totalW += pool[i].wt * pool[i].len;
+  var dens = target / (totalW || 1);
+  var best = null, bestD = -1e9;
+  for (i = 0; i < pool.length; i++) {
+    var v = pool[i];
+    if (crowded[v.id]) continue;
+    var def = v.wt * v.len * dens - (cnt.get(v.id) || 0) + Math.random() * 0.5;
+    if (def > bestD) { bestD = def; best = v; }
+  }
+  if (!best) { q.dead = false; q.tr = null; return; }   // 入口全拥挤:本帧不出车,等入口腾空
+  var car = newCar(best), tries = 0;
+  while (tries++ < 4 && pool.length > 1 &&
+         ((!car.exit || car.tr.len < 420) || trajCrowded(car.tr, parts)))
+    car = newCar(pool[Math.random() * pool.length | 0]);
+  if (trajCrowded(car.tr, parts)) { q.dead = false; q.tr = null; return; }   // 前方全堵:延迟出生(源头防堵)
+  for (var field in car) q[field] = car[field];
+  window.__stat && window.__stat.planned++;
+}
+/* IDM-lite 跟驰弹道积分:acc = a·(1-(v/v0)⁴-(s*÷gap)²),转弯制动 vCap=√(vT²+2b·d);
+   路口让行:即将汇入的走廊入口 55px 内有车 → 制动,<14px 且自身近停止线 → 停车等待 */
+function stepCar(q, dt, leader, entryOcc, entryStop) {
+  q.age += dt;
+  if (q.fading) {
+    q.dieT += dt;
+    q.s = Math.min(q.s + q.v * dt, q.tr.len);
+    q.v = Math.max(0, q.v - 60 * dt);
+    if (q.dieT >= 0.45) deficitSpawn(q);
+    return;
+  }
+  var vCap = q.v0 * 1.15, i, tn = q.tr.turns;
+  for (i = 0; i < tn.length; i++) {
+    var d = tn[i].s - q.s;
+    if (d > 170) break;
+    if (d > -8) {
+      var vT = 34 + 62 * Math.max(0, tn[i].straight);
+      var vc = Math.sqrt(vT * vT + 2 * B_COMF * Math.max(d, 0));
+      if (vc < vCap) vCap = vc;
+    }
+  }
+  var sp2 = q.tr.spans;
+  if (entryOcc && q.spanI < sp2.length - 1) {
+    var nxtKey = sp2[q.spanI + 1].key;
+    var occ = entryOcc.get(nxtKey);
+    var stp = entryStop ? entryStop.get(nxtKey) : undefined;
+    /* 不进箱:下一走廊入口被占(occ<26)或入口 30px 内有停驶车(stp<30)→ 停止线等待 */
+    var blocked = (occ !== undefined && occ < 26) || (stp !== undefined && stp < 30);
+    if (occ !== undefined && occ < 80) {
+      var dj = sp2[q.spanI].s1 - q.s;
+      if (blocked && dj < 30) {
+        vCap = 0;                                          // 停止线等待(先到先得)
+        q.yT = (q.yT || 0) + dt;
+        if (q.yT > 5) { vCap = 25; q.yIgnore = true; }     // 死锁破解:等 5s 低速放行
+      } else {
+        q.yT = 0;
+        var vj = Math.sqrt(900 + 2 * B_COMF * Math.max(dj - 10, 0));
+        if (vj < vCap) vCap = vj;
+      }
+    } else q.yT = 0;
+  }
+  var interaction = 0;
+  if (leader) {
+    var gap = (leader.s - q.s) - CAR_LEN;
+    if (gap < 240) {
+      var dv = q.v - leader.v;
+      var sStar = S0_MIN + Math.max(0, q.v * q.T + q.v * dv / (2 * Math.sqrt(A_MAX * B_COMF)));
+      interaction = Math.pow(sStar / Math.max(gap, S0_MIN * 0.5), 2);
+    }
+  }
+  var acc = A_MAX * (1 - Math.pow(q.v / q.v0, 4) - interaction);
+  if (q.v > vCap) acc = Math.min(acc, (vCap * vCap - q.v * q.v) / 8);
+  if (acc < -B_MAX) acc = -B_MAX; else if (acc > A_MAX) acc = A_MAX;
+  q.v += acc * dt;
+  if (q.v > vCap) q.v = vCap;
+  if (q.v < 0) q.v = 0;
+  q.s += q.v * dt + 0.5 * acc * dt * dt;
+  var sp = q.tr.spans;
+  while (q.spanI < sp.length - 1 && q.s > sp[q.spanI].s1) {
+    q.spanI++;
+    q.yT = 0; q.yIgnore = false;                          // 已汇入,恢复让行纪律
+    /* 合流声明:本帧进入新走廊立即登记,同帧后到者立刻可见(防双合流竞态) */
+    if (entryOcc) {
+      var nk = sp[q.spanI].key;
+      var curOcc = entryOcc.get(nk);
+      if (curOcc === undefined || q.s < curOcc) entryOcc.set(nk, q.s);
+    }
+  }
+  if (q.s >= q.tr.len) {
+    if (q.exit) { q.dead = true; window.__stat && window.__stat.exit++; }
+    else { q.fading = true; q.dieT = 0; window.__stat && window.__stat.faded++; }
+  }
+}
+/* ===== 静态层:整图按当前缩放栅格化 ===== */
+var shadowCv = document.createElement('canvas');
+/* 柔影:离屏影层 + 高斯模糊(随缩放软化);aMul 供入场生长尾段淡入,避免完成后爆现 */
+function drawShadows(aMul, vr) {
+  var c = bctx;
+  var SH = window.__SHADOWS;
+  if (!SH || !SH.length || !CAN_FILTER) return;
+  if (shadowCv.width !== base.width) { shadowCv.width = base.width; shadowCv.height = base.height; }
+  var sc = shadowCv.getContext('2d');
+  sc.setTransform(1, 0, 0, 1, 0, 0);
+  sc.clearRect(0, 0, shadowCv.width, shadowCv.height);
+  setWorldTransform(sc);
+  sc.fillStyle = '#000';
+  for (var si = 0; si < SH.length; si++) if (bbHit(SH[si].bb, vr)) sc.fill(SH[si].p2d);
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.filter = 'blur(' + Math.max(1.5, Math.min(12, 2.2 * view.k * geo.s0)).toFixed(1) + 'px)';
+  c.globalAlpha = .55 * aMul;
+  c.drawImage(shadowCv, 0, 0, geo.Ws, geo.Hs);
+  c.filter = 'none';
+  c.globalAlpha = 1;
+  setWorldTransform(c);
+}
+function drawStatic() {
+  var c = bctx;
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.fillStyle = col('--bg', '#10131c');
+  c.fillRect(0, 0, base.width, base.height);
+  setWorldTransform(c);
+  var vr = viewRect();
+  var booting = fx.boot;
+
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  c.fillStyle = col('--green', '#1b3325');
+  for (var i = 0; i < GRN.length; i++) if (bbHit(GRN[i].bb, vr)) c.fill(GRN[i].p2d);
+  c.fillStyle = col('--water', '#1d3560');
+  for (var w2 = 0; w2 < WTR.length; w2++) {
+    var wt = WTR[w2];
+    if (!bbHit(wt.bb, vr)) continue;
+    if (wt.line) { c.strokeStyle = col('--water'); c.lineWidth = wt.w; c.stroke(wt.p2d); }
+    else c.fill(wt.p2d);
+  }
+  c.strokeStyle = col('--rail', '#3a4157'); c.lineWidth = 2.2;
+  c.setLineDash([9, 5]);
+  for (var r2 = 0; r2 < RAIL.length; r2++) if (bbHit(RAIL[r2].bb, vr)) c.stroke(RAIL[r2].p2d);
+  c.setLineDash([]);
+
+  if (!booting) {
+    c.strokeStyle = col('--rc', '#0c0f18'); c.globalAlpha = .85;
+    for (var ci = 0; ci < CASES.length; ci++) {
+      var cs = CASES[ci];
+      if (!bbHit(cs.bb, vr)) continue;
+      c.lineWidth = CASE_W[cs.cls];
+      c.stroke(cs.p2d);
+    }
+    c.globalAlpha = 1;
+    c.strokeStyle = col('--r-residential', '#333a52');
+    for (var ri = 0; ri < ROADS.length; ri++) {
+      var rd = ROADS[ri];
+      if (!bbHit(rd.bb, vr)) continue;
+      var rs = RSTYLE[rd.cls];
+      c.strokeStyle = col(rs[1], '#333a52'); c.lineWidth = rs[0];
+      c.stroke(rd.p2d);
+    }
+    /* 柔影:离屏影层 + 高斯模糊(随缩放软化) */
+    drawShadows(1, vr);
+    var bstroke = col('--bld-stroke', '#0b0e16');
+    for (var bi = 0; bi < BLD.length; bi++) {
+      var bl = BLD[bi];
+      if (!bbHit(bl.bb, vr)) continue;
+      c.fillStyle = col('--' + bl.cls, '#232b44');
+      c.fill(bl.p2d);
+      c.strokeStyle = bstroke; c.lineWidth = 0.6;
+      c.stroke(bl.p2d);
+    }
+  }
+}
+
+/* ===== 动态层主循环 ===== */
+var last = null, fr = 0, ft = null;
+function frame(ts) {
+  if (!cv.width) { fit(); requestAnimationFrame(frame); return; }
+  refreshNone:
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  setWorldTransform(ctx);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  if (staticDirty) { drawStatic(); staticDirty = false; }
+  var vr = viewRect();
+  var fc = fxColor();
+  clearGlow();
+
+  /* --- 入场生长(fx 画道路/建筑;静态层此时只画地面)---
+      与静态层同宽度/同颜色/同层次生长,casing 按级淡入、柔影尾段淡入 → 衔接无爆现 */
+  if (fx.boot) {
+    if (st.boot.t0 === null) { st.boot.t0 = ts; staticDirty = true; }
+    var t = ts - st.boot.t0, DUR = 1300, allDone = true;
+    var delayBy = {motorway:0, trunk:250, primary:500, secondary:750, tertiary:1000, residential:1250,
+                   living_street:1450, unclassified:1450, pedestrian:1450, service:1650};
+    var shadowK = Math.max(0, Math.min(1, (t - 1400) / 700));
+    if (shadowK > 0) drawShadows(shadowK, vr);
+    /* casing 路缘:按级淡入(路面 dash 生长叠在其上,路床先现) */
+    var delayC = {motorway:0, trunk:250, primary:500, secondary:750, tertiary:1000};
+    for (var csi = 0; csi < CASES.length; csi++) {
+      var cs2 = CASES[csi];
+      var kc = Math.max(0, Math.min(1, (t - ((delayC[cs2.cls] || 1000) + 80)) / DUR));
+      if (kc < 1) allDone = false;
+      if (kc <= 0 || !bbHit(cs2.bb, vr)) continue;
+      ctx.globalAlpha = .85 * kc;
+      ctx.strokeStyle = col('--rc', '#0c0f18');
+      ctx.lineWidth = CASE_W[cs2.cls];
+      ctx.stroke(cs2.p2d);
+    }
+    ctx.globalAlpha = 1;
+    /* 道路:真实等级宽度逐级生长 + 同批错峰抖动(不再全体齐现) */
+    for (var pi = 0; pi < ROADS.length; pi++) {
+      var rd = ROADS[pi];
+      var d = (delayBy[rd.cls] || 1000) + (pi % 8) * 35;
+      var k = Math.max(0, Math.min(1, (t - d) / DUR));
+      if (k < 1) allDone = false;
+      if (k <= 0 || !bbHit(rd.bb, vr)) continue;
+      var rs2 = RSTYLE[rd.cls];
+      ctx.strokeStyle = col(rs2[1], '#3c4460');
+      ctx.lineWidth = rs2[0];
+      ctx.setLineDash([rd.svgLen * k, 1e6]);
+      ctx.stroke(rd.p2d);
+    }
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+    for (var bi = 0; bi < BLD.length; bi++) {
+      var bl = BLD[bi];
+      var bd2 = 1200 + (bi % 250) * 4;
+      var bk = Math.max(0, Math.min(1, (t - bd2) / 700));
+      if (bk < 1) allDone = false;
+      if (bk <= 0 || !bbHit(bl.bb, vr)) continue;
+      ctx.globalAlpha = bk;
+      ctx.fillStyle = col('--' + bl.cls, '#232b44');
+      ctx.fill(bl.p2d);
+      ctx.strokeStyle = col('--bld-stroke', '#0b0e16');
+      ctx.lineWidth = 0.6;
+      ctx.stroke(bl.p2d);
+    }
+    ctx.globalAlpha = 1;
+    if (allDone) {
+      fx.boot = false; st.boot.t0 = null; staticDirty = true;
+      var bb = document.querySelector('[data-fx="boot"]');
+      if (bb) bb.checked = false;
+    }
+  }
+
+  /* --- 光效律动:蚂蚁线 = 虚线相位流(行业标准做法:dash 沿真实路径几何计算,
+         过弯贴路由构造保证;三层同心 halo/mid/core + 半分辨率 bloom,3 相位桶错峰)--- */
+  if (fx.pulse) {
+    var march = ts / 1000 * 52;
+    var gt = Q.bloom ? glowCtx : ctx;
+    if (view.k <= 2.2) {
+      for (var agi = 0; agi < ANT_GROUPS.length; agi++) {
+        var G = ANT_GROUPS[agi];
+        var dash = [G.W * 2.0, G.W * 2.8];
+        var aMul = G.minor ? 0.55 : 1;
+        for (var pj = 0; pj < 2; pj++) {
+          var off = -march - pj * G.W * 3.4;
+          /* mid 层:进 glow 层吃 bloom(bloom 关闭时直接画 fx);纤细低亮,给车流让层级 */
+          gt.setLineDash(dash);
+          gt.lineDashOffset = off;
+          gt.globalCompositeOperation = 'lighter';
+          gt.globalAlpha = .2 * aMul;
+          gt.lineWidth = G.W * 1.1;
+          gt.strokeStyle = fc;
+          gt.stroke(G.paths[pj]);
+          ctx.setLineDash(dash);
+          ctx.lineDashOffset = off;
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.globalAlpha = .48 * aMul;
+          ctx.lineWidth = Math.max(1.1, G.W * .48);
+          ctx.strokeStyle = mixWhite(fc, .25);
+          ctx.stroke(G.paths[pj]);
+        }
+      }
+      ctx.setLineDash([]);
+      glowCtx.setLineDash([]);
+      ctx.globalAlpha = 1;
+    } else {
+      /* 深缩放:逐路剔除直描(bbHit 剪枝,干道优先) */
+      var budget = 260;
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+      for (var oi = 0; oi < ANT_ORDER.length && budget > 0; oi++) {
+        var rd2 = ANT_ORDER[oi];
+        if (!bbHit(rd2.bb, vr)) continue;
+        var W2 = (RSTYLE[rd2.cls] || [2])[0];
+        var dash2 = [W2 * 2.0, W2 * 2.8];
+        ctx.setLineDash(dash2);
+        ctx.lineDashOffset = -march - (rd2.__id % 2) * W2 * 3.4;
+        ctx.globalAlpha = .1; ctx.lineWidth = W2 * 2.0; ctx.strokeStyle = fc; ctx.stroke(rd2.p2d);
+        ctx.globalAlpha = .2; ctx.lineWidth = W2 * 1.1; ctx.stroke(rd2.p2d);
+        ctx.globalAlpha = .52; ctx.lineWidth = Math.max(1.1, W2 * .48);
+        ctx.strokeStyle = mixWhite(fc, .25); ctx.stroke(rd2.p2d);
+        budget--;
+      }
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  /* --- 车流彗星:走廊图寻路 + IDM 跟驰 --- */
+  if (fx.traffic && CORR_POOL.length) {
+    var T = st.traffic;
+    while (T.parts.length < T.target) {
+      var nq = {};
+      deficitSpawn(nq);
+      if (nq.tr) T.parts.push(nq); else break;
+    }
+    while (T.parts.length > T.target) T.parts.pop();
+    if (last !== null) {
+      var dt2 = Math.min((ts - last) / 1000, .05);
+      /* 同走廊同向分桶 → 排序 → 前车(IDM 的 leader);顺带记录各走廊入口占用与入口停驶车(让行/不进箱) */
+      var bk2 = new Map(), bi2, entryOcc = new Map(), entryStop = new Map();
+      for (bi2 = 0; bi2 < T.parts.length; bi2++) {
+        var qc = T.parts[bi2];
+        if (!qc.tr) continue;
+        var key2 = qc.tr.spans[Math.min(qc.spanI, qc.tr.spans.length - 1)].key;
+        var arr2 = bk2.get(key2);
+        if (!arr2) { arr2 = []; bk2.set(key2, arr2); }
+        arr2.push(qc);
+        var occ2 = entryOcc.get(key2);
+        if (occ2 === undefined || qc.s < occ2) entryOcc.set(key2, qc.s);
+        if (qc.v < 8) {
+          var stp2 = entryStop.get(key2);
+          if (stp2 === undefined || qc.s < stp2) entryStop.set(key2, qc.s);
+        }
+      }
+      bk2.forEach(function (arr3) {
+        arr3.sort(function (a, b) { return a.s - b.s; });
+        for (var zz = 0; zz < arr3.length; zz++)
+          arr3[zz].leader = zz + 1 < arr3.length ? arr3[zz + 1] : null;
+      });
+      /* 步进(全部车)→ 同走廊防穿模回推 → 渲染 */
+      for (var ii = T.parts.length - 1; ii >= 0; ii--) {
+        var q3 = T.parts[ii];
+        if (!q3.tr) continue;                             // 延迟出生槽位(入口全拥挤)
+        stepCar(q3, dt2, q3.leader, entryOcc, entryStop);
+        if (q3.dead) {
+          deficitSpawn(q3);
+          if (!q3.tr) T.parts.splice(ii, 1);              // 入口全拥挤:释放槽位,稍后回填
+        }
+      }
+      var bk4 = new Map();
+      for (bi2 = 0; bi2 < T.parts.length; bi2++) {
+        var qb = T.parts[bi2];
+        if (!qb.tr) continue;
+        var kb = qb.tr.spans[Math.min(qb.spanI, qb.tr.spans.length - 1)].key;
+        var ab = bk4.get(kb);
+        if (!ab) { ab = []; bk4.set(kb, ab); }
+        ab.push(qb);
+      }
+      bk4.forEach(function (arr4) {
+        arr4.sort(function (a, b) { return a.s - b.s; });
+        for (var z4 = arr4.length - 2; z4 >= 0; z4--) {
+          var g4 = arr4[z4 + 1].s - arr4[z4].s - CAR_LEN;
+          arr4[z4].v = Math.min(arr4[z4].v, arr4[z4 + 1].v);
+          if (g4 < 0) arr4[z4].s = Math.max(0, arr4[z4 + 1].s - CAR_LEN);   // 真穿模兜底(让行失效时)
+        }
+      });
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      for (var ii2 = 0; ii2 < T.parts.length; ii2++) {
+        var q3 = T.parts[ii2];
+        if (q3.dead || !q3.tr) continue;
+        var al = q3.fading ? Math.max(0, 1 - q3.dieT / 0.45) : Math.min(1, q3.age / 0.35);
+        if (al <= 0) continue;
+        var hp = trajAt(q3.tr, q3.s);
+        var hs = worldToScreen(hp[0], hp[1]);
+        if (hs[0] < -60 || hs[1] < -60 || hs[0] > geo.Ws + 60 || hs[1] > geo.Hs + 60) continue;
+        var small = q3.cls === 'residential' || q3.cls === 'unclassified' || q3.cls === 'service';
+        ribbon(ctx, Q.bloom ? glowCtx : ctx, q3.tr, q3.s, fc,
+               {trail: 34 + q3.v * 0.34, w0: small ? 3.0 : 3.6, alpha: al});
+        drawGlow(ctx, fc, hp[0], hp[1], small ? 9 : 11.5, .68 * al);
+        ctx.globalAlpha = al;
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(hp[0], hp[1], small ? 1.5 : 1.9, 0, 6.2832); ctx.fill();
+      }
+      ctx.restore();
+      window.__cars = T.parts;
+    }
+  }
+
+  /* --- 寻路 A→B:平滑轨迹 + 三段节奏(画线/到达脉冲/能量流)--- */
+  if (fx.route && window.ROUTES.routes.length) {
+    var r = window.ROUTES.routes[st.routeIdx];
+    if (!r._tr) {
+      /* 平滑:16px 粗重采样(给 Chaikin 圆角空间)→ 拐角切割 ×2 → 3px 弧长 LUT */
+      var rs = resamplePoly(r.pts, 16);
+      rs = chaikin(rs);
+      rs = chaikin(rs);
+      var lut3 = resamplePoly(rs, 3);
+      var n3 = lut3.length, tx3 = new Float32Array(n3), ty3 = new Float32Array(n3);
+      for (var z3 = 0; z3 < n3; z3++) { tx3[z3] = lut3[z3][0]; ty3[z3] = lut3[z3][1]; }
+      r._tr = {xs: tx3, ys: ty3, step: 3, n: n3, len: (n3 - 1) * 3};
+      r._p2d = new Path2D();
+      r._p2d.moveTo(tx3[0], ty3[0]);
+      for (z3 = 1; z3 < n3; z3++) r._p2d.lineTo(tx3[z3], ty3[z3]);
+      r._RDUR = Math.max(2600, Math.min(5200, r._tr.len / 450 * 1000));
+    }
+    var HOLD2 = 2400, cyc = r._RDUR + HOLD2;
+    var T3 = ts % cyc;
+    var k3 = Math.min(T3 / r._RDUR, 1);
+    var e3 = k3 < .5 ? 4 * k3 * k3 * k3 : 1 - Math.pow(-2 * k3 + 2, 3) / 2;
+    var cur2 = r._tr.len * e3;
+    var gA = T3 > cyc - 350 ? Math.max(0, (cyc - T3) / 350) : 1;
+    ctx.save();
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.globalCompositeOperation = 'lighter';
+    /* 已画轨迹:halo 进 glow 层(bloom)+ fx 中晕 + 亮芯 */
+    ctx.setLineDash([cur2, 1e6]);
+    ctx.globalAlpha = .2 * gA; ctx.lineWidth = 9; ctx.strokeStyle = fc; ctx.stroke(r._p2d);
+    var rt = Q.bloom ? glowCtx : ctx;
+    rt.setLineDash([cur2, 1e6]);
+    rt.globalAlpha = (Q.bloom ? .55 : .18) * gA;
+    rt.lineWidth = Q.bloom ? 7 : 9;
+    rt.strokeStyle = fc;
+    rt.stroke(r._p2d);
+    rt.setLineDash([]);
+    rt.globalAlpha = 1;
+    ctx.globalAlpha = .92 * gA; ctx.lineWidth = 3; ctx.strokeStyle = mixWhite(fc, .2); ctx.stroke(r._p2d);
+    ctx.setLineDash([]);
+    if (k3 < 1) {
+      /* 画线阶段:彗尾 ribbon + 亮核头部 */
+      ribbon(ctx, rt, r._tr, cur2, fc,
+             {trail: Math.min(380, Math.max(140, r._tr.len * .22)), w0: 6.5, alpha: gA});
+      var head = trajAt(r._tr, cur2);
+      drawGlow(ctx, fc, head[0], head[1], 13, .85);
+      ctx.globalAlpha = gA; ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(head[0], head[1], 2.6, 0, 6.2832); ctx.fill();
+    } else if (T3 < r._RDUR + 300) {
+      /* 到达脉冲 */
+      var pk = (T3 - r._RDUR) / 300;
+      var hb = trajAt(r._tr, r._tr.len);
+      drawGlow(ctx, fc, hb[0], hb[1], 13 + 16 * Math.sin(pk * Math.PI), .9 * (1 - pk * .4));
+    } else {
+      /* 能量流:已完成轨迹保持常驻 + 亮段沿线循环奔跑 */
+      ctx.globalAlpha = .5 * gA; ctx.lineWidth = 3; ctx.strokeStyle = mixWhite(fc, .25); ctx.stroke(r._p2d);
+      var flow = (ts / 1000 * 150) % (r._tr.len + 80);
+      ctx.setLineDash([80, r._tr.len]);
+      ctx.lineDashOffset = -flow;
+      ctx.globalAlpha = .3 * gA; ctx.lineWidth = 8; ctx.strokeStyle = fc; ctx.stroke(r._p2d);
+      ctx.globalAlpha = .95 * gA; ctx.lineWidth = 2.6; ctx.strokeStyle = mixWhite(fc, .45); ctx.stroke(r._p2d);
+      ctx.setLineDash([]);
+    }
+    var ends = [[r.pts[0], 'A · ' + r.a, 24], [r.pts[r.pts.length - 1], 'B · ' + r.b, -22]];
+    for (var ei = 0; ei < 2; ei++) {
+      var P0 = ends[ei][0];
+      ctx.globalAlpha = 1; ctx.fillStyle = fc; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(P0[0], P0[1], 7, 0, 6.2832); ctx.fill(); ctx.stroke();
+      var rk = (ts % 1550) / 1550;
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = .7 * (1 - rk); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(P0[0], P0[1], 12 + rk * 24, 0, 6.2832); ctx.stroke();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = 1;
+      ctx.font = '700 15px "Source Han Sans SC","Microsoft YaHei",sans-serif'; ctx.textAlign = 'left';
+      ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,.5)';
+      ctx.strokeText(ends[ei][1], P0[0] + 13, P0[1] + ends[ei][2]);
+      ctx.fillStyle = fc;
+      ctx.fillText(ends[ei][1], P0[0] + 13, P0[1] + ends[ei][2]);
+    }
+    ctx.restore();
+  }
+
+  flushGlow();
+  setWorldTransform(ctx);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+
+  /* --- 重点标注 --- */
+  if (fx.spot) {
+    if (st.spotPick < 0) {
+      var best = -1, bh = -1;
+      for (var si = 0; si < BLD.length; si++) if (BLD[si].h > bh) { bh = BLD[si].h; best = si; }
+      st.spotPick = best;
+    }
+    var B = BLD[st.spotPick];
+    var pulse2 = .72 + .28 * Math.abs(Math.sin(ts / 520));
+    ctx.save();
+    ctx.globalAlpha = pulse2;
+    ctx.fillStyle = fc; ctx.fill(B.p2d);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = fc; ctx.lineWidth = 1.2 + pulse2; ctx.stroke(B.p2d);
+    var rr = Math.max(B.bb[2], B.bb[3]) * .55, rk2 = (ts % 1900) / 1900;
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = .7 * (1 - rk2); ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.arc(B.cx, B.cy, 8 + rk2 * rr, 0, 6.2832); ctx.stroke();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.font = '700 16px "Source Han Sans SC","Microsoft YaHei",sans-serif'; ctx.textAlign = 'center';
+    var lbl = '★ ' + (B.name || '重点建筑') + ' · ' + Math.round(B.h) + 'm';
+    ctx.lineWidth = 3.5; ctx.strokeStyle = 'rgba(0,0,0,.55)';
+    ctx.strokeText(lbl, B.cx, B.top - 14);
+    ctx.fillStyle = fc; ctx.fillText(lbl, B.cx, B.top - 14);
+    ctx.beginPath(); ctx.moveTo(B.cx, B.top - 8); ctx.lineTo(B.cx, B.top); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* --- 随机巡检(节奏/并发可调)--- */
+  if (fx.patrol) {
+    var PT = st.patrol;
+    if (ts > PT.next) {
+      PT.next = ts + PT.iv;
+      if (PT.items.length < PT.n) {
+        PT.items.push({i: Math.random() * BLD.length | 0, born: ts});
+      }
+    }
+    for (var pti = PT.items.length - 1; pti >= 0; pti--) {
+      var it = PT.items[pti];
+      var age = (ts - it.born) / 1800;
+      if (age >= 1) { PT.items.splice(pti, 1); continue; }
+      var B3 = BLD[it.i];
+      if (!bbHit(B3.bb, vr)) continue;
+      ctx.save();
+      ctx.globalAlpha = .9 * (1 - age);
+      ctx.fillStyle = fc; ctx.fill(B3.p2d);
+      ctx.globalCompositeOperation = 'lighter';
+      drawGlow(ctx, fc, B3.cx, B3.cy, Math.max(B3.bb[2], B3.bb[3]) * .45, .55 * (1 - age));
+      ctx.globalAlpha = (1 - age) * .8; ctx.lineWidth = 2; ctx.strokeStyle = fc;
+      ctx.beginPath(); ctx.arc(B3.cx, B3.cy, 8 + age * 26, 0, 6.2832); ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  /* --- 网点涟漪 --- */
+  if (fx.ping) {
+    if (ts > st.pingNext && POIS.length) {
+      st.pingNext = ts + 1500;
+      var pp = POIS[Math.random() * POIS.length | 0];
+      addPing(pp.x, pp.y, 12, 1600);
+    }
+  }
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.strokeStyle = fc; ctx.lineWidth = 2.5;
+  for (var gi = st.pings.length - 1; gi >= 0; gi--) {
+    var pg = st.pings[gi];
+    var pt2 = (ts - pg.born) / pg.dur;
+    if (pt2 >= 1) { st.pings.splice(gi, 1); continue; }
+    if (pt2 < 0) continue;
+    var e4 = 1 - Math.pow(1 - pt2, 3);
+    ctx.globalAlpha = .9 * (1 - pt2);
+    ctx.beginPath(); ctx.arc(pg.x, pg.y, pg.r0 + pg.grow * e4, 0, 6.2832); ctx.stroke();
+  }
+  ctx.restore();
+
+  /* --- POI 自适应标注(屏幕空间)--- */
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawCallouts(fc);
+
+  fr++;
+  if (ft === null) ft = ts;
+  if (ts - ft >= 1000) {
+    document.getElementById('fps').textContent = fr + ' fps';
+    window.__fps = fr; fr = 0; ft = ts;
+  }
+  /* 自适应降档:帧时 EMA,>21ms 持续 → 关 bloom/减 ribbon 采样;<14.5ms 升回 */
+  var fms = last !== null ? Math.min(ts - last, 100) : 16.7;
+  emaMs = emaMs * 0.92 + fms * 0.08;
+  qChk += fms;
+  if (qChk > 2500) {
+    qChk = 0;
+    if (emaMs > 21 && Q.bloom) { Q.bloom = false; Q.ribbonN = 14; }
+    else if (!Q.bloom && emaMs < 14.5) { Q.bloom = true; Q.ribbonN = 24; }
+  }
+  last = ts;
+  requestAnimationFrame(frame);
+}
+/* 屏幕空间:网点标注 */
+var placedBoxes = [];
+function drawCallouts(fc) {
+  placedBoxes = [];
+  var base2 = Math.max(.9, Math.min(1.5, view.k));
+  for (var i = 0; i < POIS.length; i++) {
+    var p = POIS[i];
+    var s = worldToScreen(p.x, p.y);
+    if (s[0] < -80 || s[1] < -80 || s[0] > geo.Ws + 80 || s[1] > geo.Hs + 80) continue;
+    var r = 4.5 + Math.min(4, view.k);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    drawGlow(ctx, fc, s[0], s[1], 12 + view.k * 3, .5);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = fc; ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(s[0], s[1], r, 0, 6.2832); ctx.fill(); ctx.stroke();
+    ctx.restore();
+
+    var expanded = view.k >= 1.4;
+    var fontPx = expanded ? 14 * base2 : 12 * base2;
+    var label = p.name;
+    ctx.font = '700 ' + fontPx + 'px "Source Han Sans SC","Microsoft YaHei",sans-serif';
+    var tw = ctx.measureText(label).width;
+    var zw = 0;
+    if (expanded && p.zone) {
+      ctx.font = '400 ' + (fontPx - 3) + 'px "Source Han Sans SC","Microsoft YaHei",sans-serif';
+      zw = ctx.measureText(p.zone).width;
+    }
+    var cardW = Math.max(tw, zw) + (expanded ? 46 : 14);
+    var cardH = expanded ? (p.zone ? 40 : 30) : fontPx + 10;
+    var cx = s[0] + 14, cy = s[1] - r - 10 - cardH;
+    var box = [cx, cy, cardW, cardH];
+    var hit = placedBoxes.some(function (b4) {
+      return !(box[0] > b4[0] + b4[2] || box[0] + box[2] < b4[0] ||
+               box[1] > b4[1] + b4[3] || box[1] + box[3] < b4[1]);
+    });
+    if (hit) continue;
+    placedBoxes.push(box);
+
+    ctx.save();
+    if (expanded) {
+      ctx.strokeStyle = fc; ctx.lineWidth = 1.4; ctx.globalAlpha = .85;
+      ctx.beginPath(); ctx.moveTo(s[0] + r * .7, s[1] - r * .7);
+      ctx.lineTo(cx + 4, cy + cardH); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = 'rgba(14,11,30,.86)';
+      ctx.strokeStyle = fc; ctx.lineWidth = 1.2;
+      roundRect(cx, cy, cardW, cardH, 8);
+      ctx.fill(); ctx.stroke();
+      var ix = cx + 12, iy = cy + cardH - 8;
+      ctx.fillStyle = fc;
+      ctx.globalAlpha = .95;
+      ctx.fillRect(ix, iy - 8, 4, 8);
+      ctx.fillRect(ix + 6, iy - 12, 4, 12);
+      ctx.fillRect(ix + 12, iy - 6, 4, 6);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#f2eeff';
+      ctx.font = '700 ' + fontPx + 'px "Source Han Sans SC","Microsoft YaHei",sans-serif';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      ctx.fillText(label, cx + 34, cy + (p.zone ? 17 : cardH / 2 + fontPx / 3));
+      if (p.zone) {
+        ctx.fillStyle = '#8f89a8';
+        ctx.font = '400 ' + (fontPx - 3) + 'px "Source Han Sans SC","Microsoft YaHei",sans-serif';
+        ctx.fillText(p.zone, cx + 34, cy + cardH - 7);
+      }
+    } else {
+      ctx.fillStyle = 'rgba(14,11,30,.72)';
+      roundRect(cx, cy, cardW, cardH, 6);
+      ctx.fill();
+      ctx.fillStyle = '#f2eeff';
+      ctx.textAlign = 'left';
+      ctx.fillText(label, cx + 7, cy + cardH / 2 + fontPx / 3);
+    }
+    ctx.restore();
+  }
+}
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+/* ===== 交互 ===== */
+(function initInteraction() {
+  var drag = null;
+  wrap.addEventListener('pointerdown', function (e) {
+    viewAuto = false;
+    drag = { mx: e.clientX, my: e.clientY, x: view.x, y: view.y };
+    wrap.classList.add('dragging');
+    wrap.setPointerCapture(e.pointerId);
+  });
+  wrap.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    view.x = drag.x + (e.clientX - drag.mx);
+    view.y = drag.y + (e.clientY - drag.my);
+    clampView(); applyView(); staticDirty = true;
+  });
+  function endDrag() { drag = null; wrap.classList.remove('dragging'); }
+  wrap.addEventListener('pointerup', endDrag);
+  wrap.addEventListener('pointercancel', endDrag);
+  wrap.addEventListener('wheel', function (e) {
+    if (!e.altKey) return;
+    e.preventDefault();
+    viewAuto = false;
+    var rect = wrap.getBoundingClientRect();
+    var mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    var f = Math.exp(-e.deltaY * 0.0016);
+    var k2 = Math.max(0.5, Math.min(6, view.k * f));
+    if (k2 === view.k) return;
+    var wx = (mx - view.x) / (view.k * geo.s0);
+    var wy = (my - view.y) / (view.k * geo.s0);
+    view.k = k2;
+    view.x = mx - k2 * geo.s0 * wx;
+    view.y = my - k2 * geo.s0 * wy;
+    clampView(); applyView(); staticDirty = true;
+  }, { passive: false });
+  wrap.addEventListener('dblclick', resetView);
+  document.getElementById('reset').addEventListener('click', resetView);
+  window.addEventListener('resize', fit);
+})();
+
+/* ===== 接线 ===== */
+var sel = document.getElementById('routeSel');
+window.ROUTES.routes.forEach(function (r, i) {
+  var o = document.createElement('option');
+  o.value = i; o.textContent = r.name + '(' + r.meters + 'm)';
+  sel.appendChild(o);
+});
+sel.addEventListener('change', function () { st.routeIdx = +sel.value; });
+document.getElementById('replay').addEventListener('click', function () {
+  if (fx.boot) st.boot.t0 = null;
+});
+document.getElementById('trafficN').addEventListener('input', function () {
+  st.traffic.target = +this.value;
+});
+document.getElementById('patrolIv').addEventListener('input', function () {
+  st.patrol.iv = +this.value;
+  document.getElementById('patrolIvV').textContent = this.value;
+});
+document.getElementById('patrolN').addEventListener('input', function () {
+  st.patrol.n = +this.value;
+  document.getElementById('patrolNV').textContent = this.value;
+});
+document.querySelectorAll('[data-fx]').forEach(function (c) {
+  fx[c.dataset.fx] = c.checked;
+  if (c.dataset.fx === 'boot' && c.checked) st.boot.t0 = null;
+  c.addEventListener('change', function () {
+    fx[c.dataset.fx] = c.checked;
+    if (c.dataset.fx === 'boot' && c.checked) st.boot.t0 = null;
+    if (c.dataset.fx === 'spot' && c.checked) st.spotPick = -1;
+    if (c.dataset.fx === 'ping' && c.checked) st.pingNext = 0;
+  });
+});
+document.addEventListener('visibilitychange', function () { last = null; });
+fit();
+setTimeout(fit, 80);
+setTimeout(fit, 400);
+requestAnimationFrame(frame);
+window.__cars = [];
+window.__player_ready = true;
+</script>
+</body>
+</html>

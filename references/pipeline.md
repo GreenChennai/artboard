@@ -11,7 +11,7 @@ python "<skill>/scripts/preflight.py"
 ```
 
 - 输出 JSON + 清单。**有 FATAL → 停止**,把 hint 转告用户。
-- `ffmpeg` 缺失 + 任务包含 GIF/MP4 → **先问用户要 ffmpeg.exe 路径**,拿到后设环境变量 `ARTBOARD_FFMPEG` 再继续(用户不提供:GIF 可用 Pillow 回退继续,MP4 明确告知做不了)。
+- `ffmpeg` 缺失 + 任务包含 MP4 → **先问用户要 ffmpeg.exe 路径**,拿到后设环境变量 `ARTBOARD_FFMPEG` 再继续(用户不提供:MP4 明确告知做不了;**GIF 不受影响**——由 Kiln 内置量化器直出,不需要 ffmpeg/Pillow;`export.py` 只在 `--cmyk` 时用到 Pillow,见 `scripts/export.py:276`)。
 - 字体/vendor 缺失 WARN:静态任务可继续,动图/图表任务先补齐。
 
 ## Step 1 需求追问与路由(细则见 intake.md)
@@ -223,12 +223,13 @@ python scripts/make_bats.py <项目> --embed
 
 ## 动效规范(M2 已启用)
 
-- 一切动画必须**无缝循环**,单循环 2–6 秒,总录制时长 ≤ 15 秒。
-- fps ∈ {10, 20, 25, 50}(GIF)——循环时长须能被帧间隔整除(如 25fps 下循环 2.0s / 2.4s / 3.2s)。
+- 一切动画必须**无缝循环**,单循环 2–6 秒;**导出总长由 `--max-wait` 定**(帧数 = `--fps` × `--max-wait`,不再是"录制秒数")。
+- 帧率 `--fps` 是普通整数(**默认 25**,`scripts/export.py:197` 无 `choices`)——`{10, 20, 25, 50}` 只是引擎/播放器**建议值,不再是硬约束**;循环时长须能被帧间隔整除(如 25fps 下循环 2.0s / 2.4s / 3.2s)。
 - 只用 `transform` / `opacity` / `background-position`(可被逐帧采样的属性);**禁用依赖交互/滚动/音频的动画**。
 - 动效模式库、缓动 token、无缝循环写法、导出自检 → **references/animation.md**(M2 已启用)。
-- 录制从页面加载完成后开始:入场动画可能被错过,**动图主体靠循环表达**。
-- 导出:`--format GIF --fps 25 --max-wait 6`(无 ffmpeg 时 Pillow 回退);MP4 需 ffmpeg。
+- **静态版要确定性只能用有限动画**:静态导出(PNG/JPG)= 快进到有限动画的终态;`infinite` 的静态相位不确定(实测 2026-10-07)。要 `infinite` 就另出一版有限静态图。
+- **GIF/MP4 的捕获起点在 CSS 时间轴 ≈1.0s 处**(实测 2026-10-07:200–400px 0.9–1.0s / 1080×1920 1.0–1.25s):从 0s 起播的入场前约 1s 会被截,请给 ≥1s 前置静置;**动图主体靠循环表达**。
+- 导出:`--format GIF --fps 25 --max-wait 6`(GIF 由 Kiln 内置量化器直出,不依赖 ffmpeg/Pillow);MP4 需 ffmpeg。
 
 ## 本册用到的脚本
 
@@ -237,7 +238,7 @@ python scripts/make_bats.py <项目> --embed
 | `preflight.py` | 开工预检 | `python scripts/preflight.py` |
 | `scaffold.py` | 建项目 | `python scripts/scaffold.py <slug> --size xhs` |
 | `export.py` | 导出主路径 | `python scripts/export.py --source … --output … --width 1080 --height 1440` |
-| `export_fallback.py` | 导出兜底(仅 PNG) | `python scripts/export_fallback.py --source src/index.html -o out.png` |
+| `export_fallback.py` | 导出兜底(仅 PNG) | `python scripts/export_fallback.py --source <项目>/src/index.html --output <项目>/export/out.png` |
 | `check_overflow.py` | 机检门禁 | `python scripts/check_overflow.py <proj>/src --safe-area auto` |
 
 > 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

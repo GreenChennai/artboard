@@ -32,6 +32,9 @@ SVG_NS = "{http://www.w3.org/2000/svg}"
 NODE_COUNT_RE = re.compile(r"[mMlLhHvVcCsSqQtTaAzZ]")
 HEX_RE = re.compile(r"#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b")
 RESIDUE_RE = re.compile(r"<metadata|sodipodi:|inkscape:|<!--")
+# 能承载填充的绘制元素:判定"是否空图"时必须带上它们,不能只认 <path>
+FILL_TAGS = ("path", "rect", "circle", "ellipse", "polygon", "polyline",
+             "line", "text")
 
 
 def rel(p: str) -> str:
@@ -101,10 +104,19 @@ def check_file(path: str, max_nodes: int, allow_image: bool,
                     return None
             pw, ph = px(w), px(h)
             if pw is not None and ph is not None:
-                vw, vh = (float(x) for x in vb.split()[-2:])
-                if (pw, ph) != (vw, vh):
+                parts = vb.replace(",", " ").split()
+                try:
+                    vw, vh = float(parts[-2]), float(parts[-1])
+                except (IndexError, ValueError):
+                    # viewBox="24" / 分量非数值:以前这里裸 float() 抛 ValueError,
+                    # 会让**整批**文件检查中断且一个 JSON 都不吐。
                     add("VIEWBOX", 1,
-                        f"width/height ({w}×{h}) 与 viewBox ({vw}×{vh}) 不一致")
+                        f"viewBox 分量不足或非数值:{vb!r}"
+                        "(应为 min-x min-y width height 四个数)")
+                else:
+                    if (pw, ph) != (vw, vh):
+                        add("VIEWBOX", 1,
+                            f"width/height ({w}×{h}) 与 viewBox ({vw}×{vh}) 不一致")
 
     # 收集属性
     strokes: set[str] = set()
@@ -132,12 +144,16 @@ def check_file(path: str, max_nodes: int, allow_image: bool,
                 attrs.setdefault(k.strip(), v.strip())
         stroke = attrs.get("stroke")
         fill = attrs.get("fill")
-        if stroke and stroke not in ("none",):
+        stroke_on = bool(stroke) and stroke != "none"
+        if stroke_on:
             has_stroke = True
             strokes.add(str(attrs.get("stroke-width", "2")).strip())
             caps.add(attrs.get("stroke-linecap", "butt"))
             joins.add(attrs.get("stroke-linejoin", "miter"))
-        if tag == "path" and fill not in ("none", None) and not stroke:
+        if tag in FILL_TAGS and fill != "none" and not stroke_on:
+            # fill 未写 = SVG 规范默认填充黑,算"有填充";只有显式 fill="none"
+            # 才是真的没画。以前只认 <path> 且把 fill is None 排除,凡 rect/
+            # circle/… 画的图或缺省 fill 的 path 都被误报"空图"。
             has_fill_only = True
         if tag == "path" and attrs.get("d"):
             path_counts.append(path_node_count(attrs["d"]))
@@ -171,7 +187,8 @@ def check_file(path: str, max_nodes: int, allow_image: bool,
     if max_g_depth > 5:
         add("DEPTH", 0, f"<g> 嵌套 {max_g_depth} 层 > 5")
     limit = 200 if strict else max_nodes
-    for i, n in enumerate(path_counts[:12]):
+    # 全量遍历:以前写作 path_counts[:12],第 13 条起的超大路径被静默放过(假阴性)
+    for i, n in enumerate(path_counts):
         if n > limit:
             add("PATH_NODES", 0, f"第 {i + 1} 条路径约 {n} 个节点 > {limit}(曲线堆;简化或 --max-nodes 放宽)")
             break
@@ -181,10 +198,11 @@ def check_file(path: str, max_nodes: int, allow_image: bool,
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     class JsonParser(argparse.ArgumentParser):
         def error(self, message):  # 失败路径也吐合法 JSON(jsonfail 契约)
             print(json.dumps({"ok": False, "error": "USAGE", "hint": f"{message};{self.prog} --help"},
@@ -205,7 +223,12 @@ def main() -> int:
         return 2
     results = []
     for p in files:
-        issues = check_file(p, args.max_nodes, args.allow_image, args.strict)
+        try:
+            issues = check_file(p, args.max_nodes, args.allow_image, args.strict)
+        except Exception as exc:  # noqa: BLE001
+            # 单文件意外不得拖垮整批(协议要求无论如何都吐合法 JSON)
+            issues = [{"code": "INTERNAL", "line": 0,
+                       "msg": f"{type(exc).__name__}: {exc}"}]
         results.append({"path": rel(p), "issues": issues})
         if issues:
             for it in issues:

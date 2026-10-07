@@ -150,6 +150,11 @@ def upload_apikey(path, api_key):
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     ap = argparse.ArgumentParser(description="上传图片到图床(imgchr)取直链, 并可写成 urls.json")
     ap.add_argument("images", nargs="+", help="本地图片路径")
     ap.add_argument("--cookie", default=os.environ.get("IMGCHR_COOKIE", ""),
@@ -163,7 +168,11 @@ def main():
 
     imgs = [p for p in a.images if os.path.isfile(p)]
     if not imgs:
-        print("没有找到图片:", a.images)
+        if a.json:  # --json 承诺「只输出 JSON」:失败路径也要给信封,且单行(末行可被直接 json.loads)
+            print(json.dumps({"ok": {}, "failed": list(a.images), "error": "NO_IMAGES",
+                              "hint": "传入的路径都不是存在的文件"}, ensure_ascii=False))
+        else:
+            print("没有找到图片:", a.images)
         return 2
 
     token = None
@@ -173,11 +182,20 @@ def main():
             print(f"Cookie 校验: auth_token={'拿到 ✅' if token else '没拿到 ❌'}  "
                   f"登录态={'像已登录' if logged_in else '未确认'}")
         if not token:
-            print("!! " + note)
+            if a.json:
+                print(json.dumps({"ok": {}, "failed": [], "error": "COOKIE_INVALID",
+                                  "hint": note}, ensure_ascii=False))
+            else:
+                print("!! " + note)
             return 3
     elif not a.api_key:
-        print("需要凭证: 给 --cookie, 或给 --api-key。\n"
-              "  取 cookie: F12 → Application → Cookies → https://imgchr.com → 复制全部 k=v; k=v")
+        hint = ("需要凭证: 给 --cookie, 或给 --api-key。\n"
+                "  取 cookie: F12 → Application → Cookies → https://imgchr.com → 复制全部 k=v; k=v")
+        if a.json:
+            print(json.dumps({"ok": {}, "failed": [], "error": "NO_CREDENTIALS",
+                              "hint": hint}, ensure_ascii=False))
+        else:
+            print(hint)
         return 2
 
     results, fails = {}, []

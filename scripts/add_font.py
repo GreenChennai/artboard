@@ -43,10 +43,11 @@ INTRO_TEMPLATE = """# {name}
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     p = argparse.ArgumentParser()
     p.add_argument("folder", help="fonts/ 下的字体目录名")
     p.add_argument("--name", default=None)

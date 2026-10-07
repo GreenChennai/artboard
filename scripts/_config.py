@@ -50,7 +50,9 @@ def _load() -> dict:
     global _cache, _bad_config
     if _cache is None:
         try:
-            with open(CONFIG_PATH, encoding="utf-8") as f:
+            # utf-8-sig:带 BOM 的 config.json(Windows 记事本另存)也能读;
+            # 普通 UTF-8 无 BOM 文件同样兼容。
+            with open(CONFIG_PATH, encoding="utf-8-sig") as f:
                 _cache = json.load(f)
         except FileNotFoundError:
             _cache = {}                     # 还没建 config.json:正常,走默认值
@@ -78,7 +80,16 @@ def cfg(key: str, default: str = "") -> str:
     if env:
         return env
     v = _load().get(key)
-    return v if isinstance(v, str) and v else default
+    # 非字符串配置(如 config.example.json 示范的 "bridge_port": 0 / 900)以前被
+    # 静默丢弃回落默认值;现在非 None 且非空即 str(v) 回传。
+    if v is None or v == "":
+        return default
+    if isinstance(v, bool):
+        # 例外:布尔按既有真值语义走。若直接 str(False) → "False"(真值字符串),
+        # 会让 `if cfg("mcp_enabled")` 这类判断把「关」读成「开」(preflight.py
+        # 不在本次改动范围,链式修复风险太高),故 false 一律回落默认值。
+        return "true" if v else default
+    return str(v)
 
 
 def cfg_raw(key: str, default=None):
@@ -110,7 +121,8 @@ def write_config(data: dict, path: str = "") -> str:
     merged: dict = {}
     if os.path.isfile(target):
         try:
-            with open(target, encoding="utf-8") as f:
+            # 同 _load():带 BOM 的 config.json 也要能合并读取,否则写回时会丢掉已有键
+            with open(target, encoding="utf-8-sig") as f:
                 loaded = json.load(f)
             if isinstance(loaded, dict):
                 merged = loaded

@@ -17,7 +17,7 @@
 | 尺寸 | 由画布决定,像素级控制 | 由内容撑开(长文可达 16000px+) |
 | 样式 | 可用 `<style>` / class / CSS 动画 | **只能全内联**;`<style>`、`@keyframes`、JS 全被剥离 |
 | 动效 | GIF / MP4(`animation.md` 的模式 P/S) | **只能内联 SVG + SMIL** |
-| 导出 | `export.py` → WPI | **不导出**;发布走 **135 编辑器中转**(§八,实测 98%+ 还原度) |
+| 导出 | `export.py` → Kiln(v1.9 起唯一引擎) | **不导出**;发布走 **135 编辑器中转**(§八,实测 98%+ 还原度) |
 | 自检 | `check_overflow.py`+`design-review-rubric` | `check_wechat_svg.py`+本册 §十一 清单 |
 
 **共同点**(可直接复用 artboard 已有资产):一图一个焦点、层级 ≤3、强调 ≤2、

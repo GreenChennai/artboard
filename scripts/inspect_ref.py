@@ -171,10 +171,11 @@ def cmd_crop(args) -> None:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
     for name in ("grid", "census", "bbox", "crop"):
@@ -194,6 +195,19 @@ def main() -> int:
             sp.add_argument("--scale", type=float, default=1.0)
         sp.set_defaults(func={"grid": cmd_grid, "census": cmd_census, "bbox": cmd_bbox, "crop": cmd_crop}[name])
     args = p.parse_args()
+
+    # 输入校验(此前会抛未捕获异常):--minor/--pitch 0 → range() step 0 / % 0;
+    # --bg "#fff" → int('', 16) ValueError。
+    if args.cmd == "grid":
+        pitch, minor = getattr(args, "pitch", 1), getattr(args, "minor", 1)
+        if pitch < 1 or minor < 1:
+            p.error(f"--pitch/--minor 必须是正整数(收到 pitch={pitch}, minor={minor})")
+    if args.cmd == "bbox":
+        bg = getattr(args, "bg", "auto")
+        if bg != "auto" and not (len(bg) == 7 and bg[0] == "#"
+                                 and all(c in "0123456789abcdefABCDEF" for c in bg[1:])):
+            p.error(f"--bg 只能是 auto 或 #RRGGBB(六位十六进制),收到 {bg!r}")
+
     args.func(args)
     return 0
 

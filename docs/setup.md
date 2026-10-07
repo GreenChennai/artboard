@@ -59,7 +59,7 @@ C:\Users\你\.agents\skills\artboard\
 | Pexels API Key | 第 3 步复制的 Key | 推荐 |
 | Pixabay API Key | 第 3 步复制的 Key | 推荐 |
 | FFmpeg 路径 | 见第 5 步(可一键部署) | 用 MP4 才需要 |
-| 花瓣/图标库/Pinterest Cookie | 装 `toolssset-bridge` 扩展后由 MCP 自动抓写(`assets_cookie`);或扩展 popup 手动抓 | 可选 |
+| 花瓣/图标库/Pinterest Cookie | 装 `tools/asset-bridge` 扩展后由 MCP 自动抓写(`assets_cookie`);或扩展 popup 手动抓 | 可选 |
 | 本地代理 | 访问 Pinterest 等境外源时填,如 `http://127.0.0.1:7890` | 可选 |
 | 视觉识别模式 | 保持 `auto`(Agent 自带视觉优先) | 保持默认 |
 | 本地 VQA / OCR 路径 | 跑 `scripts\fetch_model.py vqa`(或 `ocr`)自动下载部署 | 可选 |
@@ -76,22 +76,31 @@ C:\Users\你\.agents\skills\artboard\
 > 写错了不用怕:`config.json` 解析失败时 `preflight.py` 会直接报
 > 「config.json 解析失败(第 X 行第 Y 列)」并标为阻断项,不会静默走默认值。
 
-## 第 5 步 · 一键部署运行环境(在 `artboard\scripts\` 下打开命令行)
+## 第 5 步 · 一键部署运行环境(在**技能根 `artboard\`** 下打开命令行)
+
+> 全页统一口径:**命令一律在技能根(即 `artboard\`,内含 `scripts\`)执行**,脚本路径写成
+> `scripts\xxx.py`。第 6 步与「常见问题」同样按技能根写,两处不要混用。
 
 ```bat
 :: 0. Python 依赖(核心:Pillow + playwright)
-pip install -r ..\requirements.txt
+pip install -r requirements.txt
 
 :: 1. Kiln 渲染引擎(v1.9 起唯一引擎,自动探测/部署)
-python setup_kiln.py
+python scripts\setup_kiln.py
 
 :: 2. FFmpeg(可选:GIF 高质量 + MP4 视频)
-python setup_ffmpeg.py
+python scripts\setup_ffmpeg.py
 
 :: 3. 本地 VQA 模型(可选:离线看图问答,约 600MB)
-python fetch_model.py vqa
+python scripts\fetch_model.py vqa
 
 ```
+
+> **唯一例外**:项目里的 `导出.py`(由 `scripts/export_local.py` 投放的一键导出)。
+> 它**必须在项目 `src\` 目录下**双击或运行(`python 导出.py`),画布宽/倍率/高度从项目
+> `project.json` 读、无需命令行参数(也没有参数面);放在技能根或 `scripts\` 下运行无效——
+> 它按自身位置推断项目根与输出目录,放错会在 `scripts\` 里生出一个空的「导出」目录
+> (`export_local.py` 已加防护,检测到即退出)。
 
 > 矢量产物(SVG / EPS / AI)由 Kiln 单文件直出,无需额外 Python 依赖;
 > 仅 `--reference` 相似度门禁(ai_fidelity.py)需要 `pypdfium2`,已列入 requirements.txt。

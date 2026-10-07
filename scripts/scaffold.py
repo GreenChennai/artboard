@@ -2,10 +2,14 @@
 
 用法:
   python scaffold.py <slug> [--size xhs|long|banner|kv|square|vertical]
-                     [--fonts smiley-sans,source-han-sans] [--force]
+                     [--fonts smiley-sans,source-han-sans] [--scale 1|2|4] [--force]
 
 - 复制所选字体的字体文件到 src/fonts/;复制 vendor JS 到 src/vendor/
+- slug 只能是 studio 下的一层目录名(消毒单点 = _paths.safe_segment:
+  拒绝空/`.`/`..`/含 `/` 或 `\\` 或 `:`),否则报 BAD_SLUG 不建任何目录
 - 生成 src/index.html 骨架:固定画布 + 已选字体的 @font-face + design tokens 占位
+- 写入 project.json:{size,width,height,**scale**,fonts,skill_dir}——
+  scale 取预设自带值(--scale 覆盖),<项目>/src/导出.py 与 导出-*.bat 读它
 - 尺寸预设: xhs/long/banner/kv/square/vertical/card/a4p/trifold/rollup
              gzh=900x383 yt=1280x720 og=1200x630 ig=1080x1350 channel=1080x1260
              taobao=800x800 a3p=1754x2480(全表见 references/material-catalog.md)
@@ -19,6 +23,7 @@ import subprocess
 import sys
 
 from _config import cfg, near_workspace
+from _paths import safe_segment
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS_DIR = os.path.join(SKILL_DIR, "scripts")
@@ -28,27 +33,31 @@ VENDOR_DIR = os.path.join(SKILL_DIR, "assets", "vendor")
 STUDIO = cfg("studio_dir", near_workspace("artboard-studio"))
 FONT_EXTS = (".ttf", ".otf", ".woff2", ".woff", ".ttc", ".otc")
 
+# 预设 = 画布参数(宽/高/**导出倍率 scale**)——见 docs/glossary.md「尺寸类」;
+# 本表是 18 个预设的唯一真相源(_img_core.size_of / imageops --presets 都读这里)。
+# scale 会写进 project.json.scale,由 <项目>/src/导出.py 与 导出-*.bat 读取
+# (export.md:成品 px = CSS 画布 px × scale,印刷 DPI 由它决定;--scale 可覆盖)。
 SIZES = {
-    "xhs":     {"w": 1080, "h": 1440},
-    "long":    {"w": 2400, "h": 0},
-    "banner":  {"w": 1920, "h": 600},
-    "kv":      {"w": 1920, "h": 1080},
-    "square":  {"w": 1080, "h": 1080},
-    "vertical": {"w": 1080, "h": 1920},
+    "xhs":     {"w": 1080, "h": 1440, "scale": 2},
+    "long":    {"w": 2400, "h": 0,    "scale": 1},   # 长图 2400×内容高(h=0);scale 1(内容稀疏可 --scale 2)
+    "banner":  {"w": 1920, "h": 600,  "scale": 2},   # 横幅(export.md:成品 3840×1200)
+    "kv":      {"w": 1920, "h": 1080, "scale": 2},
+    "square":  {"w": 1080, "h": 1080, "scale": 2},
+    "vertical": {"w": 1080, "h": 1920, "scale": 2},
     # ---- 印刷品类(scale 2 = 300dpi;rollup 为 150dpi 大幅面)----
-    "card":    {"w": 1063, "h": 638},    # 名片 90×54mm 成品,导出 scale 1 即 300dpi
-    "a4p":     {"w": 1240, "h": 1754},   # A4 竖版海报 210×297mm,scale 2 → 2480×3508
-    "trifold": {"w": 1754, "h": 1240},   # 三折页单面 297×210mm,scale 2 → 3508×2480;正/背两个画布
-    "rollup":  {"w": 2362, "h": 5906},   # 易拉宝 80×200cm,scale 2 → 4724×11812(150dpi)
+    "card":    {"w": 1063, "h": 638,  "scale": 1},   # 名片 90×54mm 成品,导出 scale 1 即 300dpi
+    "a4p":     {"w": 1240, "h": 1754, "scale": 2},   # A4 竖版海报 210×297mm,scale 2 → 2480×3508
+    "trifold": {"w": 1754, "h": 1240, "scale": 2},   # 三折页单面 297×210mm,scale 2 → 3508×2480;正/背两个画布
+    "rollup":  {"w": 2362, "h": 5906, "scale": 2},   # 易拉宝 80×200cm,scale 2 → 4724×11812(150dpi)
     # ---- 物料扩充(全表见 references/material-catalog.md)----
-    "gzh":     {"w": 900,  "h": 383},    # 公众号头条封面 2.35:1,关键信息居中
-    "yt":      {"w": 1280, "h": 720},    # YouTube 缩略图 16:9,文字 ≤3-5 词
-    "og":      {"w": 1200, "h": 630},    # OG 社交分享卡 1.91:1
-    "ig":      {"w": 1080, "h": 1350},   # Instagram Post 4:5
-    "channel": {"w": 1080, "h": 1260},   # 视频号封面 6:7(防 UI 遮挡)
-    "taobao":  {"w": 800,  "h": 800},    # 电商主图 1:1(禁文字牛皮癣)
-    "a3p":     {"w": 1754, "h": 2480},   # A3 海报,scale 2 → 3508×4961(300dpi)
-    "slide":   {"w": 1280, "h": 720},    # PPT 页 16:9,scale 2 → 2560×1440;多页 = slide-01.html…
+    "gzh":     {"w": 900,  "h": 383,  "scale": 2},   # 公众号头条封面 2.35:1,关键信息居中
+    "yt":      {"w": 1280, "h": 720,  "scale": 2},   # YouTube 缩略图 16:9,文字 ≤3-5 词
+    "og":      {"w": 1200, "h": 630,  "scale": 1},   # OG 分享卡 1.91:1(官方成品即 1200×630 → scale 1)
+    "ig":      {"w": 1080, "h": 1350, "scale": 2},   # Instagram Post 4:5
+    "channel": {"w": 1080, "h": 1260, "scale": 2},   # 视频号封面 6:7(防 UI 遮挡)
+    "taobao":  {"w": 800,  "h": 800,  "scale": 2},   # 电商主图 1:1(禁文字牛皮癣)
+    "a3p":     {"w": 1754, "h": 2480, "scale": 2},   # A3 海报,scale 2 → 3508×4961(300dpi)
+    "slide":   {"w": 1280, "h": 720,  "scale": 2},   # PPT 页 16:9,scale 2 → 2560×1440;多页 = slide-01.html…
 }
 
 # 字重轴:可变字体声明 100-900;单字重字体用具体值
@@ -150,22 +159,43 @@ def font_face_block(family: str, files: list[str], url_base: str = "fonts/") -> 
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     p = argparse.ArgumentParser()
     p.add_argument("slug")
     p.add_argument("--size", default="xhs", choices=list(SIZES))
     p.add_argument("--fonts", default="source-han-sans",
                    help="逗号分隔的 fonts/ 目录名(如 source-han-sans);"
                         "也接受显示名(如 思源黑体);传空串 = 不装字体走系统字体")
+    p.add_argument("--scale", type=int, default=None, choices=[1, 2, 4],
+                   help="导出倍率(写进 project.json.scale,<项目>/src/导出.py 与 "
+                        "导出-*.bat 读它决定印刷 DPI);缺省用预设自带值"
+                        "(名片/长图/OG 卡 1,其余 2)")
     p.add_argument("--force", action="store_true", help="允许写入已存在项目")
     p.add_argument("--embed-fonts", action="store_true", dest="embed_fonts",
                    help="字体/vendor 拷贝进项目(自包含);默认目录联接指向 Skill 字体库(零拷贝)")
     args = p.parse_args()
 
-    proj = os.path.join(STUDIO, args.slug)
+    # slug 直接参与路径拼接 → 必须消毒(单点实现 = _paths.safe_segment):
+    # 否则 `..\escaped` 会把项目建到 studio 之外、`a/b` 会多套一层、`C:\abs` 会
+    # 建到系统盘。非法一律回 JSON 信封,不 traceback。
+    slug = safe_segment(args.slug)
+    # 二次约束:必须真落在 studio 下的一层(防今后改动破坏 safe_segment 的不变式);
+    # 末尾句点会被 Windows 静默吃掉,目录名与 project.json.slug 就对不上了,一并拒。
+    in_studio = (bool(slug) and not slug.endswith(".")
+                 and os.path.dirname(os.path.abspath(os.path.join(STUDIO, slug)))
+                 == os.path.abspath(STUDIO))
+    if not in_studio:
+        print(json.dumps({"ok": False, "error": "BAD_SLUG", "detail": args.slug,
+                          "hint": "slug 只能是 studio 下的一层目录名:非空,"
+                                  "不含 / \\ : 与 ..,不能是 . 或 ..,末尾不能是句点"},
+                         ensure_ascii=False))
+        return 1
+
+    proj = os.path.join(STUDIO, slug)
     if os.path.exists(proj) and not args.force:
         print(json.dumps({"ok": False, "error": "EXISTS", "path": proj,
                           "hint": "换 slug 或 --force"}, ensure_ascii=False))
@@ -244,7 +274,9 @@ def main() -> int:
                 sys.exit(1)
 
     size = SIZES[args.size]
-    css_size = (f"width: {size['w']}px;" if size["h"] else
+    # doctor.py 把 .poster 的显式 width/height 当画布真值(缺一分量即判无显式尺寸
+    # → degraded):有高度的画幅必须两个分量都写。长图(h=0)高度随内容,保持注释写法。
+    css_size = (f"width: {size['w']}px; height: {size['h']}px;" if size["h"] else
                 f"width: {size['w']}px; /* 长图:高度随内容 */")
     html = INDEX_TEMPLATE.format(
         faces="\n".join(faces),
@@ -256,8 +288,11 @@ def main() -> int:
         f.write(html)
 
     # skill_dir:投放出去的 src/导出.py 靠它 import _config 读 config.json
-    meta = {"slug": args.slug, "size": args.size, "width": size["w"],
-            "height": size["h"], "fonts": ",".join(font_dirs),
+    # scale:导出倍率,预设自带(--scale 覆盖)——导出.py/导出-*.bat 读它决定成品尺寸与
+    # 印刷 DPI,漏写会回落 2(名片/长图/OG 卡本该是 1),故必须显式落进 project.json。
+    scale = args.scale if args.scale else size.get("scale", 2)
+    meta = {"slug": slug, "size": args.size, "width": size["w"],
+            "height": size["h"], "scale": scale, "fonts": ",".join(font_dirs),
             "fonts_input": args.fonts,
             "embed_fonts": embed, "skill_dir": SKILL_DIR,
             "created_by": "artboard.scaffold"}

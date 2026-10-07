@@ -16,6 +16,7 @@ import argparse
 import json
 import pathlib
 import os
+import subprocess   # --prefetch 的 curl 兜底分支用(此前漏 import → NameError)
 import sys
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -90,10 +91,11 @@ def postprocess(img, feather: float, sticker: bool, shadow: bool,
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     p = argparse.ArgumentParser()
     p.add_argument("inputs", nargs="*", help="待抠图路径(可多张)")
     p.add_argument("--prefetch", nargs="*", choices=sorted(ALLOWED_MODELS), default=None,
@@ -134,11 +136,15 @@ def main() -> int:
             home.mkdir(parents=True, exist_ok=True)
             url = f"https://github.com/danielgatis/rembg/releases/download/v0.0.0/{m}.onnx"
             dst = home / f"{m}.onnx"
-            r = subprocess.run(["curl", "-L", "-o", str(dst), url],
-                               capture_output=True, text=True, timeout=1800)
-            if r.returncode != 0 or not dst.exists() or dst.stat().st_size < 1024:
+            try:
+                r = subprocess.run(["curl", "-L", "-o", str(dst), url],
+                                   capture_output=True, text=True, timeout=1800)
+                rc, curl_err = r.returncode, (r.stderr or "")
+            except Exception as exc:  # noqa: BLE001 — curl 缺失/超时也走失败信封,不吐 traceback
+                rc, curl_err = 1, f"{type(exc).__name__}: {exc}"
+            if rc != 0 or not dst.exists() or dst.stat().st_size < 1024:
                 emit({"ok": False, "error": "PREFETCH_FAILED",
-                      "detail": f"pooch: {pooch_err[:160]} | curl: {(r.stderr or '')[-160:]}",
+                      "detail": f"pooch: {pooch_err[:160]} | curl: {curl_err[-160:]}",
                       "hint": f"手动下载 {url} 放到 {dst}"})
                 return 1
             try:

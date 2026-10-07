@@ -662,10 +662,11 @@ def cmd_check(args) -> int:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     p = argparse.ArgumentParser(description="公众号文章排版器(Markdown → 全内联样式 HTML)")
     sub = p.add_subparsers(dest="cmd", required=True)
 

@@ -35,12 +35,16 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(ROOT, "scripts")
 REF_DIR = os.path.join(ROOT, "references")
 
-MARKDOWN_GLOBS = ("*.md", "references/**/*.md", "docs/*.md", "fonts/*.md",
-                  "tools/**/*.md", "assets/**/*.md")
+MARKDOWN_GLOBS = ("*.md", "references/**/*.md", "docs/*.md", "docs/map/*.md",
+                  "fonts/*.md", "tools/**/*.md", "assets/**/*.md")
 
 # 过程性文档:本地留档、不进仓库(见 .gitignore)。里面记的是"某个提案""某个已删文件",
 # 不是现存引用 —— 纳入引用核验只会产生假阳性。
-PROCESS_DOCS = ("docs/ITERATION.md", "docs/review/", "docs/adr/")
+# docs/map/ITERATION.md 与 docs/map/adr/ 同属地图模块的历史留档(命令/路径按并入前
+# 布局书写,文件头已有"勿照抄"声明),按同一口径豁免;docs/map/ 下的调研/术语文档
+# (**/*.md 一层,不含子目录)参与引用核验。
+PROCESS_DOCS = ("docs/ITERATION.md", "docs/review/", "docs/adr/",
+                "docs/map/ITERATION.md", "docs/map/adr/", "docs/map/legacy-patches/")
 
 # 设计上豁免 import/CLI 冒烟的脚本(见各自文件头)
 SKIP_SMOKE = {
@@ -56,10 +60,12 @@ BUILD_PAIRS = (
      "--noconfirm scripts/config_gui.py"),
 )
 
-# 冒烟参数:多数脚本 --help 即可;有副作用(开 GUI / 无 argparse)的另行指定
+# 冒烟参数:多数脚本 --help 即可;有副作用(开 GUI / 无 argparse / 会写盘)的另行指定
 SMOKE_ARGS = {
     "config_gui.py": ["--locate"],   # --help 会开窗口
     "fetch_font.py": [],             # 无 argparse;空参 = 列状态
+    # --help 不被识别 → 会真的重写 registry.json + docs/scripts.md,把工作区弄脏
+    "gen_script_index.py": ["--check"],
 }
 DEFAULT_SMOKE_ARGS = ["--help"]
 
@@ -82,7 +88,15 @@ JSONFAIL_CASES = (
     ("check_svg.py", []),                            # 缺路径 → USAGE JSON
     ("fetch_svg.py", ["iconify"]),                   # 缺 --set/--query → USAGE JSON
     ("pixel.py", []),                                # 空参 → USAGE JSON
+    ("pixel.py", ["blend"]),                         # 缺 --in/--top/-o → USAGE JSON(非 traceback)
+    ("pixel.py", ["blur-gaussian", "--in", "___nonexistent___.png",
+                  "-o", "___nonexistent_out___.png", "--params", "oops"]),
+    ("pixel.py", ["recipe", "validate", "___nonexistent___.json"]),
+    ("imageops.py", ["stitch", "___nonexistent___.png", "___nonexistent2___.png",
+                     "-o", "___nonexistent_out___.png"]),
     ("check_h5.py", ["__nope__.html"]),              # 无 HTML → USAGE JSON
+    ("doctor.py", ["___nonexistent_dir___", "--json"]),  # 目录不存在 → JSON;且 --json 不得混人类行
+    ("gzh_cover.py", ["merge", "___nonexistent___"]),    # 项目不存在 → JSON
 )
 
 
@@ -214,8 +228,13 @@ class Report:
 # ---------------------------------------------------------------- refs
 
 REF_RE = re.compile(
-    r"(?<![\w/])((?:references|scripts|docs|assets|fonts|tools)"
+    r"(?<![\w/])((?:\.\./)*)"
+    r"((?:references|scripts|docs|assets|fonts|tools)"
     r"/[\w\-./]+\.[A-Za-z0-9]+)")
+
+# 项目级投放脚本:由 scaffold.py 写进 <项目>/src/,**不在 scripts/**。
+# 文档里 `python 导出.py` 这种调用是正确写法,不该按 scripts/导出.py 判悬挂。
+PROJECT_LEVEL_SCRIPTS = {"导出.py"}
 
 
 def check_refs(rep: Report) -> None:
@@ -225,14 +244,22 @@ def check_refs(rep: Report) -> None:
             continue  # 历史版本记录:引用旧脚本名属正常,不参与悬挂检查
         for lineno, line in enumerate(read(md).splitlines(), 1):
             for m in REF_RE.finditer(line):
-                ref = m.group(1)
+                up, ref = m.group(1), m.group(2)
                 if any(c in ref for c in "<>*…"):
                     continue                      # 占位符/通配,跳过
                 if ref.endswith((".py", ".md")) and ref.startswith("docs/review/"):
                     continue                      # 过程文档,本地生成
                 checked += 1
-                if not os.path.isfile(os.path.join(ROOT, ref)):
-                    rep.add("refs", "FAIL", f"{rel(md)}:{lineno} → {ref} 不存在",
+                # 显式 `../` 前缀 → 相对当前文件解析(references/styles/*.md 里
+                # `../../fonts/…` 才是对的,历史上这里全漏检);
+                # 裸路径仍按技能根解析(既有口径)。
+                target = (os.path.normpath(os.path.join(os.path.dirname(md), up + ref))
+                          if up else os.path.join(ROOT, ref))
+                if up and not os.path.abspath(target).startswith(
+                        os.path.abspath(ROOT) + os.sep):
+                    continue                      # 指向技能之外,不属本仓库
+                if not os.path.isfile(target):
+                    rep.add("refs", "FAIL", f"{rel(md)}:{lineno} → {up}{ref} 不存在",
                             "改引用或补文件;重命名脚本时务必全局搜一遍")
     # 代码块里 `python $S/xxx.py` 这类调用
     call_re = re.compile(r"(?:python|python3)[^\n]*?([\w\-_]+\.py)")
@@ -242,7 +269,7 @@ def check_refs(rep: Report) -> None:
         for lineno, line in enumerate(read(md).splitlines(), 1):
             for m in call_re.finditer(line):
                 name = m.group(1)
-                if name in ("setup.py",):
+                if name in ("setup.py",) or name in PROJECT_LEVEL_SCRIPTS:
                     continue
                 checked += 1
                 if not os.path.isfile(os.path.join(SCRIPTS, name)):
@@ -390,6 +417,15 @@ def cfg_keys_declared() -> set[str]:
     return declared
 
 
+# 在 scripts/ 之外被消费的配置键:自检的 AST 只扫 scripts/*.py,这些键会被
+# 误报成"死配置"。逐条写明消费方,便于日后核对(新增豁免必须带理由)。
+EXTERNAL_KEYS = {
+    "huaban_cookie": "tools/asset-bridge/popup.js(浏览器扩展读登录态并写回)",
+    "bridge_token_ttl": "mcp/artboard-mcp 的 Bridge 会话 TTL(references/mcp-assets.md §2)",
+    "ocr_path": "fetch_model.py 的 MODULES 目标路径键(写配置,非 cfg 调用)",
+}
+
+
 def check_cfg(rep: Report) -> None:
     read_map = cfg_keys_read()
     declared = cfg_keys_declared()
@@ -399,12 +435,13 @@ def check_cfg(rep: Report) -> None:
     if missing:
         rep.add("cfg", "FAIL", f"脚本在读但无处声明:{', '.join(missing)}",
                 "用户拿不到这些键名:GUI 与 config.example.json 都要补")
-    orphan = sorted(declared - read_all)
+    orphan = sorted(declared - read_all - set(EXTERNAL_KEYS))
     if orphan:
         rep.add("cfg", "WARN", f"已声明但无脚本读取(可能是死配置):{', '.join(orphan)}",
                 "确认是否废弃;留着会让人以为有用")
     rep.add("cfg", "PASS",
-            f"读键 {len(read_all)} 个 / 声明 {len(declared)} 个")
+            f"读键 {len(read_all)} 个 / 声明 {len(declared)} 个"
+            f"(另 {len(EXTERNAL_KEYS)} 个在 scripts/ 之外消费,已豁免)")
 
 
 # ---------------------------------------------------------------- route
@@ -416,9 +453,13 @@ def check_route(rep: Report) -> None:
         return
     text = read(skill)
     covered = set(re.findall(r"references/[\w\-./]+\.md", text))
+    covered |= set(re.findall(r"docs/[\w\-./]+\.md", text))
     covered_dirs = {c.rsplit("/", 1)[0] + "/" for c in covered}
     actual = {rel(p) for p in glob.glob(os.path.join(REF_DIR, "**", "*.md"),
                                         recursive=True)}
+    # docs/ 顶层 md 同样要"有路由才存在"(过程文档见 PROCESS_DOCS,已排除);
+    # docs/map/** 属于地图子技能自己的索引(references/map-studio.md §八),不在此列。
+    actual |= {rel(p) for p in glob.glob(os.path.join(ROOT, "docs", "*.md"))}
     orphan = []
     for f in sorted(actual):
         if f in covered:
@@ -487,32 +528,44 @@ def check_smoke(rep: Report) -> None:
 # ---------------------------------------------------------------- stale
 
 STALE_KEYS = ("wpi_path", "wpi_cli_exe", "setup_wpi", "ARTBOARD_WPI",
-              "wpi_not_found", "wpi_import_failed")
+              "wpi_not_found", "wpi_import_failed", "wpi")
+
+# 历史注记允许词:正文里写"WPI 时代概念,v1.9 起消亡/已退役"是**要求**的写法
+# (glossary / animation 的历史段),不该判违规;缺这些词的裸 WPI 才是漂移。
+STALE_OK_WORDS = ("退役", "已删除", "已移除", "均已删除", "消亡", "时代", "v1.9 起",
+                  "v1.8 及以前")
 
 
 def check_stale(rep: Report) -> None:
-    """过期引用扫描:references/ 与 SKILL.md 正文不得出现 v1.8 已退役的
-    WPI 配置键/错误码;「已删除/退役」说明行豁免(export.md 的退役注记)。"""
+    """过期引用扫描:SKILL.md / references/** / docs/*.md 不得出现 v1.8 已退役的
+    WPI 配置键/错误码/裸引擎名;带"已退役/已消亡"注记的历史说明行豁免。
+    (历史上这里只扫 references/ 一层、且键里没有裸 `wpi` —— forms/ 与 animation
+    的残留因此长期免检。)"""
     root = os.path.dirname(SCRIPTS)
     targets = [os.path.join(root, "SKILL.md")]
     refs = os.path.join(root, "references")
     if os.path.isdir(refs):
-        targets.extend(sorted(
-            os.path.join(refs, f) for f in os.listdir(refs)
-            if f.endswith(".md")))
+        targets.extend(sorted(glob.glob(os.path.join(refs, "**", "*.md"),
+                                        recursive=True)))
+    docs = os.path.join(root, "docs")
+    if os.path.isdir(docs):
+        targets.extend(sorted(glob.glob(os.path.join(docs, "*.md"))))
     n = hits = 0
     for f in targets:
         if not os.path.isfile(f):
+            continue
+        if rel(f) in PROCESS_DOCS or rel(f).startswith("docs/review/"):
             continue
         for ln, line in enumerate(open(f, encoding="utf-8").read().splitlines(), 1):
             low = line.lower()
             if any(k in low for k in STALE_KEYS):
                 n += 1
-                if any(w in line for w in ("退役", "已删除", "已移除", "均已删除")):
+                if any(w in line for w in STALE_OK_WORDS):
                     continue
                 hits += 1
-                rep.add("stale", "FAIL", f"{f.name}:{ln} 出现已退役 WPI 键: {line.strip()[:90]}",
-                        "v1.9 已 WPI 退役;若为历史记录请放 CHANGELOG,正文改 Kiln 语义")
+                rep.add("stale", "FAIL",
+                        f"{rel(f)}:{ln} 出现已退役 WPI 键: {line.strip()[:90]}",
+                        "v1.9 已 WPI 退役;若为历史记录请加「WPI 时代概念,v1.9 起消亡」注记")
     rep.add("stale", "PASS" if hits == 0 else "FAIL",
             f"过期引用扫描 {n} 处提及 / {hits} 处违规")
 
@@ -610,10 +663,11 @@ LEVEL_MARK = {"FAIL": "✗", "WARN": "△", "PASS": "✓"}
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     p = argparse.ArgumentParser(description="artboard 仓库自检")
     p.add_argument("--only", default="", help="只跑指定项,逗号分隔")
     p.add_argument("--json", action="store_true", dest="as_json")

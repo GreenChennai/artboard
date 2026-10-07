@@ -48,7 +48,8 @@
 }
 ```
 
-> ⚠️ **导出验证是硬要求**:`text-spacing-trim` 的支持随 Chromium 版本变化,而 WPI 用的是**系统 Edge/Chrome**。写完后必须导出 PNG 肉眼确认标点位置;若确认不支持,退回手写方案(§五)。
+> ⚠️ **导出验证是硬要求**:`text-spacing-trim` 的支持随 Chromium 版本变化,而 Kiln 的**浏览器车道**
+> 用的就是**系统 Edge/Chrome**(自研车道另算,见 `references/export.md`)。写完后必须导出 PNG 肉眼确认标点位置;若确认不支持,退回手写方案(§五)。
 
 ---
 

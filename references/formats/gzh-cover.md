@@ -17,7 +17,7 @@
 
 - 一键工作流:
   ```bash
-  python $S/gzh_cover.py new <slug> --title "标题" --theme blue
+  python $S/gzh_cover.py new <slug> --title "标题" --theme ink
   python $S/gzh_cover.py export <slug>            # 默认三图齐出(合一导出)
   python $S/gzh_cover.py export <slug> --only main   # 只导主封面
   python $S/gzh_cover.py export <slug> --only sub    # 只导次条
@@ -25,13 +25,13 @@
   ```
 - 产物命名:`cover-main-<slug>.png` / `cover-sub-<slug>.png` / `cover-merged-<slug>.png`,
   文件名自带用途,可直接在公众号后台上传。
-- 导出主路径与全技能一致(WPI → export.py);合并图为 Pillow 纯像素拼接,
-  **不重新渲染 HTML**,单张内容零形变、零重采样。
+- 导出主路径与全技能一致(**Kiln 原生引擎** → `scripts/export.py`;旧 WPI 主链 v1.8 及以前
+  已退役);合并图是纯像素拼接(`kiln-cli img stitch`),**不重新渲染 HTML**,单张内容零形变、零重采样。
 
 ## 双封面联动规则(工作法核心)
 
-1. **同一套 tokens**:主/次条共用同一主题色板(gzh_cover 内置 4 套:blue/dark/warm/green),
-   字体同款——信息流里两张图要像"同一个栏目"。
+1. **同一套 tokens**:主/次条共用同一主题色板(唯一色源 `scripts/_gzh_theme.py`,6 套:
+   ink/night/warm/grass/red/mono;旧名 blue/dark/green 是弃用别名),字体同款——信息流里两张图要像"同一个栏目"。
 2. **中央安全区 383×383**:头条封面在转发卡片里只露中央约 383×383,
    列表页左图右文还会裁左侧——**主标/眉题/副题全部居中排布**(gzh_cover 主封面即居中版式)。
 3. **次条元素 ≤3**:小图(列表里只有 ~78px 见方)只放"色块标记 + 眉题 + 标题(+副题)"。
@@ -68,7 +68,7 @@
 | `KILN_NOT_FOUND` | 渲染引擎未部署 | 跑 `scripts/setup_kiln.py`,或设 `ARTBOARD_KILN_CLI` |
 | `NO_FONTS` | 所选字体目录不存在 | 换 `fonts/` 下已有目录,或用默认 `auto` |
 | `MISSING_EXPORTS` | 合并前单张未导出 | 先 `export --only main` / `--only sub` |
-| `PILLOW_MISSING` | Pillow 未安装 | `pip install Pillow`(核心依赖) |
+| `STITCH_FAILED` | 合并图拼接失败(`kiln-cli img stitch`) | 检查两张单张 PNG 是否存在且未损坏 |
 | `EXISTS` | 项目已存在 | 换 slug 或 `--force` |
 
 ## 本册用到的脚本

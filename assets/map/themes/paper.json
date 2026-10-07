@@ -1,0 +1,21 @@
+{
+  "bg": "#f7f2e7",
+  "green": "#d8e4c8",
+  "water": "#aed3e8",
+  "rail": ["#8a8072", 2.4],
+  "roads": {
+    "service": ["#d9cdb6", 1.8],
+    "living_street": ["#cbbda1", 2.6],
+    "pedestrian": ["#cbbda1", 2.6],
+    "unclassified": ["#cbbda1", 2.6],
+    "residential": ["#b8a888", 3.2],
+    "tertiary": ["#a08f6c", 4.2],
+    "secondary": ["#8a7550", 5.4],
+    "primary": ["#6f5a38", 6.8],
+    "trunk": ["#54431f", 8.2],
+    "motorway": ["#382a10", 9.5]
+  },
+  "bld": ["#e4dbc8", "#d9cdb4", "#cbbd9f", "#b9a984"],
+  "bld_stops": [24, 60, 150, 400],
+  "accent": "#c2412e"
+}

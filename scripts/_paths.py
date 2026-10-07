@@ -53,3 +53,19 @@ def find_7z() -> str:
         if os.path.isfile(p):
             return p
     return shutil.which("7z") or ""
+
+
+def safe_segment(name: str) -> str:
+    """目录段消毒:用户给的目录名(项目 slug / 素材主题)只能是一层目录名。
+
+    拒绝空串 / `.` / `..` / 含 `/` `\\` `:` / 含 `..` 的值 —— 否则
+    `os.path.join(root, "materials", theme)` 会被 `..\\..\\x` 逃出 root,
+    把下载物与 CREDITS.md 写到任意目录(实测可复现)。合法返回去空白后的原名,
+    非法返回空串,由调用方回 BAD_SLUG / BAD_THEME 之类的 JSON 信封。
+    """
+    s = (name or "").strip()
+    if not s or s in (".", "..") or ".." in s:
+        return ""
+    if any(ch in s for ch in ("/", "\\", ":")):
+        return ""
+    return s

@@ -68,15 +68,17 @@ def build_parser() -> argparse.ArgumentParser:
                                                       ";各 op 参数区间表见 pixel-pipeline.md")
         g.set_defaults(kind=meta["kind"], fn=meta["fn"], op=name)
 
-    # blend 快捷形态(top 独立参数)
+    # blend 快捷形态(top 独立参数);--in/--top/-o 非 required:--list-modes 要免这三者,
+    # 缺参由 run_op 吐 USAGE JSON(而不是 argparse 富文本)
     g = sub.add_parser("blend", help="图层 · 混合模式(25 种,见 --list-modes)")
-    g.add_argument("--in", dest="inp", required=True)
-    g.add_argument("--top", required=True, help="上层图片")
+    g.add_argument("--in", dest="inp", required=False, default=None)
+    g.add_argument("--top", required=False, default=None, help="上层图片(与 --in 尺寸不同则自动缩放)")
     g.add_argument("--mode", default="normal")
     g.add_argument("--opacity", type=float, default=1.0)
     g.add_argument("--mask", default="")
-    g.add_argument("-o", "--out", required=True)
-    g.add_argument("--list-modes", action="store_true")
+    g.add_argument("-o", "--out", required=False, default=None)
+    g.add_argument("--list-modes", dest="list_modes", action="store_true",
+                   help="列出全部混合模式键名(单行 JSON;此用法无需 --in/--top/-o)")
 
     p = sub.add_parser("recipe", help="配方:save/validate/run/batch")
     rp = p.add_subparsers(dest="rcmd", required=True)
@@ -102,7 +104,52 @@ def _mask_or_none(args):
     return None
 
 
+def _resize_top(top, w: int, h: int):
+    """上层与下层尺寸不同 → 缩放到 (w, h),**返回 numpy 数组**(下游全是 ndarray 运算)。
+
+    旧实现把 top 换成 PIL Image 对象,下游 `core.to_rgb(top)` 立刻
+    `AttributeError: 'Image' object has no attribute 'ndim'`;`t if t.mode != "RGBA"
+    else None or top` 两条分支都不对(非 RGBA → 传 PIL 对象;RGBA → 压根没缩)。
+    带 alpha 时连 alpha 一起缩,保持与"等尺寸"路径一致的通道数(--mask alpha 才有意义)。
+    """
+    import numpy as np
+    from PIL import Image
+    mode = "RGBA" if top.ndim == 3 and top.shape[2] == 4 else "RGB"
+    im = Image.fromarray((np.clip(top, 0, 1) * 255).astype("uint8"), mode).resize((w, h))
+    return np.asarray(im, dtype=np.float32) / 255.0
+
+
+def _load_recipe(path: str, cmd: str):
+    """读配方 JSON → `(recipe, None)`,失败 → `(None, 退出码)`。
+
+    失败统一走 core.fail 的失败信封(末行必为合法 JSON;此前三条 recipe 路径都裸
+    FileNotFoundError/JSONDecodeError traceback):文件不存在 → RECIPE_NOT_FOUND,
+    坏 JSON / 顶层非对象 → BAD_RECIPE。
+    """
+    try:
+        with open(path, encoding="utf-8") as f:
+            recipe = json.load(f)
+    except FileNotFoundError:
+        return None, core.fail(cmd, "RECIPE_NOT_FOUND", path,
+                               hint="检查配方路径;模板可 `recipe save --out x.json`")
+    except IsADirectoryError:
+        return None, core.fail(cmd, "RECIPE_NOT_FOUND", f"{path} 是目录,不是配方文件",
+                               hint="recipe 后面跟 .json 文件路径")
+    except (ValueError, OSError) as exc:  # JSONDecodeError ⊂ ValueError
+        return None, core.fail(cmd, "BAD_RECIPE", f"{path}: {exc}",
+                               hint="配方须是合法 JSON;改完先 recipe validate")
+    if not isinstance(recipe, dict):
+        return None, core.fail(cmd, "BAD_RECIPE",
+                               f"{path}: 顶层须是 JSON 对象,收到 {type(recipe).__name__}",
+                               hint='形如 {"version":1,"stages":[...]}')
+    return recipe, None
+
+
 def run_op(args) -> int:
+    if args.cmd == "blend" and not (args.inp and args.top and args.out):
+        return core.fail("blend", "USAGE", "blend 需要 --in/--top/-o(仅 --list-modes 免)",
+                         hint="python pixel.py blend --in base.png --top glow.png "
+                              "--mode screen -o out.png")
     try:
         arr = core.load_image(args.inp)
     except FileNotFoundError:
@@ -114,10 +161,12 @@ def run_op(args) -> int:
             return core.fail("blend", "INPUT_NOT_FOUND", args.top)
         h, w = arr.shape[:2]
         if top.shape[:2] != (h, w):
-            from PIL import Image
-            t = Image.fromarray((core.to_rgb(top) * 255).astype("uint8")).resize((w, h))
-            top = t if t.mode != "RGBA" else None or top
-        m = core.build_mask(args.mask, (h, w), top) if args.mask else None
+            top = _resize_top(top, w, h)
+        try:
+            m = core.build_mask(args.mask, (h, w), top) if args.mask else None
+        except ValueError as exc:
+            return core.fail("blend", "USAGE", f"蒙版无效:{exc}",
+                             hint="蒙版语法见 pixel.py --help 的 --mask 说明")
         try:
             out = LAYER.blend(core.to_rgb(arr), core.to_rgb(top), mode=args.mode,
                               opacity=args.opacity, mask=m)
@@ -131,8 +180,20 @@ def run_op(args) -> int:
     fn = args.fn
     if not callable(fn):  # 图层类:registry 存的是 _px_layer 的函数名
         fn = getattr(LAYER, fn)
-    params = json.loads(getattr(args, "params", "{}") or "{}")
-    mask = core.build_mask(args.mask, arr.shape[:2], arr) if getattr(args, "mask", "") else None
+    try:
+        params = json.loads(getattr(args, "params", "{}") or "{}")
+    except ValueError as exc:  # JSONDecodeError ⊂ ValueError
+        return core.fail(args.cmd, "USAGE", f"--params 不是合法 JSON:{exc}",
+                         hint='形如 --params \'{"amount":0.6}\'')
+    if not isinstance(params, dict):
+        return core.fail(args.cmd, "USAGE",
+                         f"--params 须是 JSON 对象,收到 {type(params).__name__}",
+                         hint='形如 --params \'{"amount":0.6}\'')
+    try:
+        mask = core.build_mask(args.mask, arr.shape[:2], arr) if getattr(args, "mask", "") else None
+    except ValueError as exc:
+        return core.fail(args.cmd, "USAGE", f"蒙版无效:{exc}",
+                         hint="蒙版语法见 pixel.py --help 的 --mask 说明")
     try:
         out = fn(arr, **params)
     except TypeError as exc:
@@ -150,10 +211,11 @@ def run_op(args) -> int:
 
 
 def main(argv=None) -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     argv = list(sys.argv[1:] if argv is None else argv)
     if not argv:
         core.emit({"ok": False, "cmd": "pixel", "error": "USAGE",
@@ -196,7 +258,9 @@ def main(argv=None) -> int:
         if rcmd == "validate":
             a.add_argument("recipe"); a.add_argument("--allow-degrade", action="store_true")
             n = a.parse_args(rest[1:])
-            recipe = json.loads(open(n.recipe, encoding="utf-8").read())
+            recipe, err = _load_recipe(n.recipe, "recipe validate")
+            if err is not None:
+                return err
             v = R.validate(recipe, n.allow_degrade)
             core.emit({"ok": v["ok"], "cmd": "recipe validate", "recipe": n.recipe,
                        "errors": v["errors"], "degraded": v["degraded"]})
@@ -206,7 +270,9 @@ def main(argv=None) -> int:
             a.add_argument("-o", "--out", required=True)
             a.add_argument("--allow-degrade", action="store_true")
             n = a.parse_args(rest[1:])
-            recipe = json.loads(open(n.recipe, encoding="utf-8").read())
+            recipe, err = _load_recipe(n.recipe, "recipe run")
+            if err is not None:
+                return err
             r = R.run_recipe(recipe, n.inp, n.out, n.allow_degrade)
             core.emit({"ok": r["ok"], "cmd": "recipe run", "out": r.get("out"),
                        "errors": r["errors"], "degraded": r["degraded"]})
@@ -217,7 +283,9 @@ def main(argv=None) -> int:
             a.add_argument("--rename", default="{name}_px")
             a.add_argument("--allow-degrade", action="store_true")
             n = a.parse_args(rest[1:])
-            recipe = json.loads(open(n.recipe, encoding="utf-8").read())
+            recipe, err = _load_recipe(n.recipe, "recipe batch")
+            if err is not None:
+                return err
             r = R.batch(recipe, n.in_dir, n.out_dir, n.rename, n.allow_degrade)
             core.emit({"ok": r["ok"], "cmd": "recipe batch", "count": r["count"],
                        "results": r["results"], "degraded": []})
@@ -242,6 +310,10 @@ def main(argv=None) -> int:
         return core.EXIT_USAGE
 
     args = ap.parse_args(argv)
+    if getattr(args, "list_modes", False):  # 最先处理:此用法不需要 --in/--top/-o
+        core.emit({"ok": True, "cmd": "blend", "count": len(LAYER.BLEND_MODES),
+                   "modes": sorted(LAYER.BLEND_MODES), "degraded": []})
+        return core.EXIT_OK
     args._arr = None
     return run_op(args)
 

@@ -151,10 +151,11 @@ def build_bat(name: str, steps, width: int, height: int, scale: int,
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
 
     p = argparse.ArgumentParser(description="给每个 HTML 生成双击即出图的 bat")
     p.add_argument("project", help="项目目录(或直接给 src/ 目录)")

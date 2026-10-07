@@ -12,7 +12,7 @@
   src/sub.html              次条封面画布 383×383(1:1,官方下限 200×200)
   export/cover-main-<slug>.png    头条主封面(默认 2x = 1800×766)
   export/cover-sub-<slug>.png     次条副封面(默认 2x = 766×766)
-  export/cover-merged-<slug>.png  双封面合并图(Pillow 等高拼接,单张原始比例不变)
+  export/cover-merged-<slug>.png  双封面合并图(kiln img stitch 等高拼接,单张原始比例不变)
 
 设计规范(证据与来源见 references/formats/gzh-cover.md 与 docs/gzh-spec-summary.md):
   - 头条封面 900×383(2.35:1)官方口径;转发/分享卡片只露中央 ~383×383,关键信息居中;
@@ -372,14 +372,28 @@ def stitch_merged(main_png: str, sub_png: str, out_path: str, gap: int,
                     "hint": "检查两张 PNG 是否存在且未损坏"}
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": "STITCH_FAILED", "detail": str(exc)}
-    # 读取输出尺寸
+    # 读取输出尺寸:优先用 kiln 的 JSON 回报;解析不到就回读产物(PIL),
+    # 保证 ok:true 时 width/height 一定存在(下游 size 字段不再出现 NonexNone)。
+    size = None
     try:
         lines = r.stdout.decode("utf-8", errors="replace").strip().splitlines()
         j = json.loads(lines[-1])
-        return {"ok": True, "path": os.path.abspath(out_path),
-                "width": j.get("width"), "height": j.get("height")}
-    except Exception:
-        return {"ok": True, "path": os.path.abspath(out_path)}
+        if j.get("width") and j.get("height"):
+            size = (j["width"], j["height"])
+    except Exception:  # noqa: BLE001
+        size = None
+    if size is None:
+        try:
+            from PIL import Image
+            with Image.open(out_path) as im:
+                size = im.size
+        except Exception:  # noqa: BLE001 — 拼接已成功,尺寸读不到不算失败
+            size = (None, None)
+    out = {"ok": True, "path": os.path.abspath(out_path),
+           "width": size[0], "height": size[1]}
+    if size[0] is None:
+        out["warning"] = "拼接成功但尺寸未能读出(产物请在文件管理器核对)"
+    return out
 
 
 def cmd_export(args) -> int:
@@ -473,10 +487,11 @@ def cmd_merge(args) -> int:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     p = argparse.ArgumentParser(description="微信公众号双封面工作站(主 900×383 + 次 383×383 + 合并图)")
     sub = p.add_subparsers(dest="cmd", required=True)
 
@@ -506,7 +521,7 @@ def main() -> int:
     pe.add_argument("--bg", default="#f6f7f9", help="合并图底色")
     pe.set_defaults(func=cmd_export)
 
-    pm = sub.add_parser("merge", help="仅重拼合并图(不重导单张,不需要引擎)")
+    pm = sub.add_parser("merge", help="仅重拼合并图(不重导出单张;拼接仍走 kiln img stitch,需 Kiln)")
     pm.add_argument("project")
     pm.add_argument("--gap", type=int, default=MERGE_GAP, help="间隔 CSS px(按导出 scale 自动放大)")
     pm.add_argument("--bg", default="#f6f7f9")

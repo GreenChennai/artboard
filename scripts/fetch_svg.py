@@ -242,10 +242,11 @@ def cmd_illust(args) -> int:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     ap = argparse.ArgumentParser(
         description="矢量素材获取(Iconify 优先;许可逐集核查;缓存于 assets/icons-cache)")
     sub = ap.add_subparsers(dest="cmd", required=True)

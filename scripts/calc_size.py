@@ -24,10 +24,11 @@ def out(obj) -> None:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     p = argparse.ArgumentParser(description="px/mm/inch/DPI 换算")
     p.add_argument("mode", choices=["mm", "px", "inch", "dpi"])
     p.add_argument("w", nargs="?", type=float)
@@ -37,6 +38,12 @@ def main() -> int:
     p.add_argument("--mm", nargs=2, type=float, metavar=("W", "H"))
     p.add_argument("--px", nargs=2, type=float, metavar=("W", "H"))
     args = p.parse_args()
+
+    # 输入校验:此前 --scale 0 / --mm 0 / --dpi 0 会抛 ZeroDivisionError(traceback)
+    if args.scale == 0:
+        p.error("--scale 不能为 0(成品 px = CSS 画布 × scale)")
+    if args.dpi <= 0:
+        p.error(f"--dpi 必须为正数(收到 {args.dpi:g})")
 
     if args.mode == "mm":
         if not args.w or not args.h:
@@ -76,6 +83,8 @@ def main() -> int:
     else:  # dpi 反推
         if not args.px or not args.mm:
             p.error("dpi 模式需要 --px W H 与 --mm W H")
+        if args.mm[0] <= 0 or args.mm[1] <= 0:
+            p.error(f"--mm 宽高必须为正数(收到 {args.mm[0]:g} {args.mm[1]:g};0 会让 dpi 反推除零)")
         dpi_w = args.px[0] / (args.mm[0] / MM_PER_INCH)
         dpi_h = args.px[1] / (args.mm[1] / MM_PER_INCH)
         out({"mode": "反推DPI", "px": args.px, "mm": args.mm,

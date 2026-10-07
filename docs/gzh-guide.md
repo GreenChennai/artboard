@@ -13,7 +13,7 @@
 | 双封面项目生成 | `gzh_cover.py new` | src/index.html(主 900×383)+ src/sub.html(次 383×383) |
 | 三种导出 | `gzh_cover.py export` | 主封面 PNG / 次条 PNG / 合并对比图 PNG(默认三图齐出) |
 | 单独导出 | `export --only main` / `--only sub` / `--only merged` | 任意单张重出 |
-| 仅重拼合并图 | `gzh_cover.py merge` | 合并图(Pillow 纯拼接,无需渲染引擎) |
+| 仅重拼合并图 | `gzh_cover.py merge` | 合并图(`kiln-cli img stitch` 纯像素拼接,不重渲染 HTML;仍需 Kiln CLI 在位,缺则报 `KILN_NOT_FOUND`) |
 | 正文排版 | `gzh_article.py convert` | 全内联样式 HTML 片段 + 本地预览页 |
 | 排版示例 | `gzh_article.py demo` | 示例 .md + 转换结果 + 自检报告 |
 | 兼容自检 | `gzh_article.py check` | 单行 JSON 违规报告 |
@@ -23,11 +23,11 @@
 ```bash
 S="<skill 目录>/scripts"
 
-# 1. 生成项目(内置 4 套主题:blue/dark/warm/green)
+# 1. 生成项目(内置 6 套统一主题:ink/night/warm/grass/red/mono;色源 scripts/_gzh_theme.py)
 python $S/gzh_cover.py new my-post --title "双封面工作法" \
     --sub-title "双封面法" --kicker "ARTBOARD · 02" \
     --sub "一次设计 · 三张产物" --footer "WECHAT OFFICIAL ACCOUNT" \
-    --num "02" --theme blue
+    --num "02" --theme ink
 
 # 2. 导出(默认三图齐出 = 合一导出)
 python $S/gzh_cover.py export my-post
@@ -48,8 +48,8 @@ python $S/gzh_cover.py export my-post --only main
   ```bash
   python $S/check_overflow.py <项目>/src --width 900 --height 383
   ```
-- **合并图**:主封面(左)+ 57px 间隔 + 次条(右)等高拼接,Pillow 纯像素搬运,
-  单张原始比例不变。间隔/底色可调:`merge my-post --gap 80 --bg "#0f1b3d"`。
+- **合并图**:主封面(左)+ 57px 间隔 + 次条(右)等高拼接,`kiln-cli img stitch` 纯像素搬运
+  (v1.9 起,不再用 Pillow),单张原始比例不变。间隔/底色可调:`merge my-post --gap 80 --bg "#0f1b3d"`。
   合并图用于对比展示/汇报存档,**公众号后台上传仍用单张文件**。
 
 ## 三、正文排版:从 Markdown 到公众号
@@ -57,7 +57,7 @@ python $S/gzh_cover.py export my-post --only main
 ```bash
 # 写好 Markdown 后一条命令
 python $S/gzh_article.py convert 文章.md --out article.html \
-    --title "文章标题" --author "署名" --theme default --preview
+    --title "文章标题" --author "署名" --theme ink --preview
 python $S/gzh_article.py check article.html     # 必须 ok:true
 ```
 
@@ -68,14 +68,22 @@ python $S/gzh_article.py check article.html     # 必须 ok:true
 4. 粘贴进公众号:浏览器打开 `article.html` → 全选(Ctrl+A)复制 → 公众号编辑器粘贴;
    或用编辑器"HTML 源码"模式粘源码;
 5. 图片:本地路径在公众号内无效,粘贴后先在编辑器里上传替换图片;
-6. 主题:`default`(微信蓝 #576b95)/ `green` / `orange` / `red`;
-   自定义:改 `gzh_article.py` 的 `THEMES` 表。
+6. 主题:`ink`(#3b82f6 蓝,默认)/ `night`(#e8b04b 深底金)/ `warm`(#d47435 暖橘)/
+   `grass`(#1a7a4f 绿)/ `red`(#c0392b 红)/ `mono`(#444444 黑白)——上列是图文主色
+   (`primary`);封面另取 `bg/bg2/ink/accent`。旧名 `default`/`orange`/`green` 是
+   **弃用别名**(用时打印一次性提示,色值等于对应新名),不再各自成板;
+   旧文档的「`default` = 微信蓝 #576b95」已作废(`default` → `ink`,主色 #3b82f6)。
+7. 自定义配色:**唯一色源是 `scripts/_gzh_theme.py` 的 `THEMES` 表**(`gzh_article.py`
+   与 `gzh_cover.py` 都只从它取角色子集,一处改色两产物同变)——不要去改
+   `gzh_article.py` 里的 `THEMES`(那只是 `_gzh_theme.article_themes()` 的返回值)。
 
 快速体验:`python $S/gzh_article.py demo --outdir <目录>` 生成全组件示例并自检。
 
 ## 四、与 artboard 流水线的关系
 
-- 双封面走既有导出主链(WPI),`project.json` 的 `kind: "gzh-cover"`;
+- 双封面走现行导出主链(**Kiln 原生引擎**:`gzh_cover.py export` → `scripts/export.py`
+  → `kiln_cli_exe`;引擎缺失报 `KILN_NOT_FOUND`。旧 WPI 主链 v1.8 及以前已退役,
+  口径见 `references/export.md`),`project.json` 的 `kind: "gzh-cover"`;
 - Step 6 机检门禁适用于双封面 HTML(`check_overflow.py`);
 - 风格上双封面可用任意设计手法手写,品类纪律(安全区/字号阶/禁则)
   见 `references/formats/gzh-cover.md`;正文排版纪律见 `references/gzh-typography.md`。
@@ -87,12 +95,17 @@ python $S/gzh_article.py check article.html     # 必须 ok:true
 | 渲染引擎缺失 | `KILN_NOT_FOUND` | `python $S/setup_kiln.py` 或设 `ARTBOARD_KILN_CLI` |
 | 字体目录写错 | `NO_FONTS` | 用 `fonts/` 下真实目录名;`auto` 恒可用 |
 | 单张未导出就合并 | `MISSING_EXPORTS` | 先 `export --only main` / `--only sub` |
-| Pillow 缺失 | `PILLOW_MISSING` | `pip install Pillow` |
+| 合并图拼接失败 | `STITCH_FAILED` / `KILN_NOT_FOUND` | 合并图由 `kiln-cli img stitch` 拼接:确认两张单图存在且未损坏、引擎已部署 |
 | 项目已存在 | `EXISTS` | 换 slug 或 `--force` 覆盖 |
 | Markdown 为空 | `EMPTY_INPUT` | 检查输入文件 |
 | 兼容自检不过 | `violations` 列表 | 按提示删 class/script/外链后重转 |
 
-所有脚本失败时仍输出单行 JSON(`ok:false` + `error`/`hint`),可被上层脚本链消费。
+本册涉及的**机检 / 转换 / 导出类脚本**失败时仍输出单行 JSON(`ok:false` + `error`/`hint`),
+可被上层脚本链消费。已核实(读代码 + 实跑失败路径)的清单:`gzh_cover.py`(如 `PROJECT_NOT_FOUND`)、
+`gzh_article.py`(`FILE_NOT_FOUND`/`EMPTY_INPUT`/`BAD_THEME`)、`check_overflow.py`(`NO_HTML`)、
+`export.py`(`KILN_CLI_FAILED`)、`export_fallback.py`(`NO_BROWSER`/`NO_PLAYWRIGHT`/`EMPTY_SCREENSHOT`)。
+**不在此名单内**(别指望它吐 JSON):`setup_kiln.py` 等部署脚本打纯文本(如 `[X] --exe 指向的文件不存在: …`);
+`check_wechat_svg.py` 默认打人读报告,要 JSON 得加 `--json`;`imageops.py` 的 montage 缺图路径仍会裸 traceback。
 
 ## 六、回滚
 

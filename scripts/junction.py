@@ -6,6 +6,7 @@
 
 import os
 import subprocess
+import sys
 
 
 def is_junction(path: str) -> bool:
@@ -52,3 +53,15 @@ def create_junction(link: str, target: str) -> None:
         raise RuntimeError(f"PowerShell 建联接失败: {err or '穿透验证失败'}")
     if not probe(link):
         raise RuntimeError("联接穿透验证失败")
+
+
+if __name__ == "__main__":
+    # 模块型工具(无 CLI 参数):--help / 空参 打印用途,便于 `--help` 契约统一。
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+    print(__doc__)
+    print("用法: 作为模块导入 —— from junction import is_junction, probe, create_junction")
+    sys.exit(0)

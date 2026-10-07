@@ -20,6 +20,18 @@ import sys
 
 _here = os.path.dirname(os.path.abspath(__file__))
 
+# ---- -h/--help:在任何防护之前回应,避免"问用法却拿到 [X] 退出码 2" ----
+if "-h" in sys.argv[1:] or "--help" in sys.argv[1:]:
+    # main() 里的 UTF-8 重配到此为止还没执行(被本块 early-exit 跳过):
+    # 管道下 stdout 是 GBK,中文用法会变乱码字节,必须在这里先重配。
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+    print(__doc__)
+    sys.exit(0)
+
 # ---- 防护:不允许在技能 scripts/ 目录下直接运行 ----
 if os.path.basename(_here).lower() == "scripts" and os.path.isfile(
         os.path.join(_here, "preflight.py")):
@@ -87,10 +99,11 @@ def read_project(proj: str) -> dict:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
 
     here = _here
     kiln = find_kiln(here)

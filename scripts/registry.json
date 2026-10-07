@@ -1,6 +1,6 @@
 {
   "_comment": "generated, do not edit — 由 scripts/gen_script_index.py 重建",
-  "generated_at": "2026-09-28",
+  "generated_at": "2026-10-07",
   "scripts": [
     {
       "name": "_config.py",
@@ -31,6 +31,7 @@
         "SKILL.md",
         "docs/glossary.md",
         "docs/gzh-guide.md",
+        "docs/gzh-spec-summary.md",
         "docs/scripts.md",
         "references/formats/gzh-cover.md",
         "references/gzh-typography.md",
@@ -85,6 +86,27 @@
       "used_by": [
         "docs/failures.md",
         "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "_map_common.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "地图模块公共层:浏览器内核 / 代理 / 瓦片缓存 / 临时页服务。",
+      "used_by": [
+        "docs/scripts.md",
+        "references/map-studio.md"
+      ]
+    },
+    {
+      "name": "_map_mercator.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "Web-mercator tile math + China datum (GCJ-02) conversion.",
+      "used_by": [
+        "README.md",
+        "docs/scripts.md",
+        "references/map-studio.md"
       ]
     },
     {
@@ -174,6 +196,7 @@
       "internal": false,
       "purpose": "PNG ↔ 可编辑 AI/PDF 相似度门禁。",
       "used_by": [
+        "docs/glossary.md",
         "docs/scripts.md",
         "docs/setup.md",
         "references/vector-export.md"
@@ -201,6 +224,18 @@
         "docs/glossary.md",
         "docs/scripts.md",
         "references/video-motion.md"
+      ]
+    },
+    {
+      "name": "build_player.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "Build the map player HTML (assets/map/demo/map-player.html) from template + SVG ",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/map-studio.md"
       ]
     },
     {
@@ -256,7 +291,7 @@
       "name": "check_mobile_width.py",
       "group": "脚本",
       "internal": false,
-      "purpose": "import argparse",
+      "purpose": "check_mobile_width.py — 手机窄屏「横向溢出」机检(零 token)",
       "used_by": [
         "README.md",
         "SKILL.md",
@@ -310,10 +345,11 @@
       "name": "check_wechat_svg.py",
       "group": "脚本",
       "internal": false,
-      "purpose": "从整页文档里切出「会被粘贴进公众号」的那一段。",
+      "purpose": "check_wechat_svg.py — 微信公众号图文/内联 SVG 动效机检(零 token)",
       "used_by": [
         "README.md",
         "SKILL.md",
+        "docs/gzh-guide.md",
         "docs/scripts.md",
         "references/wechat-article.md"
       ]
@@ -332,10 +368,21 @@
       ]
     },
     {
+      "name": "compute_route.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "Compute real shortest paths on the OSM road network (A*, spatial-hash snap).",
+      "used_by": [
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/map-studio.md"
+      ]
+    },
+    {
       "name": "config_gui.py",
       "group": "内部/维护",
       "internal": true,
-      "purpose": "",
+      "purpose": "artboard 配置编辑器(纯 tkinter,零第三方依赖,可 PyInstaller 打包成单文件 exe)。",
       "used_by": [
         "docs/ITERATION.md",
         "docs/scripts.md"
@@ -375,7 +422,9 @@
         "README.md",
         "SKILL.md",
         "docs/ITERATION.md",
+        "docs/gzh-guide.md",
         "docs/scripts.md",
+        "docs/upstream-issues.md",
         "references/animation.md",
         "references/dataviz.md",
         "references/depth-3d.md",
@@ -386,6 +435,7 @@
         "references/multi-draft.md",
         "references/pipeline.md",
         "references/print-production.md",
+        "references/style-guide.md",
         "references/vector-drawing.md",
         "references/vector-export.md",
         "references/video-motion.md",
@@ -401,6 +451,7 @@
         "README.md",
         "SKILL.md",
         "docs/ITERATION.md",
+        "docs/gzh-guide.md",
         "docs/scripts.md",
         "references/export.md",
         "references/pipeline.md"
@@ -414,6 +465,7 @@
       "used_by": [
         "docs/ITERATION.md",
         "docs/scripts.md",
+        "docs/setup.md",
         "references/export.md"
       ]
     },
@@ -447,7 +499,7 @@
       "name": "fetch_model.py",
       "group": "脚本",
       "internal": false,
-      "purpose": "",
+      "purpose": "artboard 模型分发:VQA / OCR 模块打包与下载部署。",
       "used_by": [
         "README.md",
         "SKILL.md",
@@ -455,6 +507,18 @@
         "docs/scripts.md",
         "docs/setup.md",
         "references/materials.md"
+      ]
+    },
+    {
+      "name": "fetch_osm_data.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "Fetch OSM vector layers (buildings/roads/water/green/rail) for a bbox via ONE",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/map-studio.md"
       ]
     },
     {
@@ -519,6 +583,7 @@
         "README.md",
         "SKILL.md",
         "docs/failures.md",
+        "docs/gzh-guide.md",
         "docs/scripts.md",
         "references/depth-3d.md",
         "references/image-language.md",
@@ -567,6 +632,18 @@
       ]
     },
     {
+      "name": "map_tiles.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "Stitch a flat map PNG from XYZ raster tiles — artboard map asset generator.",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/map-studio.md"
+      ]
+    },
+    {
       "name": "pack.py",
       "group": "脚本",
       "internal": false,
@@ -610,6 +687,17 @@
       ]
     },
     {
+      "name": "probe_tiles.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "Probe reachable basemap tile sources with CORRECT slippy-map tile math.",
+      "used_by": [
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/map-studio.md"
+      ]
+    },
+    {
       "name": "qr.py",
       "group": "脚本",
       "internal": false,
@@ -624,6 +712,29 @@
       ]
     },
     {
+      "name": "render_3d.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "Render a pitched 2.5D/3D map (raster basemap + OSM building extrusions) to PNG.",
+      "used_by": [
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/map-studio.md"
+      ]
+    },
+    {
+      "name": "render_3d_vec.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "Fully vector, theme-driven true-3D render (no raster basemap at all).",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/map-studio.md"
+      ]
+    },
+    {
       "name": "scaffold.py",
       "group": "脚本",
       "internal": false,
@@ -635,6 +746,7 @@
         "docs/glossary.md",
         "docs/scripts.md",
         "references/depth-3d.md",
+        "references/export.md",
         "references/formats/ppt.md",
         "references/formats/trifold.md",
         "references/image-language.md",
@@ -695,6 +807,51 @@
       ]
     },
     {
+      "name": "svg_iso.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "GeoJSON vector layers -> axonometric 2.5D SVG (buildings extruded, themeable).",
+      "used_by": [
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/map-studio.md"
+      ]
+    },
+    {
+      "name": "svg_map.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "GeoJSON vector layers -> fully classed, themeable SVG map (1:1 to OSM data).",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/map-studio.md"
+      ]
+    },
+    {
+      "name": "svg_preview.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "Render an SVG (or HTML) to PNG via headless browser — QA preview + PNG delivery.",
+      "used_by": [
+        "docs/scripts.md",
+        "references/map-studio.md"
+      ]
+    },
+    {
+      "name": "test_v7.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "地图播放器自动化验收 V1-V12(依据 docs/map/research-v7-route-ants.md §四)。",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/map-studio.md"
+      ]
+    },
+    {
       "name": "to_vector.py",
       "group": "脚本",
       "internal": false,
@@ -708,7 +865,7 @@
       "name": "upload_imgchr.py",
       "group": "脚本",
       "internal": false,
-      "purpose": "last = \"\"",
+      "purpose": "upload_imgchr.py — 上传图片到图床(imgchr / 路过图床, Chevereto 内核)并拿到直链",
       "used_by": [
         "README.md",
         "docs/scripts.md",

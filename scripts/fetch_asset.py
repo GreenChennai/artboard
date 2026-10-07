@@ -30,6 +30,7 @@ import urllib.parse
 import urllib.request
 
 from _config import cfg, near_workspace, proxy_active
+from _paths import safe_segment as _safe_segment   # 目录段消毒单点(_paths.py)
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_STUDIO = near_workspace("artboard-studio")
@@ -394,10 +395,11 @@ def download_one(c: dict, theme_dir: str, base: str) -> tuple[str, str]:
 
 
 def main() -> int:
-    try:
-        sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
     p = argparse.ArgumentParser()
     p.add_argument("--query", default="", help="clipboard 源可省略")
     p.add_argument("--theme", required=True, help="素材库主题目录名(如 promo-coffee)")
@@ -431,20 +433,27 @@ def main() -> int:
 
     results = []
     if args.download:
+        # --theme 是路径片段:必须先消毒,否则 `..\..\x` 会逃出 studio
+        theme = _safe_segment(args.theme)
+        if not theme:
+            emit({"ok": False, "error": "BAD_THEME",
+                  "hint": f"--theme 只能是单层目录名(非空,且不含 / \\ : ..):"
+                          f" 收到 {args.theme!r}"})
+            return 2
         # 每次都重新读配置:环境变量/ config.json 的后续变更要能生效
         studio = cfg("studio_dir", DEFAULT_STUDIO)
-        theme_dir = os.path.join(studio, "materials", args.theme)
+        theme_dir = os.path.join(studio, "materials", theme)
         os.makedirs(theme_dir, exist_ok=True)
         credits = os.path.join(theme_dir, "CREDITS.md")
         if not os.path.isfile(credits):
             with open(credits, "w", encoding="utf-8") as f:
-                f.write(f"# CREDITS · {args.theme}\n\n"
+                f.write(f"# CREDITS · {theme}\n\n"
                         "| 文件 | 来源 | 作者 | 授权 | 来源页 | 日期 |\n|---|---|---|---|---|---|\n")
         for i, c in enumerate(cands, 1):
             if not (c.get("url") or c.get("content")):
                 continue
             try:
-                base = f"{args.theme}-{c['source']}-{i:02d}"
+                base = f"{theme}-{c['source']}-{i:02d}"
                 name, err = download_one(c, theme_dir, base)
                 if err:
                     results.append({"url": c.get("url", ""), "error": err})
@@ -459,13 +468,25 @@ def main() -> int:
             except Exception as exc:  # noqa: BLE001
                 results.append({"url": c.get("url", ""), "error": f"{type(exc).__name__}: {exc}"})
 
-    emit({"ok": True, "candidates": len(cands), "downloaded": results if args.download else None,
+    # ok / 退出码按实际结果判定(不能再硬编码 True/0):有一条下载失败就是失败,
+    # 否则「全部下载失败」也会报成功,消费方拿到的 ok:true 是假的。
+    failed = [r for r in results if r.get("error")]
+    ok = not failed
+    if failed:
+        hint = (f"{len(failed)}/{len(results)} 张下载失败:按 failed[].error 排查后重跑"
+                "(已成功的文件保留在主题目录,重跑幂等)")
+    elif any(cfg(k) for k in ("pexels_key", "pixabay_key")):
+        hint = None
+    else:
+        hint = ("未配置图库 key:在 config.json 填 pexels_key / pixabay_key 启用授权干净的图库源"
+                "(当前仅爬虫可用)")
+    emit({"ok": ok, "candidates": len(cands),
+          "downloaded": results if args.download else None,
+          "failed": failed if args.download else None,
           "risk_note": "带「版权风险-」前缀的文件禁止移除前缀直接当无风险素材使用;"
                        "交付时必须在汇报中列出并提醒用户更换" if args.download else None,
-          "hint": None if any(cfg(k) for k in ("pexels_key", "pixabay_key"))
-          else "未配置图库 key:在 config.json 填 pexels_key / pixabay_key 启用授权干净的图库源"
-               "(当前仅爬虫可用)"})
-    return 0
+          "hint": hint})
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

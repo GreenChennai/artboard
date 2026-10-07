@@ -165,6 +165,43 @@ export.py 输出**单行 JSON**:
 > 结果 JSON 的 `engine` 字段回报实际车道(静态有浏览器时 `browser`,动画为 `browser-anim`)。
 > 故本文的静态/动画语义均按**浏览器车道**记(车道细节见 `docs/glossary.md`「Kiln 双车道」)。
 
+## GIF / MP4 的编码质量:期望参数与被委托的现实
+
+**现状(必须知道)**:GIF/MP4 的**编码参数不在 artboard 手里** —— `scripts/export.py` 只把
+`--format GIF|MP4 --fps <n> --duration <秒>` 透传给 Kiln,编码器参数由引擎内部决定
+(全仓 `grep palettegen\|libx264` 无命中,只此一处出口)。
+
+所以"导出画质/体积还能不能调"的答案是:**调不了,除非改上游**。要做的是两件事:
+
+1. **把期望参数写清楚并登记上游**(`docs/upstream-issues.md` UP-4),不要每次重新猜;
+2. **需要更高编码质量时走绕行**:审片台的「裁片段」用 ffmpeg 直出(`tools/review-station/`,
+   已带 `-bf 0` 与偶数尺寸 pad),或对成片做一次 ffmpeg 后处理转码。
+
+**期望参数(供上游参考,来源 hyperframes `gifEncodeArgs.ts` / `chunkEncoder.ts`,Apache-2.0)**:
+
+```bash
+# GIF:两 pass(调色板按帧间差分优化,抖动抗色带;有 alpha 时保留透明)
+ffmpeg -i frame_%06d.png -vf "fps=<FPS>,palettegen=stats_mode=diff:reserve_transparent=1" palette.png
+ffmpeg -i frame_%06d.png -i palette.png -lavfi "fps=<FPS> [x]; [x][1:v] paletteuse=dither=sierra2_4a:alpha_threshold=128" \
+  -loop <N> -gifflags 0 out.gif        # -gifflags 0 = 逐帧整帧写出,不丢帧
+
+# MP4:锁 GOP(便于 `-c copy` 拼片)+ 消 B 帧(否则开头 DTS 为负,部分播放器首帧黑)
+-framerate <num>/<den> -i frame_%06d.png -r <num>/<den>
+-c:v libx264 -preset medium -crf 23
+-g <N> -keyint_min <N> -sc_threshold 0 -force_key_frames "expr:eq(mod(n,<N>),0)"
+-bf 0 -pix_fmt yuv420p -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2"
+-x264-params aq-mode=3:aq-strength=0.8:deblock=1,1:colorprim=bt709:transfer=bt709:colormatrix=bt709
+-video_track_timescale 90000 -movflags +faststart
+```
+
+> 三条最容易踩的:**① `-bf 0`**(能播 > 省体积);**② 偶数尺寸**(yuv420p 硬要求,奇数画布直接报错);
+> **③ 有理数帧率**(29.97 写 `30000/1001`,否则 PTS 被平均出漂移)。
+
+## 交付后审阅(动效类)
+
+出片不是终点:动效/视频卡的返修走**审片台闭环** —— 逐帧看 → 元素拾取 → 意见落盘成 JSON →
+下一轮直接读文件改。口径见 `references/review-loop.md`,工具在 `tools/review-station/`。
+
 ## 本册用到的脚本
 
 | 脚本 | 何时用 | 一行示例 |

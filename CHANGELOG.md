@@ -1,5 +1,126 @@
 # Changelog
 
+## v1.19.0 — 机检三连 + 交付后审阅(审片台)并入 + 两库方法论吸收(2026-10-07)
+
+> 依据两条外部输入:**① 迭代指导**(基于 heygen-com/hyperframes 与 nexu-io/open-design,
+> 两库均 Apache-2.0,已浅克隆到 `_ref/` 供逐条查证);**② MV 审片台资产包**(真实 MV 项目
+> 33 轮返修沉淀:20 条审片台铁律 + 8 条渲染铁律 + 4 条诊断方法论 + 7 个机检门禁 + 一个
+> 纯标准库的网页审片台)。落地时**改编处逐条标注来源**,引用的第三方规则文件在文内注明许可。
+> 抄写合规:两库 Apache-2.0 / guizang-ppt MIT / refero_skill MIT 均允许改写与私有使用;
+> 若将来整体对外发布,在 NOTICE 加一行「部分规则/代码改编自 hyperframes、open-design、
+> guizang-ppt(歸藏)、refero_skill」即可。
+
+### Added · 机检三连(AI 味 / 铁律 / 中文行高)
+
+- **`scripts/check_slop.py`(新)** —— 纯 stdlib、无浏览器、单页 <0.3s 的静态机检,
+  移植 open-design `apps/daemon/src/lint-artifact.ts` 的规则集并按 artboard 口径重定级:
+  **P0** 默认 indigo / 紫蓝渐变 / 蓝青"信任渐变" / emoji 当图标 / 编造指标 / 填充文案 /
+  标题回落系统无衬线 / **中文标题行高 <1.3** / **离线铁律(引用 http 资源)** / **固定画布(100vh·fixed)**;
+  **P1** 大写字距 / `:root` 外裸 hex / 强调色滥用 / 圆角+左彩边 / 中文负字距。
+  每条 finding 带 `{severity,id,message,fix,snippet}` —— **fix 字段直接给修法**;
+  支持 `<!-- slop-ignore: 规则id -->` 显式豁免(交付时要说明理由)、`--strict`/`--only`/`--list-rules`。
+  与上游的差异逐条注在文件头(left-accent 降 P1:引用卡合法;新增两条铁律与两条 CJK 规则)。
+- **`docs/samples/slop-good` + `slop-bad`(新固样例)** —— 好样例必须零 P0/P1(规则过严即报)、
+  坏样例必须报出 P0(检查器钝化即报),接入 selfcheck 的 `golden` 门禁。
+  校准:技能自带 39 个样例稿过一遍,只在实际违规处报出 1 条 P0(见下"发现")。
+- **`references/guardrails.md` §5.1/§5.2(新)** —— **AI 味七宗罪表**(判据/谁查/修法),
+  并给原有 12 条自检逐条标 **【机检】/【目检】** —— 规则文件与机检脚本谁管什么,对 Agent 诚实
+  (上游的契约写法:`auto-enforced by the linter` vs `guidance, not auto-checked`)。
+- **`references/cjk-typography-css.md` §一(新)** —— **行高与字距三条数值铁律**:
+  中文 Display/H1 **1.3–1.4**(大字无豁免)、正文 1.7–1.8、负字距是拉丁专属、大写 ≥0.06em;
+  章节重编号(原 §一–§十 → §二–§十一),同步 `typographic-expression.md`/`bilingual-typography.md`
+  的 §四/§八 引用与本节自检 7 条 → 9 条。
+- **门禁顺序**:`pipeline.md` Step 6.0 与 `SKILL.md` 改为"先静态后几何"
+  (`check_slop.py` → `check_overflow.py`);铁律 5 的机检豁免同步到两条脚本。
+
+### Added · 交付后审阅(审片台)并入
+
+- **`tools/review-station/`(新)** —— 网页审片台:画面逐帧 / 时间轴缩放 + 磁力吸附 /
+  字幕行内编辑 / **元素级拾取**(F12 式,带画布坐标)/ 意见落盘 / 离线队列 / 性能面板。
+  服务端**纯标准库**(`review_server.py`,11 个 action);按 artboard 布局重写,**移植必改 6 处全部改完**
+  (显式 `--root`、音频由 `meta` 探测、落盘路径参数化到 `--work-dir`、字幕候选走 `subfiles`、
+  `--stop` 补 POSIX、`shot`/`render` 改为基于成片的 ffmpeg 出帧/切片),另加**双挂载**
+  (`/__rv/*` → 工具目录)与 accept 队列 5→128(并发取帧不再 `ERR_CONNECTION_REFUSED`)。
+  片段编码吸收了 hyperframes 的两条:**`-bf 0`**(消负 DTS,不再出现"音频先响、画面卡首帧")+ **偶数尺寸 pad**。
+- **`references/review-loop.md`(新分册)** —— 口径层:意见文件即 **Agent 接口**(JSON 字段与读法)、
+  交付后审阅的定位与边界、**交互层通用铁律**(contenteditable 三硬规则 / 保存层抗打离线队列 /
+  磁力吸附按像素 / 缩放必配平移滑条 / flex 列分离操作区与数据区 / 唯一临时名 / 文本清洗顺序 /
+  拆并互逆 / 快捷键白名单)、字幕是审片台自己的图层与三格式解析坑、
+  **诊断方法论**(缩略图会骗人→numpy 量化;找真凶不改现象;量化后才写铁律)、
+  **MV 动效补强**(音频→节拍→逐句时间轴数据链、多镜头工程三原则、`sat((t-t0)/w)` 窗口判断、
+  缓存只能影响预览的三道防线)、**与既有能力的 4 处重叠裁决**。
+- **3 个机检门禁(新)**:
+  `check_review_ui.py`(页面自检:id 引用 / 页签配对 / 审片台与影片页 DOM 一致性)、
+  `check_review_cache.py`(缓存隔离审计:同一 t 反复画 A/C/D **逐字节相同** + 跨页 AA 容差)、
+  `check_px_baseline.py`(成片像素基线回归:差异像素占比 ≤0.05% 且最大通道差 ≤64,与 `compare.py` 分工)。
+- **`docs/adr/0028`(本地留档)** —— 记录"为什么引入交付后审阅、为什么不扩写 `video-motion.md`、
+  为什么工具进 `tools/` 而门禁进 `scripts/`"。
+- **`references/revision-protocol.md` §10(新)** —— 动效/视频的改稿出口:读意见文件 → 按 `el` 先定位 →
+  定点改 → 回写状态;并说明该入口对海报/图文同样成立。
+
+### Added · 两库方法论吸收(P1)
+
+- **`intake.md` §封闭词表**(新):维度 → 封闭取值 → 真相源,配两条硬规则 ——
+  **未识别的值必须反问不许猜**、**末尾必须报告哪些维度用了默认值+按哪条规则推的**。
+- **`style-guide.md §2.5`(新)**:歸藏 guizang-ppt 的三个工程机制 —— **类名预检**(模板是类名唯一真相源)、
+  **主题封闭**(不接受现场 hex/禁跨风格拼配)、**症状/根因/处方三段式 checklist**。
+- **`design-review-rubric.md §3.5`(新)**:**机械可数规则**(眉题每 3 区块 ≤1 / 布局族最多连续 2 /
+  格数=条目数 / 跑马灯 ≤1 / 同意图一个 label / 主视觉文本 ≤4 / CTA 不换行 / 禁三等分特性卡)
+  + **前置推理块**(读场一句话 / 三旋钮 / 数学验证三行)。
+- **`brand-system.md §2.4` + §5.1(新)**:品牌 token **四层模型**(A1 识别 / A1 结构 / A2 操作 / B 槽位)
+  与"**必须全量声明,不能靠运行时 fallback**"的论证、`color-mix(in oklab,…)` 派生色、克制清单;
+  以及"换物料按**角色**映射(canvas/ink/accent/display),不逐个 hex 替换"。
+- **`effects.md §〇`(新)**:货架格式六字段(`what/use_when/avoid_when/variables/pairs_with/cues`)
+  + **适用速查 40 行 / 覆盖全部 43 式**(use_when / 真实误用型 avoid_when / pairs_with,部分行合并成对配方);
+  `styles-catalog.md` 同步该格式口径。
+- **`animation.md §1.1/§1.2/§3.1/§3.2`(新)**:确定性三件套(`Math.floor(t*fps+1e-9)` 帧网格量化、
+  页面 settle 链(字体→图片"失败即就绪"→`decode()` 上 GPU→背景图)、double-capture、
+  四类禁用),时长阈值表与两条红线(1s 内闪烁 ≤3 次 / 静止 ≠ 冻结),**形容词→缓动映射表**、
+  时长速记、**stagger 情绪表**。
+- **`video-motion.md §九·五`(新)**:分镜描述**改写对照**(别写"一切静止"、补尾拍、两事件显式让位、
+  画面文案加引号、形容词→参数),并指路 `review-loop.md §六` 的 MV 数据链。
+- **`export.md`(新节)**:GIF/MP4 的**期望编码参数**与被委托给 Kiln 的现实(全仓无 `palettegen`/`libx264`,
+  故"参数不可调")+ 上游建议;`docs/upstream-issues.md` 登记 **UP-4**。
+- **P2 三小项**:`responsive-reflow.md §2.1`(横→竖字号系数 ×1.3/×1.2、padding 收到 24–36px)、
+  `materials.md §5.1`(检索用词两极规则:原子档或具体档,**具体查询失败就丢弃不放宽**)、
+  `replicate.md` 头部补"**测量而非记忆**"的机制解释(模型均值回归到 Inter+indigo 的根因)。
+
+### Corrected · 上游二次查证(同日)
+
+指导里给的两处路径与规模描述与上游实际不符,已按**真实文件**二次核对并修正内容(不是只改注释):
+
+| 指导原文 | 上游实际 | 本次修正 |
+|---|---|---|
+| hyperframes `registry/`(400 积木 / 237 组件货架) | `registry/components/CATALOG.md` = **"the shelf of 21"**(21 条 hero 原语,手写散文货架);其余 ~236 个组件只有极简 `registry-item.json`(无 `use_when`),两套互不引用 | `effects.md §〇` 补上 CATALOG 的**文件级四条约定**:先查货架再自造 / **`avoid_when` 是 QA 真误用、当硬约束** / **多出来的时长变 HOLD、不是拉长动画** / 变量只传要改的 |
+| open-design `docs/prompting/vocabulary.mdx`(同事首轮报"不存在") | 实际在 **hyperframes** `docs/prompting/vocabulary.mdx` + `anatomy.mdx`;但**没有独立的"stagger 情绪表"** | `animation.md §3.2` 改为**四条硬规则**(无共享起止时刻 / 偏移必须短于动画、否则变排队 / 延迟配角不延迟焦点 / 只对"正在发生"错峰,`项数×stagger ≤ ~0.5s`)+ 档位参考;`video-motion.md §九·五` 补齐为**原文 6 组改写**(新增"模糊否定""格式盲数字"),并新增 **§九·六**(简报六段式 `[route][spec][beats][copy][technique][negatives]` + 每拍五槽 `[元素][动作][布局][风格][时间]` + 转场能量三档) |
+
+### Fixed
+
+- **selfcheck `refs` 门禁两处盲区**:① 脚本调用检查此前只认裸文件名且只在 `scripts/` 下找 ——
+  `tools/` 下的工具脚本完全不在覆盖内;现按**已知顶层目录**(scripts/tools/docs/…)解析,
+  `$S/x.py`、`<skill>/tools/x.py`、`../tools/x.py` 三种写法都判对(修完引用核验 947 → 992 处);
+  ② `docs/review/` 的过程文档豁免与 `.gitignore` 对齐。
+- `jsonfail` 用例 25 → **29**(新增 `check_slop` 2 条 + 三个审片台门禁 4 条);
+  `golden` 增加 slop 固样例 2 组判据。
+
+### Verified
+
+- 全量自检 **FAIL 0 / WARN 0 / PASS 12**:引用 994 处、路由 **65/65** 分册、脚本 **74** 个
+  (冒烟 57、失败路径 29)、冒烟/构建/部署/过期引用/素材/基线/数字一致全绿。
+- **上游两条 issue 已提交**(按台账纪律,issue 稿全文保留在 `docs/review/05-上游issue待提交稿.md`):
+  UP-3 → VellumBench **#1**(GIF `steps()` 错帧)、UP-4 → VellumBench **#2**(编码参数请求);
+  `docs/upstream-issues.md` 两行的「上游状态」已由"待登记/待复核"改为**已提交 + 链接**。
+- `effects.md` 选用速查**补齐到全 43 式**(40 行,部分行合并成对配方),并保持"引用的配方 id 都存在"。
+- **机检校准**:`check_slop.py` 过技能自带 39 个样例稿 → 1 条 P0(video-opener 的 104px 双行中文主标
+  `line-height:1.22` —— 正是新铁律要抓的高频违规)+ 7 条 P1;好/坏固样例判据稳定。
+- **审片台端到端**(真实 MV 样例工程 + 合成项目两轮):11 个 action 全通;`subfiles` 识别 5 份样例字幕;
+  `srt` 按片长裁剪(截断 1 / 丢弃 0);无成片时 `shot` 回 `NO_MP4` + 提示;
+  页面 `window.__rv` 挂载、**14 个 canvas 渲染出影片**、非预期 404 = 0(仅字体 404,属样例包已知限制);
+  `check_review_ui.py` 0 issue(157 个 id / 137 处 JS 引用 / 8 页签配对 / DOM 一致);
+  `check_review_cache.py` 页内纯度 A=C=D 逐字节相同、0 页面报错;
+  合成项目 `shot` 出真 PNG(24KB)、`render` 裁 1–3s → ffprobe 核验 **`has_b_frames=0` / yuv420p / 2.000s**。
+- `check_px_baseline.py` 三分支实测(相同帧过 / 微差但超通道差门限被拦 / 整体变色被拦)。
+
 ## v1.18.0 — 地图模块并入 + 两轮审计缺陷收口(2026-10-07)
 
 > 依据:两名只读审计员的全量报告(脚本 18 项 / 文档-代码一致性 23 项)+ 地图模块

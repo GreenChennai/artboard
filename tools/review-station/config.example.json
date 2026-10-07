@@ -1,0 +1,33 @@
+{
+  "vol": 0.82,
+  "audioOn": true,
+  "loop": false,
+  "speed": 1,
+  "fps": 60,
+  "scale": "fit",
+  "pf": {
+    "mode": "auto",
+    "drag": 2
+  },
+  "sub": {
+    "on": true,
+    "file": "disk:world.execute_me__.en.ass",
+    "autoSave": false,
+    "font": "yh",
+    "size": 34,
+    "color": "#ffffff",
+    "stroke": 0,
+    "strokeColor": "#000000",
+    "bg": "#000000",
+    "bga": 0,
+    "pad": 6,
+    "bottom": 64,
+    "align": "center",
+    "lh": 1.35,
+    "maxw": 1500
+  },
+  "cmp": {
+    "mode": "side",
+    "ref": ""
+  }
+}

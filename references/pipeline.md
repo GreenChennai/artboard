@@ -144,24 +144,29 @@ python "<skill>/scripts/export_fallback.py" --source "<project>/src/index.html" 
 用户迭代改稿阶段 → 定点修改重导即可,不自动自检(省时省 token)。
 
 > **"机检"与"自检"是两件事**,别混:
-> - **机检**(`check_overflow.py`)= **每次重导前的门禁**,跑一次 3–5 秒、**零 token 成本**,
->   **不受**上面两个时机限制。它做几何量测,查的是肉眼看不见的那两类缺陷
->   (文字出卡片框但没出画布、内容进了字幕带)。
+> - **机检**(`check_slop.py` + `check_overflow.py`)= **每次重导前的门禁**,**零 token 成本**,
+>   **不受**上面两个时机限制。两条分工:前者**纯静态**(<1s,AI 味七宗罪 / 铁律 1·2 / 中文行高),
+>   后者**几何量测**(3–5s,肉眼看不见的两类缺陷:文字出卡片框但没出画布、内容进了字幕带)。
 > - **自检**= Agent 的 Read 看图与评审,只在上面两个时机做。
 >
 > 改稿阶段虽然不自检,但**机检仍要跑** —— 改文案/字号/间距正是溢出最常见的成因。
 
-### 6.0 机检门禁(每次重导前必跑)
+### 6.0 机检门禁(每次重导前必跑,顺序:先静态后几何)
 
 ```bash
-# 静态海报:查容器越框(A/B 类)
+# ① 静态(纯 stdlib、无浏览器、<1s):AI 味 / 铁律 / 中文行高
+python "<skill>/scripts/check_slop.py" "<project>/src"
+#    有 P0 → 先改再导;P1 是建议(--strict 才算阻断);例外写 <!-- slop-ignore: 规则id -->
+
+# ② 几何:查容器越框(A/B 类)
 python "<skill>/scripts/check_overflow.py" "<project>/src"
 
-# 视频卡 / 会被叠字幕的动图:追加安全区检查(C 类)
+#    视频卡 / 会被叠字幕的动图:追加安全区检查(C 类)
 python "<skill>/scripts/check_overflow.py" "<project>/src" --safe-area auto
 ```
 
 - `ok:false` / 退出码 1 → **先修再导**,别导完再改(白导一轮);
+- **slop 的 P0** → 修法在 findings 的 `fix` 字段(逐条可执行),判据见 `guardrails.md §5.1`;
 - **A/B 类(容器越框)** → 修法见 `card-layout.md §五「一行修复对照表」`;
 - **C 类(越出安全区)** → 先精简文案 / 拆卡(比贴边稳);确实装不下才降档:
   `--safe-tier tight`(垂直放宽、左右不动)→ `--safe-tier extreme`(四边 2.5%,有代价);
@@ -239,6 +244,7 @@ python scripts/make_bats.py <项目> --embed
 | `scaffold.py` | 建项目 | `python scripts/scaffold.py <slug> --size xhs` |
 | `export.py` | 导出主路径 | `python scripts/export.py --source … --output … --width 1080 --height 1440` |
 | `export_fallback.py` | 导出兜底(仅 PNG) | `python scripts/export_fallback.py --source <项目>/src/index.html --output <项目>/export/out.png` |
-| `check_overflow.py` | 机检门禁 | `python scripts/check_overflow.py <proj>/src --safe-area auto` |
+| `check_overflow.py` | 机检门禁(几何) | `python scripts/check_overflow.py <proj>/src --safe-area auto` |
+| `check_slop.py` | 机检门禁(AI 味/铁律/中文行高) | `python scripts/check_slop.py <proj>/src` |
 
 > 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

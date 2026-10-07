@@ -223,6 +223,7 @@
       "used_by": [
         "docs/glossary.md",
         "docs/scripts.md",
+        "references/review-loop.md",
         "references/video-motion.md"
       ]
     },
@@ -321,12 +322,58 @@
         "references/material-language.md",
         "references/multi-draft.md",
         "references/pipeline.md",
+        "references/review-loop.md",
         "references/revision-protocol.md",
         "references/typographic-expression.md",
         "references/typography-rules.md",
         "references/video-motion.md",
         "references/video-safe-area.md",
         "references/wechat-article.md"
+      ]
+    },
+    {
+      "name": "check_px_baseline.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "成片像素基线回归:改过影片/动效代码后,确认出图与冻结基线**没被动到别处**。",
+      "used_by": [
+        "docs/scripts.md",
+        "references/animation.md",
+        "references/review-loop.md"
+      ]
+    },
+    {
+      "name": "check_review_cache.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "缓存隔离审计:证明\"缓存/抽稀只影响预览,不影响成片内容与预览完整性\"。",
+      "used_by": [
+        "docs/scripts.md",
+        "references/review-loop.md"
+      ]
+    },
+    {
+      "name": "check_review_ui.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "审片台页面自检(不用浏览器):id 引用 / 页签配对 / 与影片页 DOM 是否一致。",
+      "used_by": [
+        "docs/scripts.md",
+        "references/review-loop.md"
+      ]
+    },
+    {
+      "name": "check_slop.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "artboard AI 味与铁律机检(静态,零渲染)。",
+      "used_by": [
+        "SKILL.md",
+        "docs/scripts.md",
+        "references/cjk-typography-css.md",
+        "references/guardrails.md",
+        "references/pipeline.md",
+        "references/revision-protocol.md"
       ]
     },
     {
@@ -364,7 +411,8 @@
         "docs/glossary.md",
         "docs/scripts.md",
         "references/pipeline.md",
-        "references/replicate.md"
+        "references/replicate.md",
+        "references/review-loop.md"
       ]
     },
     {
@@ -435,11 +483,13 @@
         "references/multi-draft.md",
         "references/pipeline.md",
         "references/print-production.md",
+        "references/review-loop.md",
         "references/style-guide.md",
         "references/vector-drawing.md",
         "references/vector-export.md",
         "references/video-motion.md",
-        "references/wechat-article.md"
+        "references/wechat-article.md",
+        "tools/review-station/README.md"
       ]
     },
     {
@@ -751,10 +801,13 @@
         "references/formats/trifold.md",
         "references/image-language.md",
         "references/imaging.md",
+        "references/intake.md",
         "references/multi-draft.md",
         "references/pipeline.md",
         "references/replicate.md",
-        "references/responsive-reflow.md"
+        "references/responsive-reflow.md",
+        "references/style-guide.md",
+        "tools/review-station/README.md"
       ]
     },
     {

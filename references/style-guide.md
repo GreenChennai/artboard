@@ -62,6 +62,46 @@
 5. **渲染自检**:scaffold 冒烟项目 → 换入案例 → Kiln 导出(`scripts/export.py`)→ Read PNG 检查(走 pipeline Step 5–6)。
 6. **登记**:SKILL.md 风格清单表加一行(名称/slug/一句话/推荐尺寸)。
 
+## 2.5 三个工程化机制(来自歸藏 guizang-ppt 的实践,MIT)
+
+> 来源:`open-design/design-templates/guizang-ppt/`(作者歸藏,MIT)。它不是美术参考,
+> 而是**"把风格做成可教的东西"** 的三条工程机制 —— 对 artboard 的风格分册同样适用。
+
+### (1) 类名预检:生成前先确认"这些 class 真的存在"
+
+它的原话是 *"This is the source of all generation problems"*:骨架里写的类名若在模板
+`<style>` 里没有定义,浏览器回退到默认样式 —— 大标题变无衬线、数据卡挤成一团、
+多栏糊成一行,**但不会报错**。处置:
+
+1. 写骨架前先读**类名真相源**:`scaffold.py` 生成的 `base.css`,或本风格案例 HTML 的 `<style>` 段;
+2. 逐类核对;**缺的补进真相源**(base.css / 分册的组件语言节),不要在每个页面上内联重写;
+3. **真相源是唯一来源**:不自创类名;确实要一次性的,才用行内 `style="…"`。
+
+### (2) 主题封闭:配色只从分册取,不接受现场 hex
+
+它的口径值得原样记住:*"a wrong color pairing makes the visuals ugly in an instant,
+and protecting the aesthetic matters more than offering freedom."* 落到 artboard:
+
+- 一个项目**只用一套 tokens**(风格分册的 `:root` 段);
+- 用户给任意 hex 时:**先给三个本风格内的近似方向**让他挑,而不是直接换掉主色;
+  用户坚持要品牌色 → 走 `brand-system.md`(品牌色走 A1 层,其它角色跟随);
+- **禁跨风格拼配**(拿 A 风格的 ink 配 B 风格的纸)—— 两套 tokens 的对比度关系不是设计出来的。
+
+### (3) 症状 / 根因 / 处方:把踩过的坑写成三段式
+
+分册末尾除了"禁则",再沉淀 **≥3 条**真实故障条目(格式固定),让**明确故障直接查表**,
+不必走 `revision-protocol.md` 的诊断阶梯。几条典型(改写自 guizang 的 checklist):
+
+| 症状 | 根因 | 处方 |
+|---|---|---|
+| 图片把网格撑开 / 顶部信息被裁 | 给图容器用了 `aspect-ratio`,父容器一变高就撑破 | 图容器**固定高 + `overflow:hidden`** + 图 `object-fit:cover; object-position:top`(**只裁底部**);禁 `aspect-ratio` |
+| 超大标题每行只剩一两个字 | 字号按 vw 走 + 标题太长,两个变量一起失控 | 超大标题**先限字数**(≤5 字),再用 `clamp()` 控字号;长标题手动断行 + `white-space:nowrap` |
+| 浅色页背景发灰 | 深色底图/画布的图层没随主题切换,盖在浅色页上 | 每页显式带主题类(`light`/`dark`);整套**禁连续 3 页同主题**,8 页以上须明暗各有 |
+| 图掉到页面底部 | 非 grid 父容器里用 `align-self:end` 无效 | 图文混排用固定分栏骨架;要"视觉贴底"改**左列**为 flex 列 + `space-between`,别动右列 |
+
+> 三段式的价值:**症状是用户能说的,根因是你要找的,处方是下次直接抄的** ——
+> 三者缺一,条目就会退化成"注意事项"。
+
 ## 3. 案例硬要求
 
 - 单文件 HTML,内联 CSS;`@font-face` 相对路径 `fonts/…`(scaffold 会复制)。

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<!-- 机检固样例(坏 · 排版向):两个渐变变体 + 大写无字距 + 中文负字距。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>违规样例 · 排版向</title>
+<style>
+  :root { --c-accent: #c2410c; }
+  .hero { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
+  .eyebrow { text-transform: uppercase; font-size: 20px; }
+  .zh-title { font-size: 64px; line-height: 1.2; letter-spacing: -0.03em; }
+</style>
+</head>
+<body>
+  <div class="hero"></div>
+  <div class="eyebrow">Field Notes</div>
+  <h2 class="zh-title">中文标题压字距</h2>
+</body>
+</html>

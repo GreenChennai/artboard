@@ -3,7 +3,7 @@
 > 由 `scripts/gen_script_index.py` 生成 @ 2026-10-07;**不要手改**。
 > 权威参数 = 各脚本 `--help`;少数无 argparse 的脚本(junction/preflight/export_local 等)打印模块说明与用法;分册末尾「本册用到的脚本」是就近索引。
 
-## 脚本(50个)
+## 脚本(54个)
 
 | 脚本 | 用途(=docstring 首行) | 被哪些文档提到 |
 |---|---|---|
@@ -11,7 +11,7 @@
 | ai_export.py | 一键矢量导出(v1.9:Kiln 原生九格式薄壳)。 | README.md、SKILL.md、docs/scripts.md、references/depth-3d.md、references/formats/ppt.md、references/print-production.md… |
 | ai_fidelity.py | PNG ↔ 可编辑 AI/PDF 相似度门禁。 | docs/glossary.md、docs/scripts.md、docs/setup.md、references/vector-export.md |
 | asset_hunt.py | artboard 全自动素材搜索(asset_hunt):一条命令 = 开页→搜词→筛→下→去重→关页→JSON 报告。 | SKILL.md、docs/glossary.md、docs/scripts.md、references/materials.md、references/mcp-assets.md |
-| beat_sheet.py | artboard 卡点表:BPM → 帧网格(模式 V · 视频动效件;细则见 references/video-motion.md §五)。 | docs/glossary.md、docs/scripts.md、references/video-motion.md |
+| beat_sheet.py | artboard 卡点表:BPM → 帧网格(模式 V · 视频动效件;细则见 references/video-motion.md §五)。 | docs/glossary.md、docs/scripts.md、references/review-loop.md、references/video-motion.md |
 | build_player.py | Build the map player HTML (assets/map/demo/map-player.html) from template + SVG  | README.md、SKILL.md、docs/scripts.md、references/map-studio.md |
 | calc_size.py | artboard 尺寸计算器:px / mm / inch / DPI 互转,印刷导出一把算清。 | docs/scripts.md、references/export.md、references/material-catalog.md、references/print-cmyk.md、references/print-production.md、references/sizes-common.md |
 | check_brief.py | artboard 开工前检查单(Brief Gate)机检。 | docs/glossary.md、docs/scripts.md、references/intake.md |
@@ -19,9 +19,13 @@
 | check_h5.py | artboard H5 交互页机检(模式 H;规范见 references/h5-interactive.md)。 | SKILL.md、docs/scripts.md、references/h5-interactive.md |
 | check_mobile_width.py | check_mobile_width.py — 手机窄屏「横向溢出」机检(零 token) | README.md、SKILL.md、docs/scripts.md、references/wechat-article.md |
 | check_overflow.py | artboard 溢出与安全区机检。 | README.md、SKILL.md、docs/glossary.md、docs/gzh-guide.md、docs/scripts.md、references/animation.md… |
+| check_px_baseline.py | 成片像素基线回归:改过影片/动效代码后,确认出图与冻结基线**没被动到别处**。 | docs/scripts.md、references/animation.md、references/review-loop.md |
+| check_review_cache.py | 缓存隔离审计:证明"缓存/抽稀只影响预览,不影响成片内容与预览完整性"。 | docs/scripts.md、references/review-loop.md |
+| check_review_ui.py | 审片台页面自检(不用浏览器):id 引用 / 页签配对 / 与影片页 DOM 是否一致。 | docs/scripts.md、references/review-loop.md |
+| check_slop.py | artboard AI 味与铁律机检(静态,零渲染)。 | SKILL.md、docs/scripts.md、references/cjk-typography-css.md、references/guardrails.md、references/pipeline.md、references/revision-protocol.md |
 | check_svg.py | artboard SVG 质量门(9 项结构机检;细则见 references/vector-drawing.md §4.7)。 | docs/glossary.md、docs/scripts.md、references/materials.md、references/vector-drawing.md |
 | check_wechat_svg.py | check_wechat_svg.py — 微信公众号图文/内联 SVG 动效机检(零 token) | README.md、SKILL.md、docs/gzh-guide.md、docs/scripts.md、references/wechat-article.md |
-| compare.py | artboard 复刻比对:参考图 vs 复刻导出图并排拼接,供视觉逐项核对。 | docs/ITERATION.md、docs/glossary.md、docs/scripts.md、references/pipeline.md、references/replicate.md |
+| compare.py | artboard 复刻比对:参考图 vs 复刻导出图并排拼接,供视觉逐项核对。 | docs/ITERATION.md、docs/glossary.md、docs/scripts.md、references/pipeline.md、references/replicate.md、references/review-loop.md |
 | compute_route.py | Compute real shortest paths on the OSM road network (A*, spatial-hash snap). | SKILL.md、docs/scripts.md、references/map-studio.md |
 | cutout.py | artboard 抠图:本地 rembg + 四件套后处理(去残边/羽化/贴纸白边/软投影)。 | SKILL.md、docs/scripts.md、references/image-language.md、references/imaging.md、references/materials.md、references/pipeline.md… |
 | doctor.py | artboard 项目体检:扫 studio 目录,核对 project.json 与 HTML 真值。 | docs/scripts.md、references/export.md |

@@ -1,7 +1,7 @@
 ---
 name: artboard
-description: Use when the user wants a finished graphic produced from copy or a reference image, or wants an existing design revised — 海报、banner、小红书封面、公众号封面、主 KV、信息长图、数据图、名片、A4 海报、三折页、易拉宝、PPT 页、二维码物料; 动态海报、GIF、MP4、口播信息卡、图解动画卡、科普动画卡等视频场景卡; 片头动画、片尾动画、内容概括动画、章节卡、转场卡等视频动效件(按口播/教程/vlog/短片/MV 配动效); H5 页面、移动端落地页、互动页、邀请函 H5 等轻量交互页(模式 H); 地图/城市地图/路网/区位图/街道底图、2.5D 等轴测与 3D 城市、地图 KV、多网点分布图、地图动画(车流/通勤/导航)、地图播放器 H5(子技能 references/map-studio.md); 印刷/打样/烫金/UV/模切/专色/裁切线等印前工艺; 公众号文章/微信图文/秀米排版(模式 W); SVG/EPS/AI/可编辑 PDF 等矢量工程文件交付; 抠图/调色/滤镜/压缩/水印/切片等位图工序; 图标/几何图形/极简插画; 多稿同出/给几个方案; 品牌色/logo/VI 一致性; 把文案变成图片、复刻一张设计图、换风格重做、改稿但说不清哪里不满意. 风格像 Illustrator/Photoshop 做的设计图,不是网页交互风. Not for 网页 UI、视频剪辑、纯 AI 生图. Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.18.0
+description: Use when the user wants a finished graphic produced from copy or a reference image, or wants an existing design revised — 海报、banner、小红书封面、公众号封面、主 KV、信息长图、数据图、名片、A4 海报、三折页、易拉宝、PPT 页、二维码物料; 动态海报、GIF、MP4、口播信息卡、图解动画卡、科普动画卡等视频场景卡; 片头动画、片尾动画、内容概括动画、章节卡、转场卡等视频动效件(按口播/教程/vlog/短片/MV 配动效); 成片/长动效的**审片**(逐帧审阅、元素拾取、审片意见落盘、像素基线回归、缓存隔离审计,子技能 references/review-loop.md + tools/review-station); H5 页面、移动端落地页、互动页、邀请函 H5 等轻量交互页(模式 H); 地图/城市地图/路网/区位图/街道底图、2.5D 等轴测与 3D 城市、地图 KV、多网点分布图、地图动画(车流/通勤/导航)、地图播放器 H5(子技能 references/map-studio.md); 印刷/打样/烫金/UV/模切/专色/裁切线等印前工艺; 公众号文章/微信图文/秀米排版(模式 W); SVG/EPS/AI/可编辑 PDF 等矢量工程文件交付; 抠图/调色/滤镜/压缩/水印/切片等位图工序; 图标/几何图形/极简插画; 多稿同出/给几个方案; 品牌色/logo/VI 一致性; 把文案变成图片、复刻一张设计图、换风格重做、改稿但说不清哪里不满意. 风格像 Illustrator/Photoshop 做的设计图,不是网页交互风. Not for 网页 UI、视频剪辑、纯 AI 生图. Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
+version: 1.19.0
 ---
 
 # artboard · HTML 海报工作室
@@ -36,6 +36,11 @@ PNG/JPG/GIF/MP4/PDF/SVG/EPS/AI/PPTX 九格式。浏览器在位时 PNG/PDF/AI �
 > 机检用 `scripts/check_h5.py`。做"移动端落地页/互动页/邀请函 H5"时走这条分支。
 > **应用型**交互原型/SPA/小程序仍不接(边界见 h5-interactive.md §〇)。
 
+> **交付后审阅(审片台)** —— 动效/视频卡/长动效交付后,用户说"审片/挑问题/哪里不对劲"时,
+> 起 `tools/review-station/`(逐帧看 + 元素拾取 + 意见落盘成 JSON);**意见文件就是给 Agent
+> 的接口**,下一轮直接读它定点改。口径与通用铁律在 **`references/review-loop.md`**。
+> 多轮返修的 MV/宣传片按这条闭环走。
+
 **不适配,别接**:网页 UI / 应用型交互原型(轻量 H5 走模式 H)、视频剪辑、纯 AI 生图、
 用户只有产品照片还没给文案(先追问,见 Step 1)。
 
@@ -59,12 +64,19 @@ Step 4.5 素材   references/materials.md §0 判定表(要不要配图→写 im
                 全自动多站搜素材用 scripts/asset_hunt.py(细则 references/mcp-assets.md §5.5);
                 用户图抠图(cutout.py);图片体检 imageops.py probe;查重 dedupe + 对账 check_credits.py
 Step 5 导出     scripts/export.py(Kiln 九格式)→ 失败走 export_fallback.py(仅 PNG)
-Step 6 自检+改稿 **6.0 机检门禁**(每次重导前必跑,3–5s、零 token):
-                scripts/check_overflow.py <proj>/src [--safe-area auto]
+Step 6 自检+改稿 **6.0 机检门禁**(每次重导前必跑,零 token):
+                scripts/check_slop.py <proj>/src      ← 先跑这个(纯静态,<1s):AI 味七宗罪 +
+                                                        铁律 1/2 + 中文行高。有 P0 先修再渲染
+                scripts/check_overflow.py <proj>/src [--safe-area auto]   ← 几何:越框/安全区
                 → 6.1 Read 导出图 + 过自检清单 → 修复重导(≤2 轮);
                 用户不满意 → **不重新生成**:按用户指定部位改现有 HTML(同 AI 生图的局部重绘);
                 说不清哪里不满意的「模糊愿望」走 references/revision-protocol.md(诊断→翻译→减法阶梯)
 Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材并提醒更换
+
+(交付后)审片   **动效/视频卡/长动效的返修闭环**(可选,不属七步):
+                起审片台 → 用户逐帧看/拾取元素/写意见 → 意见落盘成 JSON
+                → Agent 读文件定点改 → 重导。口径见 references/review-loop.md
+                tools/review-station/review_station.py --root <项目>
 ```
 
 ## 风格清单(视觉风格)
@@ -156,6 +168,8 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 | 新增风格指南 | references/style-guide.md | 仅当要新建风格分册 |
 | **设计评审打分表** | references/design-review-rubric.md | Step 6 自检的两个时机(首版完成 / 用户要求) |
 | 字体库 | fonts/README.md | 选字体时(两级筛查) |
+| **交付后审阅(审片台)** | references/review-loop.md | 用户说"审片/挑问题/逐帧看/哪里不对劲"时,或交付了动效/视频卡/长动效要进返修闭环时(**必读**;意见文件即 Agent 接口) |
+| 审片台工具 | tools/review-station/README.md | 要起审片台/改审片台 UI/查它的 HTTP 契约时 |
 | 参考案例 | assets/cases/*.html | 写 HTML 需要参照时,只读命中风格的 1 份 |
 | vendor/图标/插画包 | assets/… | 引用具体文件时,不预读 |
 | 模型下载 | scripts/fetch_model.py | 本地 VQA 模型缺失且需要时 |
@@ -170,7 +184,8 @@ python $S/preflight.py                        # 预检(每次开工先跑)
 python $S/scaffold.py <slug> --size xhs --fonts 思源黑体,霞鹜文楷
 python $S/export.py --source <proj>/src --output <proj>/export/o.png --width 1080 --scale 2 --height 1440
 python $S/export_fallback.py --source <proj>/src/index.html --output <proj>/export/o.png --width 1080  # 兜底(仅 PNG)
-python $S/check_overflow.py <proj>/src        # 机检:越框/安全区(出图前必跑;位图工序见 imageops,调色见 pixel)
+python $S/check_slop.py <proj>/src            # 机检:AI 味/铁律/中文行高(纯静态,出图前先跑)
+python $S/check_overflow.py <proj>/src        # 机检:越框/安全区(需浏览器;位图工序见 imageops,调色见 pixel)
 ```
 
 - 项目落盘:`config.json` 的 `studio_dir` 下 `<slug>/`(src/ + export/)。
@@ -186,7 +201,7 @@ python $S/check_overflow.py <proj>/src        # 机检:越框/安全区(出图�
 2. 离线渲染:HTML 零 CDN 引用;字体/vendor 一律复制进项目。
 3. 一图一个焦点、层级 ≤3 层、强调 ≤2 处、特效 ≤3 种、字体 ≤3 款。
 4. 文案逐字来自用户,不编造数据与条款。
-5. **自检只在两个时机触发**:①首版 HTML 完成时;②用户要求检查时。之后的用户改稿一律定点修改,不自动自检不派子代理(省时省 token)。**机检 `check_overflow.py` 不受此限**——每次重导前都跑(零 token 成本,3–5s,改文案最易引入溢出)。改稿怎么定部位:明确指令按 `pipeline.md` 改稿协议速查;说不清的模糊愿望走 `references/revision-protocol.md`。
+5. **自检只在两个时机触发**:①首版 HTML 完成时;②用户要求检查时。之后的用户改稿一律定点修改,不自动自检不派子代理(省时省 token)。**机检不受此限**——每次重导前都跑:`check_slop.py`(纯静态 <1s,AI 味/铁律/中文行高)与 `check_overflow.py`(零 token,3–5s,改文案最易引入溢出)。改稿怎么定部位:明确指令按 `pipeline.md` 改稿协议速查;说不清的模糊愿望走 `references/revision-protocol.md`。
 6. 动图**分两模式**(数值细则见 references/animation.md §〇):
    **模式 P 海报循环**——无缝循环;静态版必须另出**有限动画**版(静态导出=快进到终态,
    `infinite` 的静态相位不确定),该版本的终态须仍是合格静态海报;

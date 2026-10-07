@@ -57,6 +57,42 @@
 4. **全部三态齐备(无 ❌)才允许进入 Step 1.5 / Step 4**;
 5. 用户答"都行/你定" → 该字段转为"**已给(用户授权默认)**",并在假设清单里列出。
 
+#### 封闭词表:用户给符号值时,不许猜
+
+> 来源:open-design `skills/design-brief/SKILL.md`(Apache-2.0)的**封闭词表**机制。
+> 它的价值不在"多一张表",而在两条硬规则 —— A 栏的取值是**封闭**的,表外的值必须**反问**。
+
+| 维度 | 封闭取值(取自本技能既有真相源) | 真相源 |
+|---|---|---|
+| 风格 style | `xhs-cover` / `ecommerce-promo` / `tech-kv` / `data-longform`,或 `styles-catalog.md` 里的**方向名** | SKILL.md 风格清单 + `styles-catalog.md` |
+| 品类 format | `xhs` / `square` / `banner` / `kv` / `long` / `card` / `a4p` / `trifold` / `rollup` / `slide` / `gzh` | `scaffold.py` 的 `SIZES` |
+| 配色 palette | 风格自带 tokens(`--c-bg/--c-surface/--c-ink/--c-primary/--c-accent/--c-muted`);**或**用户给的品牌 hex(走 `brand-system.md`) | `references/styles/<slug>.md` 的 `:root` |
+| 字体调性 typography | 字体库里的族名(两级筛查见 `fonts/README.md`);"性格款 / 正文款 / 数字款"三类角色 | `fonts/README.md` |
+| 气质 mood | 克制 / 热烈 / 编辑感 / 松弛 / 秩序 / 戏谑 / 复古 / 未来(`styles-catalog.md` 的方向词) | `styles-catalog.md` |
+| 密度 density | 稀 / 中 / 密(对应"密度目标 4/10"的留白刻度) | `guardrails.md §2` |
+| 禁忌 exclude | 禁项清单(如"不要蓝紫渐变 / 不要人物 / 不要 emoji") | `guardrails.md §5` 反味清单 |
+| 交付 deliver | 静态 PNG/JPG、动图 GIF/MP4、印刷 PDF/TIFF、矢量 SVG/EPS/AI/PPTX | `references/export.md` |
+
+**硬规则 A · 未识别的值必须反问,不许猜**:
+
+> 用户说 `palette=ocean_blue`、`风格=赛博国潮` 这类**表外值**时,标准回应是
+> 「我不认识 `ocean_blue`;你是想要 ① 某风格自带的蓝 ② 品牌蓝(给我 hex)③ 我给你三个近似方向挑?」
+> —— **不是**"我按大海蓝理解一下吧"。猜出来的配色一旦跑偏,整张图白做。
+
+**硬规则 B · 末尾必须报告"哪些维度用了默认值、按哪条规则推的"**:
+
+```
+【默认值推导(未指定的维度)】
+- 配色:用 tech-kv 自带 tokens(规则:style=tech-kv 时配色跟随风格分册)
+- 字体:主标走"性格款"、正文走"正文款"(规则:fonts/README 两级筛查,用户未指定族名)
+- 密度:中(规则:静态海报默认档,用户未提留白偏好)
+- 交付:PNG @2x(规则:未指定时按平台默认导出)
+```
+
+> 每条默认值都要能指到一条**规则**(风格分册 / 本册字段 / 平台默认),写不出规则的默认值
+> 就是"我觉得"——那属于 ❌ 缺失,该去问(与三态标注的"可推定必须带依据"同一口径)。
+> 这份报告放在三态汇报或假设清单**末尾**,别静默带过去。
+
 ### 「直接做」例外路径
 
 用户明说「直接做 / 全按推荐 / 别问了」→ 跳过补齐,但**必须**输出:

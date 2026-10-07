@@ -95,6 +95,13 @@ JSONFAIL_CASES = (
     ("imageops.py", ["stitch", "___nonexistent___.png", "___nonexistent2___.png",
                      "-o", "___nonexistent_out___.png"]),
     ("check_h5.py", ["__nope__.html"]),              # 无 HTML → USAGE JSON
+    ("check_slop.py", ["___nonexistent___.html"]),   # 无 HTML → NO_HTML JSON
+    ("check_slop.py", ["--only", "PX"]),             # 非法级别 → 用法 JSON
+    ("check_review_ui.py", ["--tool", "___nonexistent___"]),   # 工具目录缺 → JSON
+    ("check_review_cache.py", []),                              # 缺 --url → USAGE JSON
+    ("check_review_cache.py", ["--url", "file:///x.html"]),     # file:// → NEED_HTTP JSON
+    ("check_px_baseline.py", ["--new", "___nonexistent___",
+                              "--baseline", "___nonexistent___"]),  # 无出图目录 → JSON
     ("doctor.py", ["___nonexistent_dir___", "--json"]),  # 目录不存在 → JSON;且 --json 不得混人类行
     ("gzh_cover.py", ["merge", "___nonexistent___"]),    # 项目不存在 → JSON
 )
@@ -185,8 +192,27 @@ def check_golden(rep: Report) -> None:
                            capture_output=True, text=True, encoding="utf-8", errors="replace")
         if r.returncode == 0:
             rep.add("golden", "FAIL", "svg-bad 固样例未被 check_svg 拦下(检查器钝化)")
+    # slop 固样例:好样例必须零 P0/P1(否则规则过严),坏样例必须报出 P0(否则检查器钝化)
+    slop_good = os.path.join(ROOT, "docs", "samples", "slop-good")
+    slop_bad = os.path.join(ROOT, "docs", "samples", "slop-bad")
+    slop_n = 0
+    if os.path.isdir(slop_good):
+        r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "check_slop.py"),
+                            slop_good, "--strict"],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if r.returncode != 0:
+            rep.add("golden", "FAIL", "slop-good 固样例被 check_slop 报出问题(规则过严/假阳性)",
+                    "先改规则再改样例;判据见 check_slop.py 文件头")
+        slop_n += 1
+    if os.path.isdir(slop_bad):
+        r = subprocess.run([sys.executable, os.path.join(SCRIPTS, "check_slop.py"), slop_bad],
+                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if r.returncode == 0:
+            rep.add("golden", "FAIL", "slop-bad 固样例未被 check_slop 报出 P0(检查器钝化)")
+        slop_n += 1
     rep.add("golden", "PASS",
-            f"基线 {len(base.get('video_cases', {}))} 例在位;SVG 固样例 {len(good)}好/{len(bad)}坏 判据稳定")
+            f"基线 {len(base.get('video_cases', {}))} 例在位;SVG 固样例 {len(good)}好/{len(bad)}坏;"
+            f"slop 固样例 {slop_n} 组判据稳定")
 
 
 # ---------------------------------------------------------------- helpers
@@ -236,6 +262,9 @@ REF_RE = re.compile(
 # 文档里 `python 导出.py` 这种调用是正确写法,不该按 scripts/导出.py 判悬挂。
 PROJECT_LEVEL_SCRIPTS = {"导出.py"}
 
+# 已知顶层目录:文档里的 `python tools/…/x.py` 按技能根解析(见 check_refs)
+TOP_DIRS = ("scripts", "tools", "docs", "assets", "references", "fonts", "mcp")
+
 
 def check_refs(rep: Report) -> None:
     checked = 0
@@ -261,20 +290,30 @@ def check_refs(rep: Report) -> None:
                 if not os.path.isfile(target):
                     rep.add("refs", "FAIL", f"{rel(md)}:{lineno} → {up}{ref} 不存在",
                             "改引用或补文件;重命名脚本时务必全局搜一遍")
-    # 代码块里 `python $S/xxx.py` 这类调用
-    call_re = re.compile(r"(?:python|python3)[^\n]*?([\w\-_]+\.py)")
+    # 代码块里 `python $S/xxx.py` / `python tools/…/x.py` 这类调用。
+    # 判据:取最后一个路径段当文件名;若路径里出现过**已知顶层目录**(scripts/tools/…),
+    # 就从该目录起按技能根解析 —— 此前只在 scripts/ 下找,tools/ 下的工具脚本
+    # (review-station)完全不在门禁覆盖内;`$S/preflight.py` 这类变量前缀也不会误判。
+    call_re = re.compile(r"(?:python|python3)[^\n]*?([\w\-./$<>'\"]+\.py)")
     for md in md_files():
         if rel(md) == "CHANGELOG.md":
             continue
         for lineno, line in enumerate(read(md).splitlines(), 1):
             for m in call_re.finditer(line):
-                name = m.group(1)
+                tok = m.group(1)
+                parts = [p for p in tok.replace("\\", "/").split("/") if p and p != "."]
+                if not parts:
+                    continue
+                name = parts[-1]
                 if name in ("setup.py",) or name in PROJECT_LEVEL_SCRIPTS:
                     continue
                 checked += 1
-                if not os.path.isfile(os.path.join(SCRIPTS, name)):
+                idx = next((i for i, p in enumerate(parts[:-1]) if p in TOP_DIRS), -1)
+                target = (os.path.join(ROOT, *parts[idx:]) if idx >= 0
+                          else os.path.join(SCRIPTS, name))
+                if not os.path.isfile(target):
                     rep.add("refs", "FAIL",
-                            f"{rel(md)}:{lineno} → 调用的 scripts/{name} 不存在",
+                            f"{rel(md)}:{lineno} → 调用的 {tok} 不存在",
                             "文档漂移的典型症状:脚本删了/改名了,引用没跟上")
     rep.add("refs", "PASS", f"核验 {checked} 处引用")
 

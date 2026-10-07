@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>world.execute(me); — 审片台</title>
+<link rel="stylesheet" href="/src/film.css">
+<link rel="stylesheet" href="/__rv/review.css">
+</head>
+<body class="rv">
+
+<!-- ══════════════ 左：影片舞台（与成片 DOM 完全一致，只是多一层缩放壳） ══════════════ -->
+<!-- 服务离线横幅：保存不会丢，队列里等着自动补写 -->
+<div id="rv-net" hidden><b>⚠ 审片台服务已断开</b>
+  <span id="rv-net-msg">保存会暂存在本页，服务恢复后自动补写</span>
+  <span id="rv-net-q"></span>
+  <button id="rv-net-re">立即重试</button>
+</div>
+
+<div id="rv-left">
+  <div id="rv-stale" hidden></div>
+  <div id="rv-topbar">
+    <div class="rv-title">world.execute(me);<span class="rv-sub">审片台 · SEEK(t) 逐帧直出，不渲视频</span></div>
+    <div class="rv-chips">
+      <span class="rv-chip" id="chip-sec">—</span>
+      <span class="rv-chip" id="chip-lyric">—</span>
+      <span class="rv-chip" id="chip-perf">— ms/帧</span>
+      <span class="rv-chip rv-cfg" id="chip-cfg" title="设置会实时保存到工程根的 审片台配置.json">⚙</span>
+      <span class="rv-chip" id="chip-res">—</span>
+      <span class="rv-chip rv-chip-err" id="chip-err" hidden>0 err</span>
+    </div>
+  </div>
+
+  <div id="rv-viewport">
+    <!-- 缩放壳：main.js 会写 #stage 的 transform（运镜），所以缩放放在外层 -->
+    <div id="rv-scaler">
+      <div id="stage">
+        <div id="scenes"></div>
+        <div id="overlay">
+          <canvas id="fx" width="2560" height="1440"></canvas>
+          <div id="vig"></div>
+          <div id="scan"></div>
+          <div id="flash"></div>
+        </div>
+      </div>
+      <!-- 顶部进度条：必须和 index.html 一样在 #stage **之外**（z-index 50，
+           在 1920×1080 坐标系左上角）。漏了它预览就与成片差这一条 —— 而且
+           这种差异肉眼很难发现，是靠 tools/verify_px.py 的 sha1 比对抓到的。 -->
+      <div id="prog"></div>
+      <!-- 元素框选层：坐标是 1920×1080 逻辑坐标，跟着影片一起缩放 -->
+      <div id="rv-picklayer"></div>
+      <!-- 字幕层：审片台自己的字幕（不是影片画在 canvas 上的那份），
+           固定在底部安全区，位置/外观可调 -->
+      <div id="rv-sublayer"></div>
+    </div>
+    <div id="rv-badge-diff" hidden>DIFF ×6</div>
+    <!-- 影片全屏时浮在画面里的控制条（静止 2.5s 自动淡出） -->
+    <div id="rv-fs-tip">全屏中 · Esc / F 退出</div>
+    <div id="rv-fsbar">
+      <button id="fs-play" title="播放 / 暂停 (Space)">▶</button>
+      <span id="fs-time">00:00.00 / 03:31.91</span>
+      <div id="fs-bar"><div id="fs-fill"></div><div id="fs-head"></div></div>
+      <button id="fs-exit" title="退出全屏 (Esc / F)">✕ 退出</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ 传送带 ══════════════ -->
+  <div id="rv-transport">
+    <div class="rv-trow">
+    <div class="rv-tbtns">
+      <button id="btn-home"   title="回到开头 (Home)">⏮</button>
+      <button id="btn-prev"   title="上一帧 (Ctrl+←，Shift 十帧)">◀|</button>
+      <button id="btn-play"   class="rv-primary" title="播放 / 暂停 (Space)">▶</button>
+      <button id="btn-next"   title="下一帧 (Ctrl+→，Shift 十帧)">|▶</button>
+      <button id="btn-end"    title="跳到结尾 (End)">⏭</button>
+      <button id="btn-loop"   title="循环 (L)">↻</button>
+      <button id="btn-audio" class="rv-on" title="原曲同步播放 (A)">♪</button>
+      <input type="range" id="vol" min="0" max="100" value="82" title="音量">
+    </div>
+    <div class="rv-time"><span id="t-cur">00:00.00</span><span class="rv-dim"> / </span><span id="t-dur">03:31.91</span><span class="rv-dim" id="t-frame"></span></div>
+    <div class="rv-tbtns rv-tbtns-r">
+      <span class="rv-lock" title="帧率已锁：逐帧步进 / 帧号 / 跳帧都以它为准">🔒</span>
+      <select id="sel-fps" title="帧率锁定：逐帧步进 / 帧号 / 跳帧都以它为准">
+        <option value="60" selected>60 fps</option>
+        <option value="30">30 fps</option>
+        <option value="120">120 fps</option>
+        <option value="custom">自定义…</option>
+      </select>
+      <input type="number" id="in-fps" min="1" max="240" step="1" value="60" hidden
+             title="自定义帧率（1~240）">
+      <span class="rv-tsep"></span>
+      <button id="zm-out" class="rv-zoom" title="缩小轨道 (Alt+滚轮)">−</button>
+      <button id="zm-in" class="rv-zoom" title="放大轨道 (Alt+滚轮)">＋</button>
+      <button id="zm-fit" class="rv-zoom" title="回到全片 (双击时间条空白)">全片</button>
+      <span id="rv-zoom-v" class="rv-tsep" title="当前轨道窗口">全片</span>
+      <select id="sel-speed" title="播放速度">
+        <option value="0.1">0.1×</option><option value="0.25">0.25×</option>
+        <option value="0.5">0.5×</option><option value="1" selected>1×</option>
+        <option value="2">2×</option><option value="4">4×</option>
+      </select>
+      <select id="sel-scale" title="画面缩放">
+        <option value="fit" selected>适应</option><option value="1">1:1</option>
+        <option value="0.5">50%</option><option value="2">200%</option>
+      </select>
+      <button id="btn-pick"  title="元素拾取：列出当前帧有什么元素，可点画面选中并写建议 (P)">⌖ 元素</button>
+      <button id="btn-mark"  title="打时间点标记 (M)">✚ 点标记</button>
+      <button id="btn-mrange" title="打时间区间标记：第一次=起点，第二次=终点 (R)">▭ 区间标记</button>
+      <button id="btn-snap"  title="导出当前帧 PNG (S)">⤓ 帧</button>
+      <button id="btn-clip"  title="渲染当前段为 mp4 (R)">⏺ 渲染此段</button>
+      <button id="btn-diff"  title="与成片对照 (D)">◧ 对照</button>
+      <button id="btn-full"  title="全屏 (F)">⛶</button>
+      <button id="btn-help"  title="快捷键 (?)">?</button>
+    </div>
+    </div>
+    <!-- 时间条：段标记 + 歌词刻度 + 播放头 + 标记点 -->
+    <div id="rv-bar">
+      <div id="rv-bar-sections"></div>
+      <div id="rv-bar-lyrics"></div>
+      <div id="rv-bar-ranges"></div>
+      <div id="rv-bar-marks"></div>
+      <div id="rv-bar-fill"></div>
+      <div id="rv-bar-head"></div>
+    </div>
+    <!-- 字幕轴：与上面时间轴**同一套 left/宽度映射**，块可拖动改时间 -->
+    <div id="rv-subbar"><div id="rv-subbar-empty">字幕（点「字幕」页开启）</div></div>
+    <!-- 视图平移滑条：Alt+滚轮放大后靠它左右移动视野 -->
+    <div id="rv-pan" title="拖动滑块左右移动视野 · 点空白处居中 · 滚轮也行 · 播放中也能拖">
+      <div id="rv-pan-thumb"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ 右：段落 / 歌词 / 工具 / 日志 ══════════════ -->
+<div id="rv-right">
+  <div class="rv-tabs">
+    <button class="rv-tab" data-tab="tab-pick">元素</button>
+    <button class="rv-tab rv-on" data-tab="tab-moves">段落</button>
+    <button class="rv-tab" data-tab="tab-lyrics">歌词</button>
+    <button class="rv-tab" data-tab="tab-marks">标记</button>
+    <button class="rv-tab" data-tab="tab-sub">字幕</button>
+    <button class="rv-tab" data-tab="tab-perf">性能</button>
+    <button class="rv-tab" data-tab="tab-tools">工具</button>
+    <button class="rv-tab" data-tab="tab-log">日志</button>
+  </div>
+  <div class="rv-panel rv-flex" id="tab-sub">
+    <!-- 操作面板：冻结在顶部，不随下面的字幕列表滚动 -->
+    <div class="rv-freeze">
+    <div class="rv-row"><label>字幕</label>
+      <button id="sb-toggle" class="rv-on">关闭字幕</button>
+      <select id="sb-file" title="切换字幕文件"></select>
+      <button id="sb-add" title="从本机导入 .srt / .vtt / .ass / .ssa（调试用，不写工程）">导入</button>
+      <button id="sb-open" title="把当前字幕文件从 06_成片输出 重新读一遍">重读</button>
+      <button id="sb-import" title="丢弃本文件的改动，回到来源版本">重置</button>
+      <button id="sb-undo" title="撤销上一步 (Ctrl+Z)">撤销</button>
+      <button id="sb-srt" title="按实际片长裁剪后导出到 06_成片输出/字幕导出/">导出 SRT</button>
+      <input type="file" id="sb-filein" accept=".srt,.vtt,.ass,.ssa" hidden>
+    </div>
+    <div id="sb-info" class="rv-dim">—</div>
+    <details id="sb-more">
+      <summary>外观与位置</summary>
+    <div class="rv-row"><label>字体</label><select id="sb-font">
+      <option value="yh" selected>微软雅黑</option>
+      <option value="src">思源黑体 / Noto Sans SC</option>
+      <option value="mono">Fira Code（影片同款）</option>
+      <option value="serif">衬线 / 宋体</option>
+    </select></div>
+    <div class="rv-row"><label>字号</label>
+      <input type="range" id="sb-size" min="18" max="64" step="1" value="34">
+      <span id="sb-size-v" class="rv-dim">34</span></div>
+    <div class="rv-row"><label>颜色 / 描边</label>
+      <input type="color" id="sb-color" value="#ffffff">
+      <input type="range" id="sb-stroke" min="0" max="8" step="0.5" value="3" title="描边宽度">
+      <input type="color" id="sb-strokecolor" value="#000000" title="描边色"></div>
+    <div class="rv-row"><label>背景</label>
+      <input type="color" id="sb-bg" value="#000000">
+      <input type="range" id="sb-bga" min="0" max="90" step="5" value="35" title="背景不透明度">
+      <input type="range" id="sb-pad" min="0" max="40" step="2" value="10" title="内边距"></div>
+    <div class="rv-row"><label>垂直位置</label>
+      <input type="range" id="sb-bottom" min="8" max="420" step="4" value="64" title="距底部安全距离(px)">
+      <span id="sb-bottom-v" class="rv-dim">64</span></div>
+    <div class="rv-row"><label>对齐 / 行距</label>
+      <select id="sb-align"><option value="center" selected>居中</option>
+        <option value="left">左</option><option value="right">右</option></select>
+      <input type="range" id="sb-lh" min="100" max="220" step="5" value="135" title="行距%">
+      <input type="range" id="sb-maxw" min="600" max="1860" step="20" value="1500" title="最大宽度"></div>
+    </details>
+    <div class="rv-row"><label>保存</label>
+      <button id="sb-save" title="把当前字幕写入文件（未保存时高亮）">保存字幕</button>
+      <button id="sb-auto" title="开启后，任何改动都会立刻写入字幕文件">自动保存：关</button>
+      <span id="sb-dirty" class="rv-dim">已保存</span></div>
+    <div id="sb-fileinfo" class="rv-dim">目标文件：—</div>
+    </div><!-- /rv-freeze -->
+    <div id="sb-list" contenteditable="false"></div>
+    <div class="rv-note" id="sb-hint">在下面<b>每一条</b>里直接改字：光标放中间按
+      <b>Enter</b> 在光标处拆成两句（光标在句末会自动断在最后一个词前）、光标在<b>行首</b>按<b>退格</b>并入上一段、<b>Shift+↑↓</b>
+      上下挪位、行尾 <b>×</b> 删本段、<b>Ctrl+Z</b> 撤销。改完拖时间轴上的块调长度，
+      头尾会<b>自动吸到</b>相邻字幕。</div>
+  </div>
+  <div class="rv-panel" id="tab-perf">
+    <div class="rv-row"><label>加速模式</label><select id="pf-mode">
+      <option value="auto" selected>自适应（推荐）</option>
+      <option value="l3">流畅：1/3 抽稀 + 2 帧缓存</option>
+      <option value="l2">较流畅：1/2 抽稀 + 2 帧缓存</option>
+      <option value="reuse">只用时间缓存</option>
+      <option value="full">全量（= 成片画质）</option>
+    </select></div>
+    <div class="rv-row"><label>帧率锁</label><select id="pf-fps">
+      <option value="60" selected>60 fps</option>
+      <option value="30">30 fps</option>
+      <option value="120">120 fps</option>
+      <option value="custom">自定义…</option>
+    </select>
+    </div>
+    <div class="rv-row"><label>拖动时抽稀</label><select id="pf-drag">
+      <option value="1">不抽稀</option>
+      <option value="2" selected>1/2</option>
+      <option value="3">1/3</option>
+      <option value="4">1/4</option>
+    </select></div>
+        <pre id="pf-box" class="rv-code"></pre>
+    <div class="rv-row"><button id="pf-reset">重置统计</button></div>
+      </div>
+  <div class="rv-panel rv-flex" id="tab-pick">
+    <!-- 操作区（固定不滚动）：意见坞 + 元素拾取。数据列表在下面单独滚。 -->
+    <div class="rv-freeze">
+    <div id="rv-dock">
+      <div class="rv-dock-h"><span>⌖ 元素意见</span>
+        <button id="dk-pick" title="抓当前帧有什么元素 (P)">抓取</button>
+        <button id="dk-inspect" title="像 DevTools 那样在画面上选元素 (Ctrl+Shift+C)">检查</button>
+      </div>
+      <div id="dk-info" class="rv-dim">未选中元素</div>
+      <textarea id="dk-text" rows="2" spellcheck="false"
+                placeholder="选中元素后写这里：要改什么？"></textarea>
+      <div class="rv-dock-b">
+        <button id="dk-save" class="rv-primary">记为意见</button>
+        <button id="dk-cancel">取消</button>
+        <span id="dk-count" class="rv-dim"></span>
+      </div>
+    </div>
+    <div class="rv-row"><label>元素拾取</label>
+      <button id="pk-on">抓当前帧 (P)</button>
+      <button id="pk-re">重新抓取</button>
+      <button id="pk-clear">清空框选</button>
+      <button id="pk-inspect">检查模式 (Ctrl+Shift+C)</button></div>
+    <div id="pk-info" class="rv-code rv-dim">（未拾取）</div>
+    </div><!-- /rv-freeze -->
+    <div id="pk-list"></div>
+  </div>
+  <div class="rv-panel rv-on" id="tab-moves"></div>
+  <div class="rv-panel" id="tab-lyrics"></div>
+  <div class="rv-panel rv-flex" id="tab-marks">
+    <!-- 操作面板冻结，意见列表单独滚动 -->
+    <div class="rv-freeze">
+    <div class="rv-row"><label>意见文件</label><span id="mk-file" class="rv-dim">—</span></div>
+    <div class="rv-row">
+      <button id="mk-point">✚ 时间点</button>
+      <button id="mk-range">▭ 时间区间</button>
+      <button id="mk-export">复制全部（Markdown）</button>
+      <button id="mk-open">打开 JSON</button>
+    </div>
+    </div><!-- /rv-freeze -->
+    <div id="mk-list"></div>
+  </div>
+  <div class="rv-panel" id="tab-tools">
+    <div class="rv-row"><label>设置</label>
+      <button id="cf-save">立即保存</button>
+      <button id="cf-default">恢复默认</button></div>
+    <div id="cf-file" class="rv-dim">配置文件：—</div>
+    <div class="rv-row rv-note">音量 / 帧率 / 字幕外观等设置会<b>实时保存</b>到工程根的
+      <code>审片台配置.json</code>，刷新或重开浏览器都还在。</div>
+    <div class="rv-row"><label>字幕轨</label><select id="sel-sub">
+      <option value="">关</option>
+      <option value="../06_成片输出/world.execute(me);.zh.srt">中文</option>
+      <option value="../06_成片输出/world.execute(me);.en.srt">English</option>
+    </select></div>
+    <div class="rv-row"><label>成片对照源</label><select id="sel-ref">
+      <option value="">无</option>
+    </select></div>
+    <div class="rv-row"><label>对照模式</label><select id="sel-diffmode">
+      <option value="side">并排</option>
+      <option value="blend">半透明叠加</option>
+      <option value="diff">差分 ×6</option>
+    </select></div>
+    <div class="rv-row"><label>背景</label><input type="color" id="sel-bg" value="#0a0d14"></div>
+    <div class="rv-row rv-note">画面即 <code>window.SEEK(t)</code> 的返回值：拖时间条 = 直接重算那一帧，与渲染 PNG 无差别。</div>
+    <pre id="cmd-box" class="rv-code"></pre>
+    <div class="rv-row"><button id="btn-copycmd">复制渲染命令</button></div>
+    <div class="rv-row"><button id="btn-render-all">重渲整片（后台）</button></div>
+    <div id="job-box" class="rv-code rv-dim">（无任务）</div>
+  </div>
+  <div class="rv-panel" id="tab-log"><pre id="log-box" class="rv-code"></pre></div>
+</div>
+
+<div id="rv-help" hidden>
+  <div class="rv-help-card">
+    <h2>快捷键</h2>
+    <table>
+      <tr><td>Space</td><td>播放 / 暂停</td><td>K</td><td>打标记（当前时间）</td></tr>
+      <tr><td>Ctrl+← / →</td><td>±1 帧（Shift 十帧）</td><td>M</td><td>打标记</td></tr>
+      <tr><td>← / →</td><td><b>在文本框里</b>移动光标 / 选词</td><td>1…4</td><td>点时间条=跳转</td></tr>
+      <tr><td>悬停时间条</td><td>只出预览，不跳</td><td>Shift+M</td><td>区间标记（按一次定起点，再一次定终点）</td></tr>
+      <tr><td>Home / End</td><td>开头 / 结尾</td><td>S</td><td>导出当前帧 PNG</td></tr>
+      <tr><td>[ / ]</td><td>上一句 / 下一句歌词</td><td>R</td><td>渲染当前段</td></tr>
+      <tr><td>, / .</td><td>上一个 / 下一个标记</td><td>D</td><td>与成片对照</td></tr>
+      <tr><td>1…9</td><td>跳到第 n 段</td><td>F</td><td>影片全屏（不是界面）</td></tr>
+      <tr><td>L</td><td>循环</td><td>A</td><td>原曲同步开关</td></tr>
+      <tr><td>0</td><td>跳到 0s</td><td>?</td><td>这张表</td></tr>
+    </table>
+        <button id="btn-help-close">知道了</button>
+  </div>
+</div>
+
+<!-- 悬停缩略图：必须挂在 body 下用 fixed —— 放��视口里会被 #rv-viewport 的 overflow:hidden 裁掉，
+     也会被进度条盖住 -->
+<div id="rv-hover" hidden><canvas id="rv-hover-cv" width="320" height="180"></canvas><span id="rv-hover-t"></span></div>
+<!-- DevTools 式元素检查的悬浮提示（body 下，fixed 不受视口裁剪） -->
+<div id="rv-inspect-tip"></div>
+<audio id="au" preload="auto"></audio>
+<video id="ref" playsinline muted></video>
+
+<script src="/src/data.js"></script>
+<script src="/src/data_girl.js"></script>
+<script src="/src/engine.js"></script>
+<script src="/src/kit.js"></script>
+<script src="/src/kit2.js"></script>
+<script src="/src/mathfx.js"></script>
+<script src="/src/scenes.js"></script>
+<script src="/src/scenes2.js"></script>
+<script src="/src/seams.js"></script>
+<script src="/src/main.js"></script>
+<script src="/__rv/review.js"></script>
+</body>
+</html>

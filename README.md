@@ -14,7 +14,7 @@
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-ACL--1.0-8b5cf6"></a>
   <img alt="engine" src="https://img.shields.io/badge/Kiln-v0.10.0-00a88f">
   <img alt="python" src="https://img.shields.io/badge/python-3.10%2B-3776ab">
-  <img alt="selfcheck" src="https://img.shields.io/badge/selfcheck-10%20pass-2da44e">
+  <img alt="selfcheck" src="https://img.shields.io/badge/selfcheck-12%20pass-2da44e">
 </p>
 
 ---
@@ -308,7 +308,7 @@ artboard/
 │   ├── map-studio.md        #   地图子技能:触发词 / 能力矩阵 / 实测命令(城市地图·路网·3D)
 │   ├── styles-catalog.md    #   123 风格方向速查
 │   ├── styles/ formats/     #   视觉风格分册 / 印刷品类规范
-│   └── …                    #   构图/排版/色彩/数据可视化/印刷/矢量化等 40+ 分册
+│   └── …                    #   构图/排版/色彩/数据可视化/印刷/矢量化/审片台等 55+ 分册
 ├── scripts/                 # preflight / scaffold / export / check_overflow / imageops …
 │                            #   地图:map_tiles / fetch_osm_data / svg_map / svg_iso /
 │                            #        render_3d(_vec) / build_player / compute_route / test_v7
@@ -316,7 +316,7 @@ artboard/
 ├── assets/                  # vendor(ECharts/GSAP/MapLibre) · 图标 · 插画 · 参考案例
 │   ├── map/                 #   地图:成品样张(samples) · 主题 JSON · 网点 · 播放器 demo
 │   └── …
-├── tools/                   # asset-bridge(MV3 素材 Bridge) · config-editor(exe)
+├── tools/                   # asset-bridge(MV3 素材 Bridge) · config-editor(exe) · review-station(审片台)
 ├── work/                    # 地图运行期产物(瓦片缓存/OSM 底料/临时渲染页),已 gitignore
 └── docs/                    # setup / glossary / failures / map(地图调研+术语) / samples
 ```

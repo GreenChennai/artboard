@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!-- 机检固样例(好):check_slop.py 必须一条 P0/P1 都不报。
+     任何一条新规则在这里报出问题 = 规则过严(假阳性),先改规则再改样例。 -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>合规样例 · 机检基线</title>
+<style>
+  :root {
+    --c-ink: #14161a;
+    --c-bg: #faf7f2;
+    --c-surface: #ffffff;
+    --c-muted: #6b6a66;
+    --c-accent: #c2410c;
+    --font-display: "SmileySans", "SourceHanSans", sans-serif;
+    --font-body: "SourceHanSans", sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #dedbd4; font-family: var(--font-body); }
+  .poster {
+    position: relative;
+    width: 1080px;
+    height: 1440px;
+    overflow: hidden;
+    background: var(--c-bg);
+    padding: 88px 72px;
+  }
+  .kicker {
+    font-family: var(--font-display);
+    font-size: 24px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-accent);
+  }
+  /* 中文大标题:行高 1.35 ≥ CJK 下限 1.3(即使强制换行也不会撞行) */
+  .headline {
+    font-family: var(--font-display);
+    font-size: 96px;
+    line-height: 1.35;
+    color: var(--c-ink);
+    margin-top: 28px;
+  }
+  .body-text {
+    margin-top: 36px;
+    max-width: 70ch;
+    font-size: 30px;
+    line-height: 1.75;
+    color: var(--c-ink);
+  }
+  .foot { position: absolute; left: 72px; bottom: 72px; color: var(--c-muted); font-size: 20px; }
+</style>
+</head>
+<body>
+  <div class="poster">
+    <div class="kicker">Field Notes</div>
+    <h1 class="headline">行高留一寸<br>版面松三分</h1>
+    <p class="body-text">中文标题的行高下限是 1.3:字形撑满 em 框,拉丁能用的紧行高会让两行中文相撞。</p>
+    <div class="foot">artboard · 机检固样例</div>
+  </div>
+</body>
+</html>

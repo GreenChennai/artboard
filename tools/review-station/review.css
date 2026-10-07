@@ -1,0 +1,572 @@
+/* -*- coding: utf-8 -*-
+ * review.css — 审片台外壳（影片本体仍用 film.css，DOM 结构与成片一致） */
+
+html, body.rv {
+  width: 100%; height: 100%;
+  background: #07090f;
+  overflow: hidden;
+  color: #cfd8e6;
+}
+
+/* ══════════ 字体：审片台全局微软雅黑 ══════════
+ * 只作用于审片台外壳（#rv-left / #rv-right / #rv-help），**不碰 #stage** ——
+ * 影片自己的字是 canvas 用 ctx.font 画的 Fira Code（README 铁律：正文排印
+ * 一律 Fira Code 6.2），既不受 CSS 影响，也不该被 UI 字体污染。 */
+body.rv {
+  font-family: "Microsoft YaHei", "微软雅黑", "Microsoft Yahei UI",
+               "PingFang SC", "Noto Sans CJK SC", "Source Han Sans SC",
+               "Hiragino Sans GB", "Heiti SC", sans-serif;
+  font-size: 13px; line-height: 1.5;
+}
+#rv-left, #rv-right, #rv-help { font-family: inherit; }
+#rv-left *, #rv-right *, #rv-help * { font-family: inherit; }
+/* 数字读数用等宽数字：拖时间条时字宽不跳 */
+.rv-time, .rv-chip, #t-cur, #t-dur, #t-frame, #rv-item .rt, #rv-hover-t,
+#cmd-box, #log-box, #job-box, #rv-bar-sections b {
+  font-variant-numeric: tabular-nums;
+}
+body.rv { display: flex; }
+
+/* ⚠️ `<audio>` / `<video>` 是 body 的直接子元素 = **flex item**，默认各占
+ * 300px，把 #rv-left 挤窄（右侧空一块）。移出流外解决。 */
+body.rv > audio, body.rv > video {
+  position: fixed; left: 0; top: 0; width: 1px; height: 1px;
+  opacity: 0; pointer-events: none;
+}
+
+/* ─────────────── 左栏 ─────────────── */
+#rv-left { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; }
+
+#rv-topbar {
+  display: flex; align-items: center; gap: 6px 14px; flex-wrap: wrap;
+  padding: 6px 14px; border-bottom: 1px solid #1a2130; background: #0b0f18;
+}
+.rv-title {
+  font-size: 14px; color: #ffc46b; font-weight: 600;
+  white-space: nowrap; flex: 0 1 auto; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.rv-sub { margin-left: 10px; font-size: 11px; color: #6b7c96; font-weight: 400;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#rv-topbar .rv-chips {
+  margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap;
+  justify-content: flex-end; min-width: 0; flex: 0 1 auto;
+}
+.rv-chip {
+  padding: 2px 8px; border: 1px solid #222c3d; border-radius: 3px;
+  font-size: 11px; color: #9fb0c8; white-space: nowrap;
+  max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  flex: 0 1 auto;
+}
+.rv-chip-err { color: #ff6b7f; border-color: #58222c; background: #1a0d12; }
+
+/* 视口：缩放壳包住 #stage（main.js 自己要写 #stage 的运镜 transform） */
+#rv-viewport {
+  position: relative; flex: 1 1 auto; overflow: hidden;
+  background: #000;
+  display: flex; align-items: center; justify-content: center;
+}
+#rv-scaler { position: relative; width: 1920px; height: 1080px; transform-origin: 50% 50%; }
+#rv-scaler > #stage { transform-origin: 50% 50%; }
+
+/* ───────── 字幕层（审片台自己的字幕，底部安全区） ───────── */
+#rv-sublayer { position: absolute; inset: 0; z-index: 28; pointer-events: none; }
+#rv-sublayer .sb-line {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  max-width: 1500px; white-space: pre-wrap; word-break: break-word;
+  border-radius: 4px; text-shadow: none;
+}
+
+/* ───────── 元素框选层（坐标 = 1920×1080 逻辑，跟影片一起缩放） ───────── */
+#rv-picklayer { position: absolute; inset: 0; z-index: 30; pointer-events: none; }
+.pk-box {
+  position: absolute; box-sizing: border-box;
+  border: 1.5px solid #5ee7ff; background: rgba(94,231,255,.07);
+}
+.pk-box.pk-dim { border-color: rgba(94,231,255,.35); background: transparent; }
+.pk-tag {
+  position: absolute; left: 0; top: -19px; white-space: nowrap;
+  background: #5ee7ff; color: #04202a; font-size: 11px; font-weight: 700;
+  padding: 0 5px; border-radius: 2px;
+}
+
+#rv-hover {
+  /* fixed + body 直属：不受任何祖先 overflow 裁剪，层级压过传送带与全屏浮条 */
+  position: fixed; z-index: 1000; pointer-events: none;
+  border: 1px solid #2b3a52; border-radius: 3px;
+  background: #000; box-shadow: 0 6px 24px rgba(0,0,0,.6); padding: 2px;
+}
+#rv-hover canvas { display: block; width: 320px; height: 180px; }
+#rv-hover span { display: block; text-align: center; font-size: 11px; color: #ffc46b; padding: 1px 0; }
+#rv-badge-diff {
+  position: absolute; left: 10px; top: 10px; z-index: 41;
+  padding: 3px 9px; background: rgba(255,32,56,.85); color: #fff;
+  font-size: 11px; border-radius: 3px; letter-spacing: .06rem; letter-spacing: .06em;
+}
+
+/* ─────────────── 影片全屏时的浮层控制条 ─────────────── */
+#rv-fsbar {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 45;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px 14px;
+  background: linear-gradient(to top, rgba(4,6,12,.92), rgba(4,6,12,0));
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+#rv-viewport.rv-fs #rv-fsbar { opacity: 1; pointer-events: auto; }
+#rv-viewport.rv-fs.idle #rv-fsbar { opacity: 0; pointer-events: none; }
+#rv-fsbar button {
+  background: rgba(19,26,41,.9); color: #eaf4ff; border: 1px solid #35476b;
+  border-radius: 3px; padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer;
+}
+#rv-fsbar button:hover { background: #22304a; }
+#fs-time { font-size: 12px; color: #eaf4ff; white-space: nowrap;
+           font-variant-numeric: tabular-nums; }
+#fs-bar { position: relative; flex: 1 1 auto; height: 18px; cursor: pointer;
+          display: flex; align-items: center; }
+#fs-bar::before {
+  content: ""; position: absolute; left: 0; right: 0; height: 4px;
+  background: rgba(255,255,255,.18); border-radius: 2px;
+}
+#fs-fill { position: absolute; left: 0; height: 4px; width: 0;
+           background: #ffc46b; border-radius: 2px; }
+#fs-head { position: absolute; width: 10px; height: 10px; margin-left: -5px;
+           border-radius: 50%; background: #ffc46b; }
+#rv-fs-tip {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  z-index: 44; padding: 6px 14px; border-radius: 4px;
+  background: rgba(4,6,12,.72); color: #cfd8e6; font-size: 12px;
+  opacity: 0;
+  pointer-events: none; transition: opacity .4s;
+}
+
+/* ─────────────── 传送带 ─────────────── */
+#rv-transport {
+  border-top: 1px solid #1a2130; background: #0b0f18;
+  padding: 8px 14px 14px;
+  user-select: none;
+}
+.rv-trow { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; }
+#rv-transport .rv-tbtns { display: inline-flex; gap: 4px; align-items: center; }
+#rv-transport .rv-tbtns-r { margin-left: auto; }
+#rv-transport button, #rv-transport select {
+  background: #131a29; color: #cfd8e6; border: 1px solid #26324a;
+  border-radius: 3px; padding: 3px 9px; font: inherit; font-size: 12px; cursor: pointer;
+}
+.rv-lock { color: #ffc46b; font-size: 12px; opacity: .85; }
+#sel-fps, #pf-fps { border-color: #3c5a8a; color: #ffc46b; }
+#in-fps { width: 58px; background: #131a29; color: #ffc46b;
+  border: 1px solid #3c5a8a; border-radius: 3px; padding: 2px 5px;
+  font: inherit; font-size: 12px; }
+#in-fps[hidden] { display: none; }
+#rv-transport button:hover, #rv-transport select:hover { background: #1b2537; border-color: #35476b; }
+#rv-transport button.rv-primary { background: #1d2b45; border-color: #3c5a8a; min-width: 44px; }
+#rv-transport button.rv-on { background: #2a3f2a; border-color: #4b7a4b; color: #b6e6b6; }
+.rv-time { display: inline-block; margin: 0 12px; font-size: 13px; color: #eaf4ff; }
+.rv-dim { color: #55637a; }
+
+#rv-bar {
+  position: relative; height: 34px; margin-top: 8px; cursor: pointer;
+  background: #0e1420; border: 1px solid #1e2839; border-radius: 3px;
+  overflow: hidden;
+}
+#rv-bar-sections, #rv-bar-lyrics, #rv-bar-marks, #rv-bar-ranges { position: absolute; inset: 0; pointer-events: none; }
+#rv-bar-ranges { z-index: 2; }
+#rv-bar-marks { z-index: 3; }
+#rv-bar-ranges i {
+  position: absolute; top: 22px; height: 9px; opacity: .55; border-radius: 2px;
+  pointer-events: auto; cursor: pointer; border: 1px solid rgba(255,255,255,.25);
+}
+#rv-bar-ranges i:hover { opacity: .95; }
+#rv-bar-sections i { position: absolute; top: 0; bottom: 0; width: 1px; background: #2f4a6e; }
+#rv-bar-sections i.hot { background: #ffc46b; }
+#rv-bar-sections b {
+  position: absolute; top: 2px; left: 3px; font-size: 9px; font-weight: 400;
+  color: #6b7c96; white-space: nowrap; pointer-events: none;
+  overflow: hidden; text-overflow: clip; max-width: 100%;
+}
+#rv-bar-sections b.rv-b2 { top: 15px; }
+#rv-bar-lyrics i { position: absolute; bottom: 0; width: 1px; height: 7px; background: #3a4a66; }
+#rv-bar-marks i { position: absolute; top: 0; width: 0; height: 0; margin-left: -4px;
+  border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 7px solid #ff4d8d;
+  pointer-events: auto; cursor: pointer; }
+#rv-bar-marks i.hit { border-top-color: #ffc46b; }
+#rv-bar-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(94,231,255,.10); }
+#rv-bar-head { position: absolute; top: -2px; bottom: -2px; width: 2px; margin-left: -1px; background: #ffc46b; box-shadow: 0 0 8px #ffc46b; }
+
+/* ─────────────── 字幕轴（与时间轴同一套映射） ─────────────── */
+#rv-subbar {
+  position: relative; height: 30px; margin-top: 4px;
+  background: #0b1018; border: 1px solid #1c2637; border-radius: 3px;
+  overflow: hidden; user-select: none;
+}
+#rv-subbar-empty { color: #4b5a70; font-size: 11px; padding: 7px 10px; }
+#rv-subbar i {
+  position: absolute; top: 3px; bottom: 3px; min-width: 2px;
+  background: rgba(94,231,255,.18); border: 1px solid rgba(94,231,255,.45);
+  border-radius: 2px; cursor: grab; overflow: hidden;
+}
+#rv-subbar i:hover { background: rgba(94,231,255,.3); }
+#rv-subbar i.on { background: rgba(255,196,107,.28); border-color: #ffc46b; }
+#rv-subbar i.off { opacity: .35; }
+#rv-subbar i b {
+  display: block; font-size: 9px; font-weight: 400; color: #bfe9ff;
+  padding: 1px 3px; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; pointer-events: none;
+}
+#rv-subbar i u {                       /* 右边缘的拖拽把手 */
+  position: absolute; right: 0; top: 0; bottom: 0; width: 6px;
+  background: rgba(255,255,255,.14); cursor: ew-resize;
+}
+
+/* ─────────────── 右栏 ─────────────── */
+#rv-right {
+  flex: 0 0 clamp(280px, 23vw, 420px);
+  border-left: 1px solid #1a2130; background: #0b0f18;
+  display: flex; flex-direction: column; min-height: 0;
+}
+.rv-tabs { display: flex; border-bottom: 1px solid #1a2130; flex-wrap: wrap; }
+.rv-tab {
+  flex: 1; background: #0d121d; color: #6b7c96; border: 0; border-bottom: 2px solid transparent;
+  padding: 7px 2px; font: inherit; font-size: 11px; cursor: pointer;
+}
+.rv-tab.rv-on { color: #ffc46b; border-bottom-color: #ffc46b; background: #101724; }
+.rv-panel { display: none; flex: 1 1 auto; overflow: auto; padding: 8px 10px; min-height: 0; }
+.rv-panel.rv-on { display: block; }
+
+.rv-item {
+  display: grid; grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 2px 7px; align-items: baseline;
+  padding: 1px 6px 2px; border-radius: 3px;
+  font-size: 12px; line-height: 1.42;
+  cursor: pointer; border-left: 2px solid transparent;
+}
+.rv-item:hover { background: #131a29; }
+.rv-item.rv-cur { background: #16233a; border-left-color: #ffc46b; }
+.rv-item .rt { color: #6b7c96; font-size: 11px; }
+.rv-item .rn { color: #cfd8e6; min-width: 0; white-space: normal;
+              overflow-wrap: anywhere; word-break: break-word; }
+.rv-item .rz { color: #55637a; font-size: 10px; white-space: nowrap; }
+.rv-item.rv-cue .rn { color: #eaf4ff; }
+.rv-item .rn .z, .rv-item .rn .z { color: #55637a; font-size: 10px; }
+
+.rv-row { margin: 8px 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rv-row label { color: #6b7c96; font-size: 11px; min-width: 74px; }
+.rv-row select, .rv-row input, .rv-row button, .rv-row textarea {
+  background: #131a29; color: #cfd8e6; border: 1px solid #26324a; border-radius: 3px;
+  padding: 3px 7px; font: inherit; font-size: 11px; cursor: pointer;
+}
+.rv-row textarea {
+  width: 100%; min-height: 52px; resize: vertical; cursor: text;
+  color: #eaf4ff; line-height: 1.5;
+}
+.rv-row button:hover { background: #1b2537; }
+.rv-row input[type=range] { padding: 0; width: 120px; }
+.rv-note { color: #6b7c96; font-size: 11px; line-height: 1.7; display: block; margin: 6px 0; }
+.rv-note code { color: #5ee7ff; }
+.rv-code {
+  background: #080c14; border: 1px solid #1a2130; border-radius: 3px; padding: 7px 8px;
+  color: #8fa3bf; font-size: 11px; white-space: pre-wrap; word-break: break-all;
+  max-height: 190px; overflow: auto; margin: 6px 0;
+}
+#pk-list { margin-top: 6px; }
+#pk-list .rv-item { grid-template-columns: 52px minmax(0, 1fr); }
+#pk-sel { color: #5ee7ff; font-size: 11px; }
+#sb-list { margin-top: 6px; }
+#sb-list .rv-item { grid-template-columns: 46px minmax(0, 1fr) auto; }
+#sb-sel { color: #5ee7ff; font-size: 11px; }
+#sb-edit { margin: 6px 0; }
+#sb-text { font-size: 13px !important; }
+
+/* 帮助层 */
+#rv-help[hidden], #rv-hover[hidden], #rv-badge-diff[hidden], .rv-chip[hidden],
+#rv-stale[hidden], #pk-note[hidden], #sb-edit[hidden], #rv-subbar-empty[hidden] { display: none; }
+#rv-help { position: fixed; inset: 0; background: rgba(4,6,12,.86); z-index: 90; display: flex; align-items: center; justify-content: center; }
+.rv-help-card { background: #0d121d; border: 1px solid #26324a; border-radius: 5px; padding: 18px 22px; max-width: 640px; }
+.rv-help-card h2 { margin: 0 0 12px; font-size: 14px; color: #ffc46b; }
+.rv-help-card table { border-collapse: collapse; font-size: 12px; }
+.rv-help-card td { padding: 2px 10px 2px 0; color: #cfd8e6; }
+.rv-help-card td:nth-child(odd) { color: #5ee7ff; }
+.rv-help-card button { margin-top: 12px; background: #1d2b45; color: #eaf4ff; border: 1px solid #3c5a8a; border-radius: 3px; padding: 5px 14px; cursor: pointer; }
+
+#rv-stale {
+  background: #4a1020; border-bottom: 1px solid #ff2b4d; color: #ffd7de;
+  padding: 6px 14px; font-size: 12px;
+}
+#rv-stale[hidden] { display: none; }
+
+body.rv-nofilter #stage { filter: none !important; }
+
+/* ══════════════ ① 意见坞：冻结在右栏顶部，滚动区之外 ══════════════ */
+/* 意见坞：在「元素」面板内部、滚动时吸顶（sticky）。
+   * 不要用 position:fixed —— 那样它会脱离右栏、盖住画面；
+   * 也不要放回 #rv-right 的直接子元素 —— 那会跑到页签上面去。 */
+#rv-dock {
+  position: sticky; top: 0; z-index: 6;
+  margin: 0 0 6px; padding: 7px 10px 8px;
+  background: #0d1320; border: 1px solid #1e2839; border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, .45);
+}
+.rv-dock-h { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.rv-dock-h span { color: #5ee7ff; font-size: 11px; font-weight: 700; flex: 1 1 auto; }
+.rv-dock-h button {
+  background: #131a29; color: #cfd8e6; border: 1px solid #26324a; border-radius: 3px;
+  padding: 2px 8px; font: inherit; font-size: 11px; cursor: pointer;
+}
+.rv-dock-h button.rv-on { background: #2a3f2a; border-color: #4b7a4b; color: #b6e6b6; }
+#dk-info {
+  font-size: 11px; color: #8fa3bf; margin-bottom: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#dk-text {
+  width: 100%; min-height: 40px; resize: vertical;
+  background: #0a0f18; color: #eaf4ff; border: 1px solid #26324a; border-radius: 3px;
+  padding: 4px 6px; font: inherit; font-size: 12px; line-height: 1.45; cursor: text;
+}
+#dk-text::placeholder { color: #4b5a70; }
+.rv-dock-b { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
+.rv-dock-b button {
+  background: #131a29; color: #cfd8e6; border: 1px solid #26324a; border-radius: 3px;
+  padding: 3px 9px; font: inherit; font-size: 11px; cursor: pointer;
+}
+.rv-dock-b button.rv-primary { background: #1d2b45; border-color: #3c5a8a; }
+.rv-dock-b button:hover { background: #1b2537; }
+#dk-count { margin-left: auto; font-size: 10px; }
+
+/* ══════════════ ② 字幕页的折叠控件（默认收起） ══════════════ */
+#sb-more { margin: 6px 0; border: 1px solid #1e2839; border-radius: 3px; background: #0a0f18; }
+#sb-more > summary {
+  cursor: pointer; padding: 5px 9px; font-size: 11px; color: #6b7c96;
+  list-style: none; user-select: none;
+}
+#sb-more > summary::-webkit-details-marker { display: none; }
+#sb-more > summary::before { content: "▸ "; color: #ffc46b; }
+#sb-more[open] > summary::before { content: "▾ "; }
+#sb-more[open] > summary { color: #ffc46b; border-bottom: 1px solid #1a2130; }
+#sb-more > *:not(summary) { margin-left: 8px; margin-right: 8px; }
+#sb-more .rv-row:last-child { margin-bottom: 8px; }
+
+/* 字幕轨下拉 */
+#sb-lang { max-width: 190px; }
+
+/* ══════════════ ③ 轨道缩放控件 ══════════════ */
+#rv-zoom {
+  display: flex; align-items: center; gap: 6px; margin-top: 4px;
+  font-size: 11px; color: #6b7c96;
+}
+#rv-zoom-v { color: #ffc46b; min-width: 108px; }
+#rv-zoom button {
+  background: #131a29; color: #cfd8e6; border: 1px solid #26324a; border-radius: 3px;
+  padding: 1px 8px; font: inherit; font-size: 11px; cursor: pointer; line-height: 1.4;
+}
+#rv-zoom button:hover { background: #1b2537; }
+#rv-zoom .rv-dim { margin-left: auto; }
+
+/* ══════════════ ⑤ DevTools 式元素检查提示 ══════════════ */
+#rv-inspect-tip {
+  position: fixed; z-index: 1200; pointer-events: none; display: none;
+  background: #1d4ed8; color: #fff; font-size: 11px; line-height: 1.5;
+  padding: 2px 7px; border-radius: 2px; white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(0,0,0,.5);
+}
+body.rv-inspect #rv-viewport { cursor: crosshair; }
+body.rv-inspect #rv-inspect-tip { display: block; }
+/* 缩放后时间条上才显示歌词文本 */
+#rv-bar-lyrics b {
+  position: absolute; top: 20px; font-size: 9px; font-weight: 400;
+  color: #7f93ad; white-space: nowrap; pointer-events: none;
+  overflow: hidden; text-overflow: clip;
+}
+#rv-bar-lyrics b.rv-b2 { top: 30px; }
+
+/* ══════════════ ⑦ 配置已保存指示灯 ══════════════ */
+.rv-cfg { min-width: 0; transition: color .2s, border-color .2s; }
+.rv-cfg.rv-on { color: #7ee787; border-color: #2f5f3f; }
+
+/* ══════════════ ① 意见坞：只在「元素」页显示 ══════════════ */
+/* 作者样式的 display 会压过 UA 的 [hidden]{display:none}，必须显式写一条 */
+#rv-dock[hidden] { display: none; }
+
+/* ══════════════ ② 传送带里的轨道缩放组 ══════════════ */
+.rv-tsep {
+  display: inline-block; width: 1px; height: 18px; margin: 0 3px;
+  background: #1e2839; vertical-align: middle; flex: 0 0 auto;
+}
+#rv-zoom-v {
+  border: 0; background: none; width: auto; min-width: 92px; padding: 0 4px;
+  color: #8fa3bf; font-size: 11px; font-variant-numeric: tabular-nums;
+  white-space: nowrap; cursor: default;
+}
+button.rv-zoom {
+  background: #131a29; color: #cfd8e6; border: 1px solid #26324a; border-radius: 3px;
+  padding: 2px 7px; font: inherit; font-size: 12px; cursor: pointer; line-height: 1.35;
+  min-width: 0; flex: 0 0 auto;
+}
+button.rv-zoom:hover { background: #1b2537; border-color: #3c5a8a; }
+button.rv-zoom:active { background: #24334f; }
+
+/* ══════════════ ⑤⑥ 字幕列表：逐条直接编辑 ══════════════ */
+#sb-list { display: flex; flex-direction: column; gap: 1px; }
+#sb-list .rv-item {
+  grid-template-columns: 44px minmax(0, 1fr) auto auto;
+  align-items: start; position: relative;
+}
+/* 正在播放的那句：蓝色底（时间轴上也是蓝的） */
+#sb-list .rv-item.rv-cur {
+  background: #14243c; border-left-color: #4a9eff;
+}
+/* 选中的那句：琥珀左边框 + 更亮的底（和"目前段"明确区分） */
+#sb-list .rv-item.rv-sel {
+  background: #2a2113; border-left-color: #ffc46b; box-shadow: inset 0 0 0 1px #4a3a1c;
+}
+/* 既选中又正在播：选中优先，底色仍能看出在播 */
+#sb-list .rv-item.rv-sel.rv-cur {
+  background: #2b2a17; border-left-color: #ffc46b;
+  box-shadow: inset 0 0 0 1px #4a3a1c, inset 3px 0 0 #4a9eff;
+}
+#sb-list .rn {
+  min-height: 17px; padding: 0 2px; border-radius: 2px; cursor: text;
+  outline: none; white-space: pre-wrap; word-break: break-word;
+}
+#sb-list .rn:focus {
+  background: #0a0f18; box-shadow: inset 0 0 0 1px #3c5a8a;
+}
+#sb-list .rn:empty::before { content: "（空）"; color: #4b5a70; }
+/* 行尾：删本段 */
+#sb-list .rx {
+  cursor: pointer; color: #55637a; font-size: 12px; line-height: 17px;
+  padding: 0 3px; border-radius: 2px; user-select: none;
+}
+#sb-list .rx:hover { color: #ff5f6d; background: #2a1420; }
+/* 磁力吸附命中时给块一个高亮（在时间轴上） */
+#rv-subbar i.snap { box-shadow: 0 0 0 1px #5ee7ff, 0 0 7px rgba(94,231,255,.75); z-index: 3; }
+#rv-subbar i.sel-edge { cursor: ew-resize; }
+#sb-hint { margin: 6px 2px 2px; }
+/* 让轨道读数可收缩：窄窗口下不要把传送带顶成两行 */
+#rv-zoom-v {
+  border: 0; background: none; width: auto; min-width: 0; max-width: 108px;
+  padding: 0 2px; flex: 0 1 auto; overflow: hidden; text-overflow: clip;
+  color: #8fa3bf; font-size: 11px; font-variant-numeric: tabular-nums;
+  white-space: nowrap; cursor: default;
+}
+/* 传送带按钮行：宁可横向滚动也**绝不换行**（换行会把顶栏撑高 24px，
+   在 1280 这类窄窗口上很明显）。配合 #rv-zoom-v 的 min-width:0 收缩。 */
+.rv-trow {
+  flex-wrap: nowrap !important;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.rv-trow::-webkit-scrollbar { height: 0; }
+.rv-trow > * { flex: 0 0 auto; }
+#rv-zoom-v { flex: 0 1 auto; }
+
+/* ══════════════ 保存层：服务离线横幅 ══════════════ */
+/* ⚠️ 必须是 fixed 浮层：`body.rv` 是 row 方向的两栏 flex，body 的直接子元素
+   会被当成**第三个 flex 列**，挤成左侧一条窄柱（文字全被压没）。 */
+#rv-net {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 2000;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 14px; font-size: 12px;
+  background: #3a2410; color: #ffd9a0;
+  border-bottom: 1px solid #7a5525;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .55);
+}
+#rv-net[hidden] { display: none; }
+#rv-net b { color: #ffb454; }
+#rv-net-msg { color: #e8cfa8; }
+#rv-net-q { color: #ffb454; font-variant-numeric: tabular-nums; }
+#rv-net-re {
+  margin-left: auto; background: #4a3016; color: #ffd9a0;
+  border: 1px solid #7a5525; border-radius: 3px; padding: 2px 9px;
+  font: inherit; font-size: 11px; cursor: pointer;
+}
+#rv-net-re:hover { background: #5c3c1c; }
+
+/* 字幕：超出片长的行与轴上块 */
+#sb-list .rz-over {
+  color: #ffb454; font-size: 10px; font-weight: 400; white-space: nowrap;
+  border: 1px solid #6b4a1c; border-radius: 2px; padding: 0 3px;
+  background: #3a2410;
+}
+#rv-subbar i.over { opacity: .55; }
+#rv-subbar i.over::after {
+  content: ""; position: absolute; right: 0; top: 0; bottom: 0; width: 2px;
+  background: repeating-linear-gradient(to bottom, #ffb454 0 2px, transparent 2px 4px);
+}
+#sb-info { margin: 4px 2px 2px; }
+#sb-info b { color: #cfd8e6; }
+#sb-file { max-width: 100%; }
+
+/* 双语字幕：cue 内的换行要真的换行显示（解析保留的是 \n） */
+#rv-sublayer .sb-line { white-space: pre-line; }
+
+/* ══════════════ 视图平移滑条（配合 Alt+滚轮缩放） ══════════════ */
+#rv-pan {
+  position: relative; height: 15px; margin: 3px 0 1px;
+  background: #0a0f18; border: 1px solid #1a2130; border-radius: 3px;
+  cursor: pointer; user-select: none;
+}
+#rv-pan-thumb {
+  position: absolute; top: 1px; bottom: 1px; left: 0; min-width: 20px;
+  background: linear-gradient(#2c4468, #1f3352);
+  border: 1px solid #4a6ea8; border-radius: 2px; cursor: grab;
+}
+#rv-pan-thumb:hover { background: linear-gradient(#37507a, #26406a); }
+#rv-pan-thumb.drag { cursor: grabbing; background: #2f4d7a; border-color: #6f9ad8; }
+#rv-pan.full #rv-pan-thumb { background: #16202f; border-color: #2a3a52; cursor: default; }
+
+/* ══════════════ 操作面板冻结（操作区 / 数据区分离） ══════════════
+ * 右栏面板 .rv-panel 是滚动容器（overflow:auto；padding:8px 10px）。
+ * 把每页顶部的"操作面板"包进 .rv-freeze 并 sticky 在 top:-8px ——
+ * 负值是为了抵消面板的 padding，让它真正贴住面板顶边；负 margin 让它
+ * 横向铺满（否则左右会露出滚动条底下的内容）。 */
+/* 注意：三个列表页（元素/字幕/标记）改用 flex 列布局，冻结区**不再靠 sticky**
+   —— 见文件末尾的 .rv-panel.rv-flex 段。这条规则留给其它可能用到 sticky 的页面。 */
+.rv-freeze {
+  position: sticky; top: -8px; z-index: 6;
+  margin: -8px -10px 6px; padding: 8px 10px 5px;
+  background: #0b0f18; border-bottom: 1px solid #18202e;
+  box-shadow: 0 6px 12px -8px rgba(0, 0, 0, .8);
+}
+.rv-freeze > *:last-child { margin-bottom: 0; }
+.rv-freeze .rv-row:last-child { margin-bottom: 0; }
+/* 冻结块里的 details 收起时也别留太多空隙 */
+.rv-freeze #sb-more { margin: 4px 0 2px; }
+
+/* 字幕：未保存提示 */
+#sb-dirty.saving { color: #ffb454; }
+#sb-dirty.dirty { color: #ff7b72; font-weight: 700; }
+#sb-auto.rv-on { background: #2a3f2a; border-color: #4b7a4b; color: #b6e6b6; }
+#sb-save.need { border-color: #a8642a; color: #ffc46b; }
+#sb-save.need:hover { background: #3a2a14; }
+
+/* ══════════════ 操作区 / 数据区分离（不再靠双 sticky） ══════════════
+ * 之前元素页有两个 sticky 兄弟（意见坞 top:0 与 .rv-freeze top:-8px），
+ * 滚动时后者顶穿前者、配置行被推出视野。现在改成 flex 列：
+ *   .rv-freeze  固定不滚动（flex:0 0 auto）
+ *   数据列表     唯一滚动区（flex:1 1 auto; overflow-y:auto; min-height:0）
+ * min-height 给到 140px：冻结区再高也只压列表，不会把列表压成一条缝。 */
+.rv-panel.rv-flex {
+  display: none; flex-direction: column; overflow: hidden;
+}
+.rv-panel.rv-flex.rv-on { display: flex; }
+.rv-panel.rv-flex > .rv-freeze {
+  /* 面板不滚了（overflow:hidden），冻结区是 flex 项 —— 必须是 static。
+     残留 sticky 不会触发，但它是"双 sticky 把坞顶穿"那颗雷的引信。 */
+  position: static;
+  flex: 0 0 auto;
+  margin: -8px -10px 6px; padding: 8px 10px 6px;
+  background: #0b0f18; border-bottom: 1px solid #18202e;
+  box-shadow: 0 6px 12px -8px rgba(0, 0, 0, .8);
+}
+.rv-panel.rv-flex > .rv-freeze > *:last-child { margin-bottom: 0; }
+.rv-panel.rv-flex > .rv-freeze #rv-dock { position: static; margin: 0 0 6px; }
+.rv-panel.rv-flex > #sb-list,
+.rv-panel.rv-flex > #pk-list,
+.rv-panel.rv-flex > #mk-list {
+  flex: 1 1 auto; min-height: 140px; overflow-y: auto; overflow-x: hidden;
+  margin-top: 0; padding-right: 2px;
+}
+/* 列表里的横向滚动条会挤高度，换成细一点的 */
+.rv-panel.rv-flex > #sb-list::-webkit-scrollbar,
+.rv-panel.rv-flex > #pk-list::-webkit-scrollbar,
+.rv-panel.rv-flex > #mk-list::-webkit-scrollbar { width: 8px; }

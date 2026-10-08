@@ -12,7 +12,7 @@
 <p align="center">
   <a href="#-成品样例"><img alt="samples" src="https://img.shields.io/badge/%E6%88%90%E5%93%81%E6%A0%B7%E4%BE%8B-15%20%E5%BC%A0-1f6feb"></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-ACL--1.0-8b5cf6"></a>
-  <img alt="engine" src="https://img.shields.io/badge/Kiln-v0.14.1-00a88f">
+  <img alt="engine" src="https://img.shields.io/badge/Kiln-v0.14.2-00a88f">
   <img alt="python" src="https://img.shields.io/badge/python-3.10%2B-3776ab">
   <img alt="selfcheck" src="https://img.shields.io/badge/selfcheck-12%20pass-2da44e">
 </p>
@@ -82,7 +82,7 @@ artboard 反着来——设计 token 锁住配色，HTML 承载文字，Kiln 单
 | *城市咖啡图鉴* — 数据长图 |
 
 > 渲染引擎：[GreenChennai/VellumBench](https://github.com/GreenChennai/VellumBench) 的
-> Kiln 导出核心（Rust，自研），**当前基线 v0.14.1**。五用例固定基准以浏览器渲染为基线
+> Kiln 导出核心（Rust，自研），**当前基线 v0.14.2**。五用例固定基准以浏览器渲染为基线
 > 平均 **97.76/100**，22 案例可编辑 PDF 对拍 **98.63/100**、文本一致率 100%。
 
 ## 工作流水线

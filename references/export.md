@@ -192,38 +192,40 @@ export.py 输出**单行 JSON**:
 > 结果 JSON 的 `engine` 字段回报实际车道(静态有浏览器时 `browser`,动画为 `browser-anim`)。
 > 故本文的静态/动画语义均按**浏览器车道**记(车道细节见 `docs/glossary.md`「Kiln 双车道」)。
 
-## GIF / MP4 的编码质量:期望参数与被委托的现实
+## GIF / MP4 的编码质量(v0.14.2 起可配)
 
-**现状(必须知道)**:GIF/MP4 的**编码参数不在 artboard 手里** —— `scripts/export.py` 只把
-`--format GIF|MP4 --fps <n> --duration <秒>` 透传给 Kiln,编码器参数由引擎内部决定
-(全仓 `grep palettegen\|libx264` 无命中,只此一处出口)。
+**v0.14.2 之前**编码参数确实不在 artboard 手里(全仓 `grep palettegen|libx264` 无命中),
+只能登记上游(`docs/upstream-issues.md` UP-4)。**现在 Kiln 已把它们暴露成 CLI 参数**,
+`scripts/export.py` 原样透传:
 
-所以"导出画质/体积还能不能调"的答案是:**调不了,除非改上游**。要做的是两件事:
-
-1. **把期望参数写清楚并登记上游**(`docs/upstream-issues.md` UP-4),不要每次重新猜;
-2. **需要更高编码质量时走绕行**:审片台的「裁片段」用 ffmpeg 直出(`tools/review-station/`,
-   已带 `-bf 0` 与偶数尺寸 pad),或对成片做一次 ffmpeg 后处理转码。
-
-**期望参数(供上游参考,来源 hyperframes `gifEncodeArgs.ts` / `chunkEncoder.ts`,Apache-2.0)**:
+| 参数 | 语义 | 默认 |
+|---|---|---|
+| `--gop <N>` | 关键帧间隔(x264 链自动配 `-x264-params forced-idr=1` 钉死网格) | 不下发 = 编码器默认 |
+| `--bf <N>` | B 帧数;**`--bf 0` 是显式意图**(关 B 帧),不是缺省 | 不下发 = 编码器默认 |
+| `--pix-fmt <fmt>` | 像素格式(默认 `yuv420p`) | `yuv420p` |
+| `--no-color-tags` | **不写**色彩标签(关掉 ≠ 写 `unknown`);色程压缩保留 | 关 = 写 bt709 |
 
 ```bash
-# GIF:两 pass(调色板按帧间差分优化,抖动抗色带;有 alpha 时保留透明)
-ffmpeg -i frame_%06d.png -vf "fps=<FPS>,palettegen=stats_mode=diff:reserve_transparent=1" palette.png
-ffmpeg -i frame_%06d.png -i palette.png -lavfi "fps=<FPS> [x]; [x][1:v] paletteuse=dither=sierra2_4a:alpha_threshold=128" \
-  -loop <N> -gifflags 0 out.gif        # -gifflags 0 = 逐帧整帧写出,不丢帧
-
-# MP4:锁 GOP(便于 `-c copy` 拼片)+ 消 B 帧(否则开头 DTS 为负,部分播放器首帧黑)
--framerate <num>/<den> -i frame_%06d.png -r <num>/<den>
--c:v libx264 -preset medium -crf 23
--g <N> -keyint_min <N> -sc_threshold 0 -force_key_frames "expr:eq(mod(n,<N>),0)"
--bf 0 -pix_fmt yuv420p -vf "pad=ceil(iw/2)*2:ceil(ih/2)*2"
--x264-params aq-mode=3:aq-strength=0.8:deblock=1,1:colorprim=bt709:transfer=bt709:colormatrix=bt709
--video_track_timescale 90000 -movflags +faststart
+# 要能直接粘进微信 / 播客编辑器、且首帧绝不为黑:关 B 帧 + 锁 GOP
+python scripts/export.py --source <proj>/src --output out.mp4 \
+  --format MP4 --fps 25 --max-wait 6 --gop 25 --bf 0
 ```
 
-> 三条最容易踩的:**① `-bf 0`**(能播 > 省体积);**② 偶数尺寸**(yuv420p 硬要求,奇数画布直接报错);
-> **③ 有理数帧率**(29.97 写 `30000/1001`,否则 PTS 被平均出漂移)。
+> 默认逐位保持旧行为(已用 `ffprobe` 核对:不带参数时成片仍含 B 帧),
+> 所以「以前能播的现在还能播」。要改就走上面的显式参数,别再自己拼 ffmpeg 后处理。
 
+### 曾经踩过的两个坑(已在上游修掉,记下来别再引入)
+
+1. **`palettegen=stats_mode=diff` 会静默错色**。`diff` 只把「相邻帧之间变化过的像素」
+   纳入调色板统计,而硬切动画(`steps()` 卡点)恰恰是「大片纯色整体切换」——
+   从不变化的部分零贡献,某些颜色进不了调色板,被映射到最接近的已有色。
+   实测 40 帧(0-19 红 / 20-39 蓝):`diff` → 整段蓝色丢失;`full` → 正确。
+   **现引擎用 `stats_mode=full`**。调色板会略大(2269B → 2737B),换来不交付错色。
+2. **裸 `-forced-idr` 会让整条 ffmpeg 命令崩**。ffmpeg 解析器不认它是布尔标志,
+   会把后一个 token 当输出文件名(`Unable to choose an output format for 'yuv420p'`)。
+
+> 审片台「裁片段」仍自带 `-bf 0` 与偶数尺寸 pad(`yuv420p` 硬要求,奇数画布直接报错)——
+> 那条走自己的 ffmpeg 调用,与引擎参数无关。
 ## 交付后审阅(动效类)
 
 出片不是终点:动效/视频卡的返修走**审片台闭环** —— 逐帧看 → 元素拾取 → 意见落盘成 JSON →

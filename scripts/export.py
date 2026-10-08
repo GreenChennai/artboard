@@ -128,6 +128,19 @@ def export_via_kiln(cli: str, args) -> tuple[int, dict, dict]:
     # 逐帧动画中途耗尽。不传 = 各阶段默认上限,这才是绝大多数情形想要的。
     if args.max_wait_budget > 0:
         cmd += ["--max-wait", str(args.max_wait_budget)]
+    # MP4/GIF 编码参数(Kiln v0.14.2 起可配,此前只能改上游或事后 ffmpeg 转码)。
+    # **默认全不传** = 落编码器默认 = 逐位保持旧行为;这里只做薄透传,
+    # 语义与取舍见 references/export.md「GIF / MP4 的编码质量」。
+    # 注意 `--bf 0` 是显式意图(关 B 帧,让开头 DTS 不为负 → 部分播放器首帧黑),
+    # 所以用 is not None 判定而不是真值判定。
+    if getattr(args, "gop", None):
+        cmd += ["--gop", str(args.gop)]
+    if getattr(args, "bf", None) is not None:
+        cmd += ["--bf", str(args.bf)]
+    if getattr(args, "pix_fmt", ""):
+        cmd += ["--pix-fmt", str(args.pix_fmt)]
+    if getattr(args, "no_color_tags", False):
+        cmd += ["--no-color-tags"]
     try:
         r = run_tree(cmd, timeout=args.timeout)
     except Exception as exc:  # noqa: BLE001
@@ -250,6 +263,18 @@ def main() -> int:
     p.add_argument("--height", type=int, default=0,
                    help="采集视口高(CSS px);0 = 自适应;动画卡 100vh 型必须显式锁定")
     p.add_argument("--fps", type=int, default=25)
+    p.add_argument("--gop", type=int, default=0,
+                   help="MP4 关键帧间隔;0 = 不下发(编码器默认)。"
+                        "要能直接粘进微信/播客编辑器时配 --gop 25 --bf 0")
+    p.add_argument("--bf", type=int, default=None,
+                   help="MP4 B 帧数。**--bf 0 是显式意图**(关 B 帧,让开头 DTS 不为负,"
+                        "避免部分播放器首帧黑);不传 = 编码器默认")
+    p.add_argument("--pix-fmt", dest="pix_fmt", default="",
+                   help="MP4 像素格式(如 yuv420p / yuv422p);空 = 不下发。"
+                        "yuv420p 要求偶数画布,奇数尺寸会直接报错")
+    p.add_argument("--no-color-tags", dest="no_color_tags", action="store_true",
+                   help="不写色彩标签(关掉 ≠ 写 unknown);色程压缩仍保留。"
+                        "仅当目标播放器对 bt709 标签处理异常时才用")
     p.add_argument("--transparent", action="store_true")
     p.add_argument("--cmyk", action="store_true",
                    help="打印交付:追加导出 CMYK PDF + TIFF(印刷流程见 print-cmyk.md)")

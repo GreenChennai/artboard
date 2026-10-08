@@ -42,13 +42,13 @@ CANDIDATES = [
 SELF_CHECK = ["--help"]
 
 # ── 发行同步(改版本时三处同改:URL / SHA256 / BASELINE)────────────────────
-KILN_VERSION = "0.14.1"
+KILN_VERSION = "0.14.2"
 RELEASE_URL = ("https://github.com/GreenChennai/artboard/releases/download/"
                "kiln-cli-v" + KILN_VERSION + "/Kiln-noGUI-CLI.exe")
 # 正式版才承诺 sha256(GB 镜像「可复现但无 sha256」是另一条路,见文档头注)
-RELEASE_SHA256 = "00185547dc56d20480610016e4a9c5f1adcff797a9747f724eb0236b902065c6"
+RELEASE_SHA256 = "33a783c5b3b331f340ed7cb075f760a5da57bf3393068a151171d4b06e659087"
 # 已知基线:低于它 export.py 的参数面/语义对不上(KILN_TOO_OLD 判定用)
-BASELINE = (0, 14, 1)
+BASELINE = (0, 14, 2)
 
 
 def probe() -> str:

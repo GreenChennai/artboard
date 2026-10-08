@@ -1,6 +1,6 @@
 # artboard 脚本总表(生成物)
 
-> 由 `scripts/gen_script_index.py` 生成 @ 2026-10-08;**不要手改**。
+> 由 `scripts/gen_script_index.py` 生成 @ 2026-10-09;**不要手改**。
 > 权威参数 = 各脚本 `--help`;少数无 argparse 的脚本(junction/preflight/export_local 等)打印模块说明与用法;分册末尾「本册用到的脚本」是就近索引。
 
 ## 脚本(54个)

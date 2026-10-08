@@ -1,6 +1,6 @@
 {
   "_comment": "generated, do not edit — 由 scripts/gen_script_index.py 重建",
-  "generated_at": "2026-10-08",
+  "generated_at": "2026-10-09",
   "scripts": [
     {
       "name": "_config.py",
@@ -326,6 +326,7 @@
         "references/cjk-typography-css.md",
         "references/design-review-rubric.md",
         "references/design-thinking.md",
+        "references/export.md",
         "references/formats/ppt.md",
         "references/guardrails.md",
         "references/material-language.md",

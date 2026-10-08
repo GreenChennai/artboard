@@ -1,7 +1,7 @@
 ---
 name: artboard
 description: Use when the user wants a finished graphic produced from copy or a reference image, or wants an existing design revised — 海报、banner、小红书封面、公众号封面、主 KV、信息长图、数据图、名片、A4 海报、三折页、易拉宝、PPT 页、二维码物料; 动态海报、GIF、MP4、口播信息卡、图解动画卡、科普动画卡等视频场景卡; 片头动画、片尾动画、内容概括动画、章节卡、转场卡等视频动效件(按口播/教程/vlog/短片/MV 配动效); 成片/长动效的**审片**(逐帧审阅、元素拾取、审片意见落盘、像素基线回归、缓存隔离审计,子技能 references/review-loop.md + tools/review-station); H5 页面、移动端落地页、互动页、邀请函 H5 等轻量交互页(模式 H); 地图/城市地图/路网/区位图/街道底图、2.5D 等轴测与 3D 城市、地图 KV、多网点分布图、地图动画(车流/通勤/导航)、地图播放器 H5(子技能 references/map-studio.md); 印刷/打样/烫金/UV/模切/专色/裁切线等印前工艺; 公众号文章/微信图文/秀米排版(模式 W); SVG/EPS/AI/可编辑 PDF 等矢量工程文件交付; 抠图/调色/滤镜/压缩/水印/切片等位图工序; 图标/几何图形/极简插画; 多稿同出/给几个方案; 品牌色/logo/VI 一致性; 把文案变成图片、复刻一张设计图、换风格重做、改稿但说不清哪里不满意. 风格像 Illustrator/Photoshop 做的设计图,不是网页交互风. Not for 网页 UI、视频剪辑、纯 AI 生图. Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.21.0
+version: 1.22.0
 ---
 
 # artboard · HTML 海报工作室
@@ -138,6 +138,9 @@ Step 6 自检+改稿 **6.0 机检门禁**(每次重导前必跑,零 token):
                 scripts/check_slop.py <proj>/src      ← 先跑这个(纯静态,<1s):AI 味七宗罪 +
                                                         铁律 1/2 + 中文行高。有 P0 先修再渲染
                 scripts/check_overflow.py <proj>/src [--safe-area auto]   ← 几何:越框/安全区
+                                                        + E 素材断图 / F 字体静默降级
+                                                        (v1.22.0 起;E/F 非空=素材没到位,
+                                                         别看缩略图看不出来)
                 → 6.1 Read 导出图 + 过自检清单 → 修复重导(≤2 轮);
                 用户不满意 → **不重新生成**:按用户指定部位改现有 HTML(同 AI 生图的局部重绘);
                 说不清哪里不满意的「模糊愿望」走 references/revision-protocol.md(诊断→翻译→减法阶梯)

@@ -373,6 +373,37 @@ DETECT_JS = r"""
       }
     }
   }
+
+  // ---- E/F 类:资源真的加载出来了吗(默认开,零成本)----
+  // A~D 都在问「版面对不对」,没有一条问「素材到位了没」。于是两类最隐蔽的
+  // 损坏完全漏网:
+  //   E 图片断图 —— 产物里只剩 alt 文字/占位块,版面看着「有个图」;
+  //   F 字体静默降级 —— @font-face 掉了直接回退系统字体,字重字距全错,
+  //     而缩略图尺度下几乎看不出来。
+  // 两者都不是「Kiln 报错」,而是「Kiln 报 ok:true」—— 所以必须在这里量化。
+  // 判据用 naturalWidth/字体 status,不靠肉眼(这也是交付前验收清单第 2/3 条)。
+  // 采集时机在 fonts.ready + 500ms 之后,已排除「还没加载完」的假阳性。
+  for (const el of document.querySelectorAll('img')) {
+    if (el.complete && el.naturalWidth === 0) {
+      const box = el.getBoundingClientRect();
+      // 装饰性小图常是 1x1 追踪像素,报它只会淹没真问题
+      if (box.width < 2 || box.height < 2) continue;
+      issues.push({ type: 'E', selector: SEL(el),
+        src: (el.currentSrc || el.src || '').split('/').pop().slice(0, 60),
+        hint: '图片没加载出来(产物里是断图占位):检查 相对路径/联接/文件名,'
+            + '或改内联 base64' });
+    }
+  }
+  if (document.fonts) {
+    for (const f of document.fonts) {
+      if (f.status === 'loaded' || f.status === 'loading') continue;
+      issues.push({ type: 'F', selector: '@font-face ' + f.family,
+        family: f.family, weight: String(f.weight || '400'), status: f.status,
+        hint: '自定义字体未生效(status=' + f.status + '),已静默降级成系统字体:'
+            + '确认 src 指向的字体文件存在(scaffold 默认建联接,'
+            + '工程拷贝/迁移后联接会断)或改用 --embed-fonts' });
+    }
+  }
   return { issues: issues.slice(0, 300), safe: safeInfo };
 }
 """
@@ -554,7 +585,8 @@ def main() -> int:
     emit(out)
 
     TAGS = {"A": "A 内容溢出自身盒", "B": "B 越出容器边框", "C": "C 越出安全区",
-            "D": "D 元素互相重叠"}
+            "D": "D 元素互相重叠",
+            "E": "E 图片没加载出来(断图占位)", "F": "F 自定义字体未生效(静默降级)"}
     if safe_used:
         si = safe_used
         print(f"\n安全区 {si['label']}  画布 {si['canvas']['width']}×"

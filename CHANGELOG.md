@@ -1,5 +1,59 @@
 # Changelog
 
+## v1.22.0 - 核实生产机报单的 7 条 BUG:2 条真缺陷已修,5 条不成立(同步 Kiln v0.14.3)
+
+> 起因:生产机(2026-10-08 实际出图)汇总了 7 条 BUG + 1 条环境变更。逐条做了
+> 复现验证 —— **结论有 5 条与报单相反或不属于 artboard/Kiln**,一并写清,免得
+> 下次照着错误结论再加绕行。
+
+### Fixed - 真正的两条(都在 Kiln 侧)
+
+1. **`@font-face` 失败零告警(报单 BUG 2,成立)**。`RESOURCE_WARNINGS_JS`
+   只扫 `img/video/audio/source/link/script/iframe`,**一个字体都不查**。字体掉了
+   不会让任何元素的 `naturalWidth` 变 0,只会让 `document.fonts` 里那条 status 变
+   `error` —— 于是自定义字体静默降级成系统字体,报告里**一条告警都没有**。
+   现按 status 报并点名 family/style/weight。
+2. **告警采集早于 settle**。判据 `img.complete && naturalWidth===0` 在 settle 之前
+   调用,等于拿「还没加载完」当结论;产物里图是好的、报告却说坏了。假阳性比漏报更
+   有害 —— 它训练人忽略 warnings,真断图一起被忽略。已移到 settle 之后。
+
+### 不成立 / 不属于本项目的(逐条给出证据)
+
+| 报单条目 | 核实结论 |
+|---|---|
+| BUG 1 Kiln 不解析相对路径 | **不成立**。相对路径完全正常:合成 200x200 纯色图 + 洋红底,`img/x.png` 渲染为 400x400 精确绿块、`warnings:0`。**被拦的是绝对 `file:///` URI**(Chromium 禁止 file:// 页面加载 file:// 绝对子资源)。报单的探针表把两者搞反了 —— 它们解析后是**同一个 URL 字符串**,旧诊断混报无法区分。**上游 v0.14.3 已把告警消息改为带来源标注**,封掉同款误判。 |
+| BUG 3 `src/fonts/` 空目录 | **当前版本不可能发生**。`scaffold.py` 有硬门禁:联接不可穿透就 `JUNCTION_FAILED` 退出,不允许建出空目录工程。报单里的 `v0923-*`/`h0923-*` 是历史工程。 |
+| BUG 4 参考终版糊图 | **不是 bug**,是素材分辨率(1387x1080)与 `dsf=2` 不匹配。artboard 无义务为它兜底。 |
+| BUG 5 `wait_for_function` 挂死 | **artboard 里不存在**。`export_fallback.py` / `check_overflow.py` 已经用 `goto(load) + fonts.ready + wait_for_timeout` 三步定式。报单说的是生产机上**自己那份**脚本。 |
+| BUG 6 flex 子项被压扁 | **不是 bug**,是 CSS 规范行为(`flex-shrink:1` 默认会压缩显式写了 `height` 的子项)。`flex:none` 是正确写法,不是绕过。 |
+| WPI.exe 消失 | **已完成**。v1.9 起 Kiln 是唯一引擎,`setup_kiln.py` 全程无 WPI 残留。 |
+
+### Added - 素材加载门禁(报单「验收清单」第 2/3 条,此前没有任何门禁在查)
+
+`check_overflow.py` 新增两类,**默认开、零额外开销**(复用本来就要起的那次浏览器):
+
+- **E 类** = 图片没加载出来(`naturalWidth === 0`;1x1 追踪像素自动跳过)
+- **F 类** = 自定义字体未生效(已静默降级),提示检查联接是否在拷贝/迁移后断掉
+
+实测:反例页(断图 + 缺字体)被抓到,好页与 artboard 自带样例零误报。
+
+### Changed
+
+- `references/export.md` 新增「素材到底加载出来了吗」小节:把 `ok: true` 不等于
+  内容正确这件事写清,给出 E/F 门禁用法与「只写相对路径、绝不写 `file:///`」的
+  结论表(含「曾试 `--allow-file-access-from-files`,实测无效」的留档)。
+- `setup_kiln.py` 发行三件套升到 `0.14.3` / 新 sha256 / `BASELINE=(0,14,3)`;
+  实测 `--force`:sha256 通过、版本 == 基线、引擎自检 `{"ok":true,"formats":9}`。
+- `docs/upstream-issues.md` 的 UP-1 行按实测结论改写(原登记「目录联接越界」未复现)。
+
+### 验证
+
+- 发行资产与本地构建 sha256 **逐位一致**(`0d59eb16a9621e4e…`)。
+- 相对路径页:`warnings:0` + 产物中心像素 (0,200,0) 绿;绝对 URI 页:洋红底(被拦)
+  + 告警带「[绝对 file:// URI,Chromium 必拦,改相对路径]」。
+- 缺字体页:`@font-face GhostFont [error]` 告警出现(修复前零告警)。
+- `cargo test -p vb_kiln` 全绿(12 组);`selfcheck.py` FAIL 0 / PASS 12。
+
 ## v1.21.0 — 同步 Kiln v0.14.2:UP-3/UP-4 上游修复 + 编码参数首次可配(2026-10-08)
 
 > 起因:上游台账登记的 **UP-3**(GIF 车道 `steps()` 硬切动画全片停在 from 色)与

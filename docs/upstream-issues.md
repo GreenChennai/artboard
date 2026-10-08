@@ -11,8 +11,8 @@
 > ⑤ 同步引擎版本后复查,改「上游状态」列。**④ 不要自动做**:issue 是公开的、
 > 不可撤回,且需要用户的 GitHub 身份。
 >
-> **基线**:Kiln **v0.14.2**(`CHANGELOG.md` 顶条)。发行资产在 **artboard 发行页**
-> `kiln-cli-v0.14.2`,`scripts/setup_kiln.py` 内置该版本的 URL + sha256 + 版本基线
+> **基线**:Kiln **v0.14.3**(`CHANGELOG.md` 顶条)。发行资产在 **artboard 发行页**
+> `kiln-cli-v0.14.3`,`scripts/setup_kiln.py` 内置该版本的 URL + sha256 + 版本基线
 > 三件套(`KILN_VERSION` / `RELEASE_SHA256` / `BASELINE`),**换版时三处同改**。
 > 校验实测:工作区里已部署的那份引擎 exe 与发行资产 sha256 一致
 > (`00185547…`);`setup_kiln.py --force` 对不符值**拒绝写 config 并保留产物**。

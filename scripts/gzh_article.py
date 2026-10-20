@@ -2,28 +2,50 @@
 
 用法:
   python gzh_article.py convert <input.md> --out article.html [--title 标题]
-                  [--author 署名] [--theme default|green|orange|red] [--preview]
-  python gzh_article.py demo --outdir <目录>   # 生成示例 .md 并转换(含预览页)
-  python gzh_article.py check <article.html>   # 公众号兼容性自检(无 class/script/外链 CSS)
+                  [--author 署名] [--theme ink|night|warm|grass|red|mono] [--preview]
+                  [--cover-layout band-editorial] [--cover-kicker 眉题] [--cover-sub 副题]
+                  [--cover-image PATH (plate-page)]
+  python gzh_article.py demo --outdir <目录>   # 生成示例 .md 并转换
+  python gzh_article.py check <article.html>   # 通用内联样式自检
+  python gzh_preview_copy.py <article.html>    # 单篇/多篇预览与剪贴板中转
 
 产出:
   <out>            公众号正文片段(全内联样式,<section> 包裹,无 class/id/script/style 标签)
-  <out>.preview.html  本地预览页(仅本地查看;公众号编辑器只粘贴片段)
+  <out_stem>.preview-copy.html  单文件预览复制页(选择/预览/复制;打开官方 135)
   check 输出单行 JSON(violations 为空 = 兼容通过)
+
+Artboard 不克隆 135 编辑器，也不模拟其私有 DOM。
+                 需要 135 中转时,运行 `convert --preview` 生成页面;预览复制页只负责选择/预览/复制,实际编辑始终使用官方 135。
 
 排版规范依据(来源与决策记录见 references/gzh-typography.md 与 docs/gzh-spec-summary.md):
   - doocs/md(20k+ star 微信 Markdown 编辑器)主题 CSS 的内联化结论:
     <section> 包裹 + 每个元素 style 内联 + 桌面级字号(正文 15px)+ 主色强调;
-  - 微信编辑器会剥离 <style>/<script>/class/id 与部分标签,仅保留内联样式;
+  - 本工具将样式内联作为兼容策略,不假定官方编辑器会固定清洗某些标签或属性;
+    粘贴后应在官方编辑器预览中核对实际保留效果;
   - 斜体/删除线在移动端中文可读性差 → 弱化处理(遵循主流公众号排版惯例)。
 """
 
+from __future__ import annotations
+
 import argparse
+import hashlib
 import html as html_mod
 import json
 import os
 import re
 import sys
+from html.parser import HTMLParser
+from pathlib import Path
+from urllib.parse import urlsplit
+
+import _proc
+from gzh_preview_copy import write_preview_copy_page
+import _gzh_layouts as _GHL
+
+COVER_LAYOUT_DEFAULT = "auto"
+COVER_LAYOUT_NO_SUB_DEFAULT = "center-band"
+COVER_LAYOUT_CHOICES = ("auto", *_GHL.LAYOUT_SLUGS, "legacy")
+COVER_FX_CHOICES = ("auto", "none", *_GHL.SHADER_FX)
 
 
 # ---------------------------------------------------------------- 主题
@@ -59,7 +81,28 @@ def _extract_h1(md_text: str) -> str:
 # ---------------------------------------------------------------- 行内解析
 
 def esc(s: str) -> str:
-    return html_mod.escape(s, quote=False)
+    return html_mod.escape(s, quote=True)
+
+
+def esc_attr(s: str) -> str:
+    """Normalize one existing entity layer, then escape for a quoted HTML attribute."""
+    return html_mod.escape(html_mod.unescape(s), quote=True)
+
+
+def _markdown_url_allowed(raw: str, *, image: bool = False) -> bool:
+    """Allow portable article URLs only; the rendered value is already HTML-escaped."""
+    value = html_mod.unescape(raw or "").strip()
+    if not value or "\\" in value or any(ord(ch) < 0x20 or ord(ch) == 0x7F for ch in value):
+        return False
+    try:
+        scheme = urlsplit(value).scheme.lower()
+    except ValueError:
+        return False
+    if not scheme:
+        return True  # relative path, query, fragment, or protocol-relative URL
+    if image and scheme == "data":
+        return bool(re.match(r"^data:image/(?:png|jpe?g|gif|webp|avif|bmp);base64,", value, re.I))
+    return scheme in ({"http", "https"} if image else {"http", "https", "mailto", "tel"})
 
 
 class Inline:
@@ -85,15 +128,20 @@ class Inline:
         # 2) 图片 ![alt](src)
         img_style = ("display:block;border-radius:4px;max-width:100%;"
                      "margin:16px auto;")
-        s = re.sub(r"!\[([^\]]*)\]\(([^)\s]+)\)",
-                   lambda m: stash(
-                       f'<img src="{m.group(2)}" alt="{m.group(1)}" style="{img_style}"/>'),
-                   s)
+        def _image(m):
+            alt, src = m.group(1), m.group(2)
+            if not _markdown_url_allowed(src, image=True):
+                return stash(alt)
+            return stash(f'<img src="{esc_attr(src)}" alt="{esc_attr(alt)}" style="{img_style}"/>')
+        s = re.sub(r"!\[([^\]]*)\]\(([^)\s]+)\)", _image, s)
 
         # 3) 链接 [text](url) — 链接文字再过一遍强调处理
         def _link(m):
             inner = self._emphasis(m.group(1))
-            return stash(f'<a href="{m.group(2)}" style="color:{self.t["primary"]};'
+            href = m.group(2)
+            if not _markdown_url_allowed(href):
+                return stash(inner)
+            return stash(f'<a href="{esc_attr(href)}" style="color:{self.t["primary"]};'
                          f'text-decoration:none;">{inner}</a>')
         s = re.sub(r"\[([^\]]+)\]\(([^)\s]+)\)", _link, s)
 
@@ -335,9 +383,13 @@ class Renderer:
             f"<thead><tr>{ths}</tr></thead><tbody>{''.join(trs)}</tbody></table>")
 
     def img(self, alt: str, src: str) -> str:
+        if not _markdown_url_allowed(src, image=True):
+            return self._sec(
+                "margin:24px 8px;text-align:center;",
+                esc(alt))
         return self._sec(
             "margin:24px 8px;text-align:center;",
-            f'<img src="{src}" alt="{esc(alt)}" '
+            f'<img src="{esc_attr(src)}" alt="{esc_attr(alt)}" '
             f'style="display:block;border-radius:4px;max-width:100%;margin:0 auto;"/>'
             + (self._sec(f"margin-top:8px;font-size:12px;color:{self.t['muted']};",
                          esc(alt)) if alt else ""))
@@ -390,30 +442,6 @@ def render_article(md_text: str, theme: str, title: str = "", author: str = "") 
     return head + body
 
 
-PREVIEW_TEMPLATE = """<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>公众号排版预览 · {title}</title>
-<style>
-/* 本地预览壳(仅本地查看;公众号编辑器只粘贴 ARTICLE 区块内的片段) */
-body {{ margin: 0; background: #ededed; font-family: sans-serif; }}
-.phone {{ max-width: 420px; margin: 24px auto; background: #ffffff;
-  border-radius: 12px; padding: 24px 4px; min-height: 600px; }}
-.hint {{ max-width: 420px; margin: 16px auto; font-size: 13px; color: #999;
-  text-align: center; }}
-</style>
-</head>
-<body>
-<div class="hint">本地预览(公众号编辑器只粘贴白色区域内容)</div>
-<div class="phone">
-{article}
-</div>
-</body>
-</html>"""
-
-
 # ---------------------------------------------------------------- 兼容自检
 
 ALLOWED_TAGS = {"section", "p", "h1", "h2", "h3", "h4", "h5", "h6", "span",
@@ -423,10 +451,46 @@ ALLOWED_TAGS = {"section", "p", "h1", "h2", "h3", "h4", "h5", "h6", "span",
 BANNED_PATTERNS = ("class=", "<script", "<style", "<link", "id=", "javascript:")
 
 
+class _CompatAttributeAudit(HTMLParser):
+    """Find active attributes and non-portable URLs in generated article HTML."""
+
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.event_attrs: list[str] = []
+        self.unsafe_urls: list[str] = []
+
+    def _inspect(self, tag: str, attrs):
+        for name, value in attrs:
+            attr = (name or "").lower()
+            if attr.startswith("on") or attr == "srcdoc":
+                self.event_attrs.append(f"{tag}[{attr}]")
+            if value is None:
+                continue
+            if attr in {"href", "src", "xlink:href"} and not _markdown_url_allowed(
+                    value, image=(attr != "href")):
+                self.unsafe_urls.append(f"{tag}[{attr}]={value[:100]}")
+            elif attr in {"action", "formaction", "ping"}:
+                self.unsafe_urls.append(f"{tag}[{attr}]")
+
+    def handle_starttag(self, tag, attrs):
+        self._inspect(tag, attrs)
+
+    def handle_startendtag(self, tag, attrs):
+        self._inspect(tag, attrs)
+
+
 def check_compat(path: str) -> dict:
+    """检查通用微信文章片段；预览复制页本身不应作为文章片段检查。"""
     with open(path, encoding="utf-8") as f:
         doc = f.read()
     violations: list[str] = []
+    audit = _CompatAttributeAudit()
+    audit.feed(doc)
+    audit.close()
+    if audit.event_attrs:
+        violations.append(f"存在事件处理器或 srcdoc 属性: {', '.join(sorted(set(audit.event_attrs))[:8])}")
+    if audit.unsafe_urls:
+        violations.append(f"存在不安全或不可移植 URL: {', '.join(sorted(set(audit.unsafe_urls))[:8])}")
     for pat in BANNED_PATTERNS:
         if pat.lower() in doc.lower():
             violations.append(f"出现禁用模式: {pat}")
@@ -457,6 +521,48 @@ def write_text(path: str, content: str) -> None:
         f.write(content)
 
 
+def _utf16_units(value: str) -> int:
+    return len(value.encode("utf-16-le", errors="surrogatepass")) // 2
+
+
+def _truncate_utf16(value: str, max_units: int) -> str:
+    parts = []
+    used = 0
+    for char in value:
+        width = 2 if ord(char) > 0xFFFF else 1
+        if used + width > max_units:
+            break
+        parts.append(char)
+        used += width
+    return "".join(parts)
+
+
+def _preview_copy_path(article: Path) -> Path:
+    suffix = ".preview-copy.html"
+    stem = article.stem
+    filename = stem + suffix
+    if _utf16_units(filename) <= 255:
+        return article.with_name(filename)
+    digest = hashlib.sha256(os.fsencode(article.name)).hexdigest()[:12]
+    marker = f".{digest}"
+    budget = max(1, 255 - _utf16_units(marker) - _utf16_units(suffix))
+    return article.with_name(_truncate_utf16(stem, budget) + marker + suffix)
+
+
+def _write_preview_copy(fragment: str, title: str, input_path: str,
+                        article_path: str) -> str:
+    """Create a single-file preview/copy wrapper; the official 135 site remains the editor."""
+    article = Path(article_path).expanduser().resolve()
+    preview = _preview_copy_path(article)
+    source_base = Path(input_path).expanduser().resolve().parent.as_uri() + "/"
+    label = (title or Path(input_path).stem).strip()
+    write_preview_copy_page(
+        [{"title": label, "html": fragment, "base": source_base}],
+        preview,
+        page_title=f"公众号预览与复制 · {label}")
+    return str(preview)
+
+
 def cmd_convert(args) -> int:
     try:
         with open(args.input, encoding="utf-8") as f:
@@ -485,11 +591,14 @@ def cmd_convert(args) -> int:
     payload = {"ok": True, "output": os.path.abspath(args.out),
                "theme": theme_name, "chars": len(fragment)}
     if args.preview:
-        preview_path = args.out + ".preview.html"
-        write_text(preview_path, PREVIEW_TEMPLATE.format(
-            title=esc(args.title or os.path.basename(args.input)),
-            article=fragment))
+        try:
+            preview_path = _write_preview_copy(fragment, args.title, args.input, args.out)
+        except (OSError, ValueError) as exc:
+            payload.update({"ok": False, "preview_error": str(exc)})
+            print(json.dumps(payload, ensure_ascii=False))
+            return 1
         payload["preview"] = os.path.abspath(preview_path)
+        payload["preview_copy"] = os.path.abspath(preview_path)
 
     # ---- 图文 ⇒ 封面 单向绑定(D-11-1:默认 on;--no-cover 逃生口) ----
     if not getattr(args, "no_cover", False):
@@ -514,35 +623,137 @@ def _make_covers(args, md_text: str, theme_name: str) -> dict:
     import subprocess
     cover_py = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gzh_cover.py")
     slug = getattr(args, "slug", "") or _re.sub(r"\.[^.]+$", "", os.path.basename(args.input))
+    requested_layout = getattr(args, "cover_layout", COVER_LAYOUT_DEFAULT) or "auto"
+    cover_sub = (getattr(args, "cover_sub", "") or "").strip()
+    if requested_layout == "auto":
+        layout = "band-editorial" if cover_sub else COVER_LAYOUT_NO_SUB_DEFAULT
+    else:
+        layout = requested_layout
+    cover_image_arg = (getattr(args, "cover_image", "") or "").strip()
+    cover_image = (os.path.abspath(os.path.expanduser(cover_image_arg))
+                   if cover_image_arg else "")
+    if layout == "plate-page":
+        if not cover_image:
+            return {"ok": False, "error": "COVER_IMAGE_REQUIRED",
+                    "hint": "文章转换使用 plate-page 时,请提供 --cover-image 本地 PNG/JPEG/WebP 图片"}
+        if not os.path.isfile(cover_image):
+            return {"ok": False, "error": "COVER_IMAGE_NOT_FOUND",
+                    "hint": f"--cover-image 不是现存本地文件: {cover_image}"[:200]}
+    elif cover_image:
+        return {"ok": False, "error": "COVER_IMAGE_LAYOUT_CONFLICT",
+                "hint": "--cover-image 仅与显式 --cover-layout plate-page 搭配使用"}
+    requested_fx = getattr(args, "cover_fx", "auto") or "auto"
+    if layout == "legacy":
+        if requested_fx not in ("auto", "none"):
+            return {"ok": False, "error": "COVER_FX_UNSUPPORTED_LAYOUT",
+                    "hint": "legacy 模板不接入 WebGPU shader;改用六个新版式或 --cover-fx none"}
+        fx = ""
+    else:
+        fx = _GHL.resolve_fx(layout, requested_fx)
     title = (getattr(args, "cover_title", "") or args.title
              or _extract_h1(md_text) or os.path.basename(args.input)).strip()
     if not title:
         return {"ok": False, "error": "NO_TITLE",
                 "hint": "无标题可用:给 --cover-title 或文内 H1"}
-    cmd_new = [sys.executable, cover_py, "new", slug, "--title", title,
-               "--theme", theme_name, "--force"]
+    base_cmd = [sys.executable, cover_py, "new", slug, "--title", title,
+                "--theme", theme_name]
+    if cover_image:
+        base_cmd += ["--image", cover_image]
     if getattr(args, "cover_kicker", ""):
-        cmd_new += ["--kicker", args.cover_kicker]
+        base_cmd += ["--kicker", args.cover_kicker]
+    if cover_sub:
+        base_cmd += ["--sub", cover_sub]
+    if getattr(args, "cover_sub_title", ""):
+        base_cmd += ["--sub-title", args.cover_sub_title]
+    if getattr(args, "cover_sub_sub", ""):
+        base_cmd += ["--sub-sub", args.cover_sub_sub]
     if getattr(args, "cover_num", ""):
-        cmd_new += ["--num", args.cover_num]
-    try:
+        base_cmd += ["--num", args.cover_num]
+
+    def create_and_check(candidate_layout: str, *, overwrite_created: bool = False):
+        cmd_new = list(base_cmd)
+        if overwrite_created:
+            # Only replace the project that this invocation just created and checked;
+            # never force the initial creation over a pre-existing user project.
+            cmd_new.append("--force")
+        if candidate_layout != "legacy":
+            candidate_fx = _GHL.resolve_fx(candidate_layout, requested_fx)
+            cmd_new += ["--layout", candidate_layout, "--fx", candidate_fx or "none"]
         r_new = subprocess.run(cmd_new, capture_output=True, text=True,
                                encoding="utf-8", errors="replace", timeout=120)
-        lines = [l for l in (r_new.stdout or "").splitlines() if l.strip()]
-        new_payload = json.loads(lines[-1]) if lines else {}
-        if r_new.returncode != 0 or not new_payload.get("ok"):
-            return {"ok": False, "error": "COVER_NEW_FAILED",
-                    "hint": (new_payload.get("hint") or r_new.stderr or "")[:200]}
-        r_exp = subprocess.run([sys.executable, cover_py, "export", new_payload["project"]],
-                               capture_output=True, text=True,
-                               encoding="utf-8", errors="replace", timeout=300)
+        lines = [line for line in (r_new.stdout or "").splitlines() if line.strip()]
+        new_data = json.loads(lines[-1]) if lines else {}
+        if r_new.returncode != 0 or not new_data.get("ok"):
+            return new_data, {}, {"ok": False, "error": "COVER_NEW_FAILED",
+                                  "hint": (new_data.get("hint") or r_new.stderr or "")[:200]}
+        cmd_check = [sys.executable, cover_py, "check", new_data["project"]]
+        r_check = subprocess.run(cmd_check, capture_output=True, text=True,
+                                 encoding="utf-8", errors="replace", timeout=120)
+        check_lines = [line for line in (r_check.stdout or "").splitlines() if line.strip()]
+        check_data = json.loads(check_lines[-1]) if check_lines else {}
+        if r_check.returncode != 0 or not check_data.get("ok"):
+            failed = check_data.get("failed") or []
+            details = [f"{row.get('kind', '?')}/{row.get('id', '?')}: {row.get('detail', '')}"
+                       for row in failed]
+            error = {"ok": False, "error": "COVER_CHECK_FAILED",
+                     "hint": ("；".join(details) or check_data.get("hint")
+                              or r_check.stderr or "双封面静态检查失败")[:300],
+                     "failed": failed}
+            return new_data, check_data, error
+        return new_data, check_data, None
+
+    layout_fallback = None
+    try:
+        new_payload, check_payload, cover_error = create_and_check(layout)
+        created_by_this_invocation = bool(new_payload.get("ok"))
+        title_fit_checks = {"title-word-break", "title-particle-edge", "title-row-cap",
+                            "title-min-px", "title-width-fit"}
+        failed_ids = {row.get("id") for row in (cover_error or {}).get("failed", [])}
+        if (cover_error and requested_layout == "auto" and layout == "band-editorial"
+                and failed_ids.intersection(title_fit_checks)):
+            first_hint = cover_error.get("hint", "标题断行不适配")
+            fallback_layout = COVER_LAYOUT_NO_SUB_DEFAULT
+            fallback_data, fallback_check, fallback_error = create_and_check(
+                fallback_layout, overwrite_created=created_by_this_invocation)
+            if fallback_error:
+                return {"ok": False, "error": fallback_error.get("error", "COVER_CHECK_FAILED"),
+                        "hint": (f"band-editorial标题不适配({first_hint});center-band回退失败: "
+                                 f"{fallback_error.get('hint', '')}")[:300],
+                        "failed": fallback_error.get("failed", [])}
+            new_payload, check_payload = fallback_data, fallback_check
+            layout = fallback_layout
+            fx = _GHL.resolve_fx(layout, requested_fx)
+            layout_fallback = {"from": "band-editorial", "to": fallback_layout,
+                               "reason": first_hint}
+        elif cover_error:
+            return cover_error
+        # 封面跟图文落在同一个 outdir(传 --outdir 时),否则用户去 studio_dir 里翻图
+        outdir = getattr(args, "outdir", "") or ""
+        cmd_exp = [sys.executable, cover_py, "export", new_payload["project"]]
+        if outdir:
+            cmd_exp += ["--outdir", outdir]
+        r_exp = _proc.run(cmd_exp, timeout=300)
+        if r_exp.timed_out:
+            return {"ok": False, "error": "COVER_EXPORT_TIMEOUT",
+                    "hint": "封面导出超时;Kiln/浏览器进程树已终止"}
         exp_lines = [l for l in (r_exp.stdout or "").splitlines() if l.strip()]
         exp_payload = json.loads(exp_lines[-1]) if exp_lines else {}
         if r_exp.returncode != 0 or not exp_payload.get("ok"):
+            # 把首条 failed[].error 带出来:否则只剩一句通用的"单张失败",
+            # 用户和 Agent 都得去翻 gzh_cover.py 才知道是缺 Kiln / 缺浏览器 / 尺寸问题。
+            first = (exp_payload.get("failed") or [{}])[0]
+            detail = first.get("error") or ""
+            hint = first.get("hint") or exp_payload.get("hint") or r_exp.stderr or ""
+            if detail and detail not in hint:
+                hint = f"{detail}: {hint}"
             return {"ok": False, "error": "COVER_EXPORT_FAILED",
-                    "hint": (exp_payload.get("hint") or r_exp.stderr or "")[:200]}
+                    "hint": hint[:300]}
         return {"ok": True, "project": new_payload["project"],
-                "title": title, "theme": theme_name,
+                "title": title, "theme": theme_name, "layout": layout,
+                "fx": fx or "none", "layout_fallback": layout_fallback,
+                "check": {"ok": True, "coverage": check_payload.get("coverage"),
+                          "passed": [r.get("kind") for r in check_payload.get("reports", [])
+                                     if r.get("pass")]},
                 "images": [e.get("output") for e in exp_payload.get("exports", [])],
                 "note": "图文必带双封面(单向绑定);反向 gzh_cover 不产图文"}
     except Exception as exc:  # noqa: BLE001
@@ -563,17 +774,17 @@ DEMO_MD = """# 双封面时代的公众号排版指南
 
 > 本文演示 artboard 公众号排版器的全部组件:标题、引用、列表、表格、代码块与分割线。
 
-公众号头条封面是 **2.35:1** 的横幅,次条封面是 *1:1* 方图——两张图要用同一套视觉语言,这是「双封面工作法」的核心。
+Artboard 将头条封面与次条封面作为一组来设计,共享主题与字体语言,方便同稿联动。下列画布尺寸是本工具的内部默认值,参考第三方 135 编辑教程,并非已核实的微信官方规格；实际展示请以当前公众号后台预览为准。
 
-## 一、封面规格速记
+## 一、封面画布速记
 
-- 头条封面:900 × 383 px(2.35:1),关键信息居中
-- 次条封面:383 × 383 px(1:1),元素不超过 3 个
-- 合并预览:两图等高拼接,间隔 57px,一键出图
+- 头条封面:Artboard 默认 900 × 383 px(约 2.35:1),关键信息优先放入内部保守安全区
+- 次条封面:Artboard 默认 383 × 383 px(1:1),减少元素以适配小尺寸阅读
+- 合并预览:两图等高拼接,间隔 57px,用于联审；不是平台要求的上传画布
 
-## 二、为什么用内联样式
+## 二、为什么优先用内联样式
 
-微信编辑器会剥离 `class`、`id` 与 `<style>` 标签,只有写在每个元素 `style` 属性里的样式能存活。所有主流排版工具(doocs/md、mdnice 等)都基于这一事实工作。
+为提高复制到官方编辑器后的样式兼容性,本工具默认将正文格式写入元素的 `style` 属性；class、id 与 `<style>` 的保留情况可能随编辑器流程变化,应通过官方编辑器预览确认。这个实现选择是兼容策略,不是对平台 DOM 清洗行为的官方承诺。
 
 | 组件 | 存活方式 | 备注 |
 |---|---|---|
@@ -605,7 +816,8 @@ def cmd_demo(args) -> int:
     write_text(md_path, DEMO_MD)
     rc = cmd_convert(argparse.Namespace(
         input=md_path, out=out_path, title="双封面时代的公众号排版指南",
-        author="artboard · 排版器演示", theme=args.theme, preview=True))
+        cover_title="双封面指南", author="artboard · 排版器演示",
+        theme=args.theme, preview=True))
     if rc == 0:
         chk = check_compat(out_path)
         chk["demo_md"] = os.path.abspath(md_path)
@@ -673,12 +885,13 @@ def main() -> int:
     pc = sub.add_parser("convert", help="转换 Markdown 为公众号 HTML")
     pc.add_argument("input", help="输入 .md 文件")
     pc.add_argument("--out", required=True, help="输出 HTML 路径")
+    pc.add_argument("--outdir", default="", help="可选：双封面 PNG 输出目录(正文/预览仍按 --out 落盘)")
     pc.add_argument("--title", default="", help="文章大标题(空=用文内 H1)")
     pc.add_argument("--author", default="", help="作者署名行")
     pc.add_argument("--theme", default="ink",
                     help="主题(统一源 _gzh_theme):ink/night/warm/grass/red/mono;"
                          "旧名 default/orange/green 仍可用(弃用提示)")
-    pc.add_argument("--preview", action="store_true", help="同时生成本地预览页")
+    pc.add_argument("--preview", action="store_true", help="同时生成独立预览复制页")
     pc.add_argument("--with-cover", dest="with_cover", action="store_true", default=True,
                     help="(默认)图文同时出同主题双封面")
     pc.add_argument("--no-cover", dest="no_cover", action="store_true",
@@ -687,7 +900,19 @@ def main() -> int:
     pc.add_argument("--cover-title", dest="cover_title", default="",
                     help="封面主标题(默认取 --title 或文章 H1)")
     pc.add_argument("--cover-kicker", dest="cover_kicker", default="", help="封面眉题/栏目")
+    pc.add_argument("--cover-sub", dest="cover_sub", default="", help="主封面副题")
+    pc.add_argument("--cover-sub-title", dest="cover_sub_title", default="",
+                    help="次条封面主标题(默认同封面主标题)")
+    pc.add_argument("--cover-sub-sub", dest="cover_sub_sub", default="",
+                    help="次条封面副题(默认同主封面副题)")
     pc.add_argument("--cover-num", dest="cover_num", default="", help="封面期号")
+    pc.add_argument("--cover-image", dest="cover_image", default="",
+                    help="plate-page 本地 PNG/JPEG/WebP 主封照片;须同时显式选择 --cover-layout plate-page")
+    pc.add_argument("--cover-layout", default=COVER_LAYOUT_DEFAULT,
+                    choices=COVER_LAYOUT_CHOICES,
+                    help="auto:有主封副题先用 band-editorial,否则 center-band;标题不适配时回退 center-band;可选六族/legacy")
+    pc.add_argument("--cover-fx", default="auto", choices=COVER_FX_CHOICES,
+                    help="背景 shader 效果(auto=版式默认;none=关闭;11种MIT上游效果)")
     pc.set_defaults(func=cmd_convert)
 
     pd = sub.add_parser("demo", help="生成示例文章并转换(自检兼容性)")

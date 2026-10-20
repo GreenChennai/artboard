@@ -106,6 +106,11 @@ python scripts/export.py --source "<project>/src" --output "<project>/export/out
 python scripts/export.py --source "<project>/src" --output "<project>/export/out.mp4" \
   --width 1080 --scale 2 --format MP4 --fps 30 --max-wait 6
 
+# WebGPU 动效卡(含 requestAnimationFrame / 无确定性 seek 的 shader):使用墙钟采样
+# MP4 yuv420p 画布宽高必须为偶数;视频卡建议独立使用 900×384 等偶数画布。
+python scripts/export.py --source "<project>/src" --output "<project>/export/shader-card.mp4" \
+  --width 900 --height 384 --format MP4 --fps 10 --max-wait 2 --webgpu --wall
+
 # 重页面/长动画:调大墙钟上限(默认 900s)。逐帧动画实测约 0.9 帧/秒,
 # 1080x1440 @25fps x 15s = 375 帧 ≈ 427s —— 别等它自己撞死。
 python scripts/export.py --source "<project>/src" --output "<project>/export/out.gif" \

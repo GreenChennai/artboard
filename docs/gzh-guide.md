@@ -1,7 +1,6 @@
 # 公众号双封面与内容排版 · 使用指南
 
-> artboard v1.8.0 新增能力:微信公众号**双封面**(头条 + 次条,可单独导出/合并成一张)
-> 与**公众号正文排版**(Markdown → 全内联样式 HTML,粘贴进公众号编辑器不塌样式)。
+> artboard 当前提供微信公众号**双封面**(头条 + 次条,可单独导出/合并成一张)、**公众号正文排版**(Markdown → 全内联样式 HTML)与独立**预览复制页**(选择版本、手机预览、复制到官方 135)。
 > 规格依据与来源见 [gzh-spec-summary.md](gzh-spec-summary.md);
 > 排版细则见 [../references/gzh-typography.md](../references/gzh-typography.md);
 > 封面品类规范见 [../references/formats/gzh-cover.md](../references/formats/gzh-cover.md)。
@@ -14,7 +13,9 @@
 | 三种导出 | `gzh_cover.py export` | 主封面 PNG / 次条 PNG / 合并对比图 PNG(默认三图齐出) |
 | 单独导出 | `export --only main` / `--only sub` / `--only merged` | 任意单张重出 |
 | 仅重拼合并图 | `gzh_cover.py merge` | 合并图(`kiln-cli img stitch` 纯像素拼接,不重渲染 HTML;仍需 Kiln CLI 在位,缺则报 `KILN_NOT_FOUND`) |
-| 正文排版 | `gzh_article.py convert` | 全内联样式 HTML 片段 + 本地预览页 |
+| 正文排版 | `gzh_article.py convert` | 全内联样式正文 HTML + 按封面文案自动选族的双封面三图 |
+| 正文与预览复制 | `gzh_article.py convert --preview` | 通用全内联正文 HTML + `*.preview-copy.html`；封面可用 `--cover-layout auto`/六族/`legacy`，`plate-page` 另需 `--cover-image` 本地照片，`--cover-fx` 控制 MIT shader |
+| 预览复制页 | `gzh_preview_copy.py` | 单文件预览、版本选择、HTML/纯文本复制、打开官方 135 |
 | 排版示例 | `gzh_article.py demo` | 示例 .md + 转换结果 + 自检报告 |
 | 兼容自检 | `gzh_article.py check` | 单行 JSON 违规报告 |
 
@@ -27,7 +28,7 @@ S="<skill 目录>/scripts"
 python $S/gzh_cover.py new my-post --title "双封面工作法" \
     --sub-title "双封面法" --kicker "ARTBOARD · 02" \
     --sub "一次设计 · 三张产物" --footer "WECHAT OFFICIAL ACCOUNT" \
-    --num "02" --theme ink
+    --num "02" --theme ink --layout band-editorial
 
 # 2. 导出(默认三图齐出 = 合一导出)
 python $S/gzh_cover.py export my-post
@@ -35,12 +36,17 @@ python $S/gzh_cover.py export my-post
 #   → export/cover-sub-my-post.png      766×766  (383×383 @2x)
 #   → export/cover-merged-my-post.png  2680×766  (合并对比图)
 
-# 3. 只改了文案?重跑 new --force + export 覆盖;或手工改 HTML 后只重导单张
+# 3. 静态几何/离线检查
+python $S/gzh_cover.py check my-post
+
+# 4. 只改了文案?重跑 new --force + export 覆盖;或手工改 HTML 后只重导单张
 python $S/gzh_cover.py export my-post --only main
 ```
 
-- **尺寸规格**:头条 2.35:1(900×383),转发卡片只露中央 383×383 → 关键信息居中;
-  次条 1:1(383×383,官方下限 200×200)。依据见 gzh-spec-summary.md §一。
+- `--layout` 可选 `center-band`、`band-editorial`、`stack-cards`、`giant-caps`、`kraft-note`、`plate-page`；直接运行 `gzh_cover.py new` 不传布局时仍保留旧模板。文章转换的 `--cover-layout auto` 有 `--cover-sub` 时先选 `band-editorial`，无副题选 `center-band`；若主/次标题断点不适配会回退 `center-band`，显式布局不回退。`--cover-fx auto` 接入版式默认的MIT WebGPU效果，`none` 关闭；`legacy`显式恢复旧式。
+- `gzh_cover.py check` 对六族执行完整安全区/信息层级检查，并检查显式标题断点是否拆词或把助词推到行首/行尾；旧 `legacy` 返回 `coverage=partial`，不把旧标记误报成新族溢出。
+- `gzh_cover.py new` 的 CSS `--bg-pattern` 与 WebGPU `--fx` 为互斥底材；显式选一个时自动层让位，两者都显式启用则报 `BACKGROUND_LAYER_CONFLICT`，不静默丢弃用户参数。
+- **尺寸预设**:头条采用 900×383(约 2.35:1)、次条采用 383×383，作为 Artboard 内部尺寸预设，参考第三方 135 教程；不是微信官方规格，也不表示平台保证按中央区域或左侧裁切。中央 383×383 仅作保守排版安全区，发布前核对当前公众号后台预览。依据见 [gzh-spec-summary.md](gzh-spec-summary.md) §一。
 - **自定义字体**:`--fonts smiley-sans,source-han-sans`(第一款=展示体,第二款=正文体);
   `auto` 用默认双字体。字体来自 `fonts/` 库(离线渲染)。
 - **手工改稿**:直接编辑 `src/index.html` / `src/sub.html`(设计 tokens 在 `:root`,
@@ -55,19 +61,28 @@ python $S/gzh_cover.py export my-post --only main
 ## 三、正文排版:从 Markdown 到公众号
 
 ```bash
-# 写好 Markdown 后一条命令
+# 通用文章 HTML + 独立预览复制页
 python $S/gzh_article.py convert 文章.md --out article.html \
-    --title "文章标题" --author "署名" --theme ink --preview
+    --title "文章标题" --author "署名" --theme ink --preview --no-cover
 python $S/gzh_article.py check article.html     # 必须 ok:true
+
+# 正文 HTML + 独立预览复制页；默认同步生成同主题双封面
+python $S/gzh_article.py convert 文章.md --out output/article.html --outdir output --theme ink --preview --cover-layout band-editorial --cover-kicker "栏目" --cover-sub "主封面副题" --cover-sub-title "次条标题"
+# 使用画页分栏时，COVER_IMAGE 需指向现存的本地 PNG/JPEG/WebP；不会上传到 135
+python $S/gzh_article.py convert 文章.md --out output/article.html --outdir output --cover-layout plate-page --cover-image "$COVER_IMAGE"
+# 已有 HTML 时直接包装；多篇/多品牌使用重复 --doc
+python $S/gzh_preview_copy.py output/article.html --label "品牌A版"
+python $S/gzh_preview_copy.py --doc "品牌A=output/a.html" --doc "品牌B=output/b.html" --out output/preview-copy.html
 ```
+
+- 默认封面会先运行 `gzh_cover.py check` 再导出。若返回 `COVER_CHECK_FAILED`，正文/预览文件已生成但封面不导出；看 `cover_hint` 的 `title-word-break` / `title-particle-edge`，改写封面标题或换族后重跑。结构断点检查不代替最终实图审美检查。
 
 1. 支持组件:标题(h1–h4)、正文、引用、无序/有序列表(嵌套 1 层)、表格、
    围栏代码块(带语言标签)、行内代码、图片、分割线、加粗/斜体/删除线/链接;
 2. 产物是**全内联样式**的 `<section>` 片段:无 class/id/`<style>`/`<script>`/外部 CSS;
-3. 预览:浏览器打开 `article.html.preview.html`(手机宽度壳);
-4. 粘贴进公众号:浏览器打开 `article.html` → 全选(Ctrl+A)复制 → 公众号编辑器粘贴;
-   或用编辑器"HTML 源码"模式粘源码;
-5. 图片:本地路径在公众号内无效,粘贴后先在编辑器里上传替换图片;
+3. `convert --preview` 生成 `*.preview-copy.html`：选择篇目/品牌、手机宽度预览、复制 `text/html` + 纯文本；兼容复制路径失败会显示状态。预览/剪贴板会剥除 script、事件属性与 `javascript:` URL；该页不是 135 编辑器，也不模拟私有 DOM;
+4. 在预览复制页点击“复制当前篇目”，再点“打开 135 编辑器”；粘贴到官方 135 编辑区（不要粘源码模式），核对后点“复制使用”，最后粘到公众号;
+5. 本地图片不会由 135/复制页上传；粘贴后在 135/公众号检查并替换图片，发布前用手机预览;
 6. 主题:`ink`(#3b82f6 蓝,默认)/ `night`(#e8b04b 深底金)/ `warm`(#d47435 暖橘)/
    `grass`(#1a7a4f 绿)/ `red`(#c0392b 红)/ `mono`(#444444 黑白)——上列是图文主色
    (`primary`);封面另取 `bg/bg2/ink/accent`。旧名 `default`/`orange`/`green` 是
@@ -77,7 +92,7 @@ python $S/gzh_article.py check article.html     # 必须 ok:true
    与 `gzh_cover.py` 都只从它取角色子集,一处改色两产物同变)——不要去改
    `gzh_article.py` 里的 `THEMES`(那只是 `_gzh_theme.article_themes()` 的返回值)。
 
-快速体验:`python $S/gzh_article.py demo --outdir <目录>` 生成全组件示例并自检。
+快速体验:`python $S/gzh_article.py demo --outdir <目录>` 生成文章、预览复制页与自检报告。
 
 ## 四、与 artboard 流水线的关系
 
@@ -126,7 +141,7 @@ python $S/gzh_article.py check article.html     # 必须 ok:true
 
 - **单向绑定**:出图文(`gzh_article.py convert`)默认同时出同主题双封面三图;
   只出封面(`gzh_cover.py`)不产图文。`--no-cover` 是逃生口,用了要在交付汇报里说明。
-- **标题自动**:封面主标题取 `--cover-title > --title > 文章 H1`,通常零输入。
+- **标题来源**:封面主标题取 `--cover-title > --title > 文章 H1`；无须另行复制标题，但断点质量门若拒绝，需按 `cover_hint` 改写/加自然停顿，不能把失败输出当成可用封面。
 - **主题唯一真相源**:`scripts/_gzh_theme.py`,6 套:ink(蓝黑)/ night(深色金)/
   warm(暖米)/ grass(绿)/ red(红)/ mono(黑白)。封面取 bg/bg2/ink/accent/muted/line,
   图文取 primary/text/muted/soft/border/quote,同角色同值。

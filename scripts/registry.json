@@ -1,6 +1,6 @@
 {
   "_comment": "generated, do not edit — 由 scripts/gen_script_index.py 重建",
-  "generated_at": "2026-10-09",
+  "generated_at": "2026-10-19",
   "scripts": [
     {
       "name": "_config.py",
@@ -9,7 +9,6 @@
       "purpose": "artboard 共享配置读取与写入:环境变量 > config.json > 默认值。",
       "used_by": [
         "SKILL.md",
-        "docs/ITERATION.md",
         "docs/scripts.md"
       ]
     },
@@ -20,6 +19,16 @@
       "purpose": "artboard 共享下载器:带超时、带重试、带进度、临时文件必清理。",
       "used_by": [
         "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "_gzh_layouts.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "微信公众号双封面 · 版式族库(gzh_cover.py 的渲染后端)。",
+      "used_by": [
+        "docs/scripts.md",
+        "references/formats/gzh-cover.md"
       ]
     },
     {
@@ -34,6 +43,7 @@
         "docs/gzh-spec-summary.md",
         "docs/scripts.md",
         "references/formats/gzh-cover.md",
+        "references/gzh-cover-layouts.md",
         "references/gzh-typography.md",
         "references/h5-interactive.md"
       ]
@@ -287,6 +297,42 @@
       ]
     },
     {
+      "name": "check_gzh_article_cover.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "Regression checks for article-to-cover layout and image forwarding.",
+      "used_by": [
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "check_gzh_layout_tokens.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "Regression checks for cover layout tokens and fail-closed title export.",
+      "used_by": [
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "check_gzh_preview_copy.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "Offline regression test for the standalone public-account preview/copy page.",
+      "used_by": [
+        "docs/scripts.md"
+      ]
+    },
+    {
+      "name": "check_gzh_shader_vendor.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "Verify shader-enabled projects fail closed when local vendor assets cannot link.",
+      "used_by": [
+        "docs/scripts.md"
+      ]
+    },
+    {
       "name": "check_h5.py",
       "group": "脚本",
       "internal": false,
@@ -403,6 +449,15 @@
       ]
     },
     {
+      "name": "check_webgpu_atomic.py",
+      "group": "内部/维护",
+      "internal": true,
+      "purpose": "WebGPU 引擎/像素验收失败不得覆盖旧输出的本地回归检查。",
+      "used_by": [
+        "docs/scripts.md"
+      ]
+    },
+    {
       "name": "check_wechat_svg.py",
       "group": "脚本",
       "internal": false,
@@ -421,7 +476,6 @@
       "internal": false,
       "purpose": "artboard 复刻比对:参考图 vs 复刻导出图并排拼接,供视觉逐项核对。",
       "used_by": [
-        "docs/ITERATION.md",
         "docs/glossary.md",
         "docs/scripts.md",
         "references/pipeline.md",
@@ -445,7 +499,6 @@
       "internal": true,
       "purpose": "artboard 配置编辑器(纯 tkinter,零第三方依赖,可 PyInstaller 打包成单文件 exe)。",
       "used_by": [
-        "docs/ITERATION.md",
         "docs/scripts.md"
       ]
     },
@@ -482,7 +535,6 @@
       "used_by": [
         "README.md",
         "SKILL.md",
-        "docs/ITERATION.md",
         "docs/gzh-guide.md",
         "docs/scripts.md",
         "docs/upstream-issues.md",
@@ -497,6 +549,7 @@
         "references/pipeline.md",
         "references/print-production.md",
         "references/review-loop.md",
+        "references/shader-fx.md",
         "references/style-guide.md",
         "references/vector-drawing.md",
         "references/vector-export.md",
@@ -513,7 +566,6 @@
       "used_by": [
         "README.md",
         "SKILL.md",
-        "docs/ITERATION.md",
         "docs/gzh-guide.md",
         "docs/scripts.md",
         "references/export.md",
@@ -526,7 +578,6 @@
       "internal": false,
       "purpose": "artboard 项目一键导出:双击或 `python 导出.py` 即可导出本目录全部 HTML。",
       "used_by": [
-        "docs/ITERATION.md",
         "docs/scripts.md",
         "docs/setup.md",
         "references/export.md"
@@ -551,7 +602,6 @@
       "internal": false,
       "purpose": "artboard 字体按需下载:读 fonts/download.json,把本地缺失的字体取回。",
       "used_by": [
-        "docs/ITERATION.md",
         "docs/scripts.md",
         "docs/setup.md",
         "fonts/README.md",
@@ -566,7 +616,6 @@
       "used_by": [
         "README.md",
         "SKILL.md",
-        "docs/ITERATION.md",
         "docs/scripts.md",
         "docs/setup.md",
         "references/materials.md"
@@ -602,7 +651,6 @@
       "purpose": "artboard 脚本索引生成器(08 迭代 D-08-3):registry.json + docs/scripts.md。",
       "used_by": [
         "README.md",
-        "docs/ITERATION.md",
         "docs/glossary.md",
         "docs/scripts.md"
       ]
@@ -618,7 +666,9 @@
         "docs/gzh-guide.md",
         "docs/gzh-spec-summary.md",
         "docs/scripts.md",
-        "references/gzh-typography.md"
+        "references/gzh-typography.md",
+        "references/shader-fx.md",
+        "references/wechat-article.md"
       ]
     },
     {
@@ -632,7 +682,22 @@
         "docs/gzh-guide.md",
         "docs/scripts.md",
         "references/formats/gzh-cover.md",
+        "references/gzh-cover-layouts.md",
         "references/imaging.md",
+        "references/shader-fx.md",
+        "references/wechat-article.md"
+      ]
+    },
+    {
+      "name": "gzh_preview_copy.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "Build a self-contained WeChat article preview-and-copy page.",
+      "used_by": [
+        "README.md",
+        "SKILL.md",
+        "docs/gzh-guide.md",
+        "docs/scripts.md",
         "references/wechat-article.md"
       ]
     },
@@ -677,7 +742,6 @@
       "internal": true,
       "purpose": "NTFS 目录联接(junction)创建/检测。",
       "used_by": [
-        "docs/ITERATION.md",
         "docs/scripts.md"
       ]
     },
@@ -687,7 +751,6 @@
       "internal": false,
       "purpose": "artboard 一键导出批处理生成:给 src/ 下每个 HTML 生成一个双击即出图的 .bat。",
       "used_by": [
-        "docs/ITERATION.md",
         "docs/scripts.md",
         "references/export.md",
         "references/pipeline.md"
@@ -710,11 +773,13 @@
       "internal": false,
       "purpose": "artboard 工程打包:把瘦身影子项目引用的所有外部文件收集进 zip,可迁移交付。",
       "used_by": [
+        "README.md",
         "SKILL.md",
         "docs/glossary.md",
         "docs/scripts.md",
         "references/export.md",
-        "references/h5-interactive.md"
+        "references/h5-interactive.md",
+        "references/shader-fx.md"
       ]
     },
     {
@@ -739,7 +804,6 @@
       "used_by": [
         "README.md",
         "SKILL.md",
-        "docs/ITERATION.md",
         "docs/scripts.md",
         "docs/setup.md",
         "references/depth-3d.md",
@@ -800,7 +864,6 @@
       "used_by": [
         "README.md",
         "SKILL.md",
-        "docs/ITERATION.md",
         "docs/glossary.md",
         "docs/scripts.md",
         "references/depth-3d.md",
@@ -824,7 +887,6 @@
       "internal": true,
       "purpose": "artboard 仓库自检:拦住\"文档说有、代码没有\"与\"同一事实多处不一致\"这一类缺陷。",
       "used_by": [
-        "docs/ITERATION.md",
         "docs/scripts.md"
       ]
     },
@@ -857,6 +919,16 @@
         "references/export.md",
         "references/formats/gzh-cover.md",
         "references/vector-export.md"
+      ]
+    },
+    {
+      "name": "shader_fx.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "Artboard's offline helper for the official upstream WebGPU shader bundle.",
+      "used_by": [
+        "docs/scripts.md",
+        "references/shader-fx.md"
       ]
     },
     {

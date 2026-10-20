@@ -1,7 +1,7 @@
 ---
 name: artboard
 description: Use when the user wants a finished graphic produced from copy or a reference image, or wants an existing design revised — 海报、banner、小红书封面、公众号封面、主 KV、信息长图、数据图、名片、A4 海报、三折页、易拉宝、PPT 页、二维码物料; 动态海报、GIF、MP4、口播信息卡、图解动画卡、科普动画卡等视频场景卡; 片头动画、片尾动画、内容概括动画、章节卡、转场卡等视频动效件(按口播/教程/vlog/短片/MV 配动效); 成片/长动效的**审片**(逐帧审阅、元素拾取、审片意见落盘、像素基线回归、缓存隔离审计,子技能 references/review-loop.md + tools/review-station); H5 页面、移动端落地页、互动页、邀请函 H5 等轻量交互页(模式 H); 地图/城市地图/路网/区位图/街道底图、2.5D 等轴测与 3D 城市、地图 KV、多网点分布图、地图动画(车流/通勤/导航)、地图播放器 H5(子技能 references/map-studio.md); 印刷/打样/烫金/UV/模切/专色/裁切线等印前工艺; 公众号文章/微信图文/秀米排版(模式 W); SVG/EPS/AI/可编辑 PDF 等矢量工程文件交付; 抠图/调色/滤镜/压缩/水印/切片等位图工序; 图标/几何图形/极简插画; 多稿同出/给几个方案; 品牌色/logo/VI 一致性; 把文案变成图片、复刻一张设计图、换风格重做、改稿但说不清哪里不满意. 风格像 Illustrator/Photoshop 做的设计图,不是网页交互风. Not for 网页 UI、视频剪辑、纯 AI 生图. Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.22.0
+version: 1.23.0
 ---
 
 # artboard · HTML 海报工作室
@@ -27,16 +27,22 @@ version: 1.22.0
 |---|---|---|---|---|
 | **主流程** | 海报/封面/banner/长图/印刷/名片/GIF/矢量… | `references/guardrails.md` + `intake.md` | 图片/矢量/视频 | `check_slop.py` → `check_overflow.py` |
 | **子技能 · 地图** | 地图/路网/区位图/街道底图/3D 城市/网点分布/地图动画 | **`references/map-studio.md`** | 平面图 / 2.5D / 3D / 播放器 H5 | `scripts/test_v7.py` |
-| **模式 W · 公众号图文** | 公众号文章/微信图文/秀米排版 | **`references/wechat-article.md`** | 可粘进编辑器的 HTML | `check_wechat_svg.py` + `check_mobile_width.py` |
+| **模式 W · 公众号图文** | 公众号文章/微信图文/秀米排版 | **`references/wechat-article.md`** | 双封面 + 通用正文 HTML；可选预览复制页 | `gzh_cover.py check` + `check_wechat_svg.py` + `check_mobile_width.py` |
 | **模式 H · H5 交互页** | 移动端落地页/互动页/邀请函 H5/长滚动叙事 | **`references/h5-interactive.md`** | 可运行的 HTML 页面 | `check_h5.py` |
 | **交付后审阅(审片台)** | 审片/挑问题/逐帧看/哪里不对劲 | **`references/review-loop.md`** | 审片意见 JSON(返修闭环) | `check_review_ui/cache/px_baseline.py` |
 
 分支之间的硬约束(只记结论,细则在册内):
 
-- **模式 W** 不出图、不走 Kiln;只能内联样式,动效只能内联 SVG+SMIL,
-  禁用渐变/滤镜/一切 `id`。图文**必带双封面**(`gzh_article.py convert` 默认
-  `--with-cover`,同主题三图齐出;`--no-cover` 是逃生口且交付需说明);
-  只出封面用 `gzh_cover.py`。主题唯一真相源 `scripts/_gzh_theme.py`。
+- **模式 W** 正文不走 Kiln;只能内联样式,动效只能内联 SVG+SMIL,
+  禁用渐变/滤镜/一切 `id`。图文**默认带双封面**(`gzh_article.py convert` 默认
+  `--with-cover`,同主题三图齐出;版式 `--cover-layout auto` 根据内容选择:有主封副题先用 `band-editorial`,
+  无副题用 `center-band`;若两条标题显式断点不适配,auto 会回退 `center-band`，显式版式仍 fail closed。可选六族或 `legacy`。提供 `--cover-kicker`、`--cover-sub`、
+  `--cover-sub-title`、`--cover-sub-sub` 填满主/次封面的层级;`--cover-fx auto` 按族接官方 shader,
+  `none` 关闭。直接用 `gzh_cover.py new` 时,显式 `--bg-pattern` 优先于自动 shader；CSS 底纹与 shader 都显式启用会报冲突,不可静默忽略;`--no-cover` 是逃生口且交付需说明);
+  `convert` 导出前运行 `gzh_cover.py check`；若 `COVER_CHECK_FAILED`，按 `cover_hint` 改写标题/断点或换族，不能当成可交付封面。显式坏词组/助词断点必须修正；`legacy` 的 partial coverage 要明示。只出封面用 `gzh_cover.py`。主题唯一真相源 `scripts/_gzh_theme.py`。
+  需要 135 中转时用 `gzh_article.py convert --preview` 或 `gzh_preview_copy.py`；
+  预览复制页只做篇目选择/预览/富文本复制，实际编辑始终使用官方 135 网站，
+  不克隆或手写其私有 DOM。
 - **模式 H** 不适用铁律 1(H5 允许滚动与 `position:fixed`),遵守 H5 自有铁律集;
   **应用型**交互原型/SPA/小程序仍不接(边界见 h5-interactive.md §〇)。
 - **审片台** 是交付**之后**的闭环:起 `tools/review-station/`,逐帧看 + 元素拾取 +
@@ -68,6 +74,7 @@ version: 1.22.0
 | **视频动效(片头/片尾/概括/章节/转场)** | references/video-motion.md | 做**一整件**片头动画/片尾动画/内容概括/章节卡/转场,或按视频类型配动效、出分镜表/卡点表时(**必读**;模式 V) |
 | 动效分册 | references/animation.md | 动图任务(GIF/MP4)或**视频桥场景卡**时 |
 | 视觉特效 43 式 | references/effects.md | 需要特效配方时(通常写 HTML 时) |
+| **上游 Shader Effects WebGPU** | references/shader-fx.md | 使用官方 shader 背景/视频动效、公众号双封面材质或排查 WebGPU 时；必须走 `--webgpu`，失败不静默降级 |
 | **伪3D与空间感** | references/depth-3d.md | 标题要立体/画面要前后空间/要厚度时 |
 | 标题手法库 | references/title-fx.md | 标题需要描边/蒙版/错位等处理时 |
 | **对比度与色彩工程** | references/color-contrast.md | 定配色 tokens、文字压图、自检"看不清"时(WCAG 定义 + 遮罩数值 + 色盲) |
@@ -165,7 +172,7 @@ Step 7 交付     汇报路径/尺寸/风格/瑕疵;列「版权风险-」素材
 
 | 品类 | --size | 规范分册 | 要点 |
 |---|---|---|---|
-| 公众号双封面 | `gzh`(经 `gzh_cover.py`) | formats/gzh-cover.md | 头条 900×383 + 次条 383×383;居中安全区;三种导出 |
+| 公众号双封面 | `gzh`(经 `gzh_cover.py`) | formats/gzh-cover.md | Artboard 内部默认 900×383 + 383×383;中心安全区非平台裁切承诺;三种导出 |
 | 名片 90×54mm | `card` | formats/card.md | scale 1=300dpi;7pt 可读底线;双面双画布 |
 | A4 海报 | `a4p` | formats/a4p.md | scale 2=300dpi;Z 动线;禁荧光色 |
 | 三折页 | `trifold` | formats/trifold.md | 双面双画布;折线 x=585/1169;文字禁跨折线 |

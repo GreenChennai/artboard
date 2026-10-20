@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.23.0 (未发布) — 公众号预览复制、双封面与官方 WebGPU shader
+
+### Added
+
+- 新增 `gzh_preview_copy.py`：独立单文件预览复制页，支持多篇/品牌版本、sandbox iframe、HTML+纯文本剪贴板、兼容复制回退与打开官方 135 编辑器；预览/复制前清除 script、事件属性与 `javascript:` URL。
+- `gzh_article.py convert --preview` 可生成预览复制页；移除本地 135 私有 DOM 仿制 renderer，实际编辑继续在官方 135 网站完成。
+- 双封面新增六种布局，并按安全栏宽做标题断行/字号适配；新增常见词组边界评分，`gzh_cover.py check` 可检出显式断行拆词、助词边界、必需副题缺失及封面文件缺失。`gzh_article.py convert` 的 `--cover-layout auto` 在有主封副题时优先`band-editorial`、无副题用`center-band`，标题不适配时回退center-band；显式版式仍fail closed。`--cover-fx auto` 使用版式对应的 MIT WebGPU shader，可显式用 `none` 关闭。`--bg-pattern` 与 `--fx` 冲突时显式拒绝，不静默丢弃用户选择；同时支持六族/`legacy`。
+- 集成 MIT 上游 `shader-effects-inc/shaders` v4.0.4 的 WebGPU runtime/registry，并通过本地 global/API wrapper 暴露；本地 bundle 与 npm 发布包不字节相同，上游源码重建尚未复现。Kiln `--webgpu` lane 显式 opt-in，验证失败不静默降级，也不会覆盖已有最终输出。
+
+### Changed
+
+- Kiln 发行基线升级至 v0.15.0；`setup_kiln.py` 的版本、下载 URL、SHA-256 与最低兼容基线同步，README/安装说明的版本提示同步更新。
+- README 明确区分“方法论借鉴”与 shader 的 MIT 直接集成，并保留完整上游 LICENSE。
+- 公众号模式 W 路由改为“正文 HTML + 预览复制页 + 官方 135 中转”，不声称本地 135 编辑器或真实账号实测。
+
+### Verification
+
+- VellumBench Kiln 0.15.0：`cargo clippy --locked -p vb_kiln --bin kiln-cli --all-targets -- -D warnings`、`cargo test --locked -p vb_kiln`、`cargo build --locked -p vb_kiln --bin kiln-cli --release` 通过；release CLI `--version` 与 `export --help` 确认版本及 `--webgpu` 参数。
+- Artboard 隔离工作树：修改的 Python 文件 `py_compile` 通过；`check_gzh_layout_tokens.py` 33/33（含 CSS nesting fail-closed、任意隐藏包装祖先/祖先可见性/内联透明度/内边距、base/资源越界/脚本哈希、poster/标题祖先伪元素遮挡、极低可见度标题、video/audio/marquee/动画与截断图像、含分号 data URL、非法/缺失/无法解码 CSS 图像资源、@font-face 字体源存在性、完整栅格解码、SVG/SMIL 拒绝、manifest FX 精确匹配与 Unicode 字素回归，以及相对 WebGPU 输出路径锚定）、`check_gzh_article_cover.py` 9/9（含文章属性注入、封面进程树超时、已有封面不覆盖、仅复用本次新建的自动版式回退项目与长文章预览文件名回归）、`check_gzh_preview_copy.py` 25 项、`check_gzh_shader_vendor.py` 安全矩阵通过（许可缺失、bundle 哈希篡改、无 canvas 脚本引用、src 根/目录别名、shader 子目录伪根、Windows 大小写路径、font/vendor/own-src ZIP 目标冲突、缺失 shader 引用、混用 vendor 根及未授权联接均 fail closed）、`check_webgpu_atomic.py` 22/22（含 Windows Job Object 后代清理、POSIX 预存组 ID、嵌套组继承/外层清理、超时、非有限参数、长文件名临时目录与显式 WebGPU 禁止静默回退）；`gen_script_index.py --check` 83 项，`git diff --check` 通过。Edge headless DOM 探针确认实际文章输出无事件属性，并确认 sanitizer 保留安全格式且移除 SVG/SMIL/MathML、声明式 Shadow DOM 模板与 image-set CSS 资源。六种版式 main/sub/merged 均已真实导出并视觉检查。
+- 全仓 `scripts/selfcheck.py` 尚未通过（10 FAIL）：4 个既有文档引用缺失、6 个 smoke import 因运行时缺 `requests`；设置当前 WebGPU Kiln 后，29 个 JSON 失败路径检查通过；其余 12 项通过。
+- Shader：11 个上游效果均用 Kiln WebGPU 导出 900×383 非空 PNG；`shader_fx.py --bake` 在启动 Kiln 前固定核验 runtime/upstream/MIT LICENSE SHA256。真实文章双封面使用 halftone 上游滤镜完成导出。
+- 视频：Edge 155 + VellumBench debug Kiln 实测 WebGPU Aurora 动效卡；GIF 为 900×383，20/20 帧哈希不同；MP4 为 900×384、20 帧，均回报 `webgpu: true`、`engine: "browser-anim"`。MP4 经 `--wall` 墙钟采样；Edge 不支持旧 `beginFrame`，Kiln 回退到 `captureScreenshot`，WebCodecs 因页面无 seek 函数未启用。
+- 边界：没有登录用户的 135 账号；只验证 Artboard 的通用预览复制页，不宣称 135 在线粘贴实测。移动宽度自动化因本机未安装 Playwright 未执行。
+
 ## v1.22.0 - 核实生产机报单的 7 条 BUG:2 条真缺陷已修,5 条不成立(同步 Kiln v0.14.3)
 
 > 起因:生产机(2026-10-08 实际出图)汇总了 7 条 BUG + 1 条环境变更。逐条做了
@@ -911,8 +935,8 @@ CHANGELOG 不回填包内过时的 v1.8.x 条目,以本条目替代。
   共用同一套主题 tokens(blue/dark/warm/green 四套)与字体,信息流里"同一个栏目"
 - **三种导出路径**:`export` 默认三图齐出(合一导出);`--only main|sub|merged` 单出任意一张;
   `merge` 仅重拼合并图(Pillow 纯像素拼接,不重渲染,单张原始比例零形变)
-- **居中安全区版式**:转发卡片只露中央 383×383 → 主封面关键信息全部居中;
-  次条元素 ≤3 居中堆叠(规格依据 docs/gzh-spec-summary.md,多源交叉验证)
+- **居中安全区版式**:当时按中央 383×383 内部区域安排主封面关键信息;这是 Artboard 的保守布局,不代表转发卡片固定裁切;
+  旧版次条模板采用最多三项居中堆叠;这是历史布局选择,不约束后续六族,也不是平台要求
 - 产物命名 `cover-main/sub/merged-<slug>.png`,可直接上传公众号后台
 
 ### Added · 公众号正文排版(gzh_article.py)

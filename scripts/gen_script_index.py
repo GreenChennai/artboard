@@ -27,7 +27,10 @@ import sys
 
 SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 SKILL = os.path.dirname(SCRIPTS)
-INTERNAL = {"junction.py", "config_gui.py", "gen_script_index.py", "selfcheck.py"}
+INTERNAL = {"junction.py", "config_gui.py", "gen_script_index.py", "selfcheck.py",
+            "check_gzh_preview_copy.py", "check_webgpu_atomic.py",
+            "check_gzh_shader_vendor.py", "check_gzh_layout_tokens.py",
+            "check_gzh_article_cover.py"}
 SCAN_GLOBS = ["SKILL.md", "README.md", "references/**/*.md", "docs/*.md", "fonts/*.md",
               "tools/**/*.md"]
 

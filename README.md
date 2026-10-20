@@ -12,7 +12,7 @@
 <p align="center">
   <a href="#-成品样例"><img alt="samples" src="https://img.shields.io/badge/%E6%88%90%E5%93%81%E6%A0%B7%E4%BE%8B-15%20%E5%BC%A0-1f6feb"></a>
   <a href="LICENSE"><img alt="license" src="https://img.shields.io/badge/license-ACL--1.0-8b5cf6"></a>
-  <img alt="engine" src="https://img.shields.io/badge/Kiln-v0.14.3-00a88f">
+  <img alt="engine" src="https://img.shields.io/badge/Kiln-v0.15.0-00a88f">
   <img alt="python" src="https://img.shields.io/badge/python-3.10%2B-3776ab">
   <img alt="selfcheck" src="https://img.shields.io/badge/selfcheck-12%20pass-2da44e">
 </p>
@@ -82,7 +82,7 @@ artboard 反着来——设计 token 锁住配色，HTML 承载文字，Kiln 单
 | *城市咖啡图鉴* — 数据长图 |
 
 > 渲染引擎：[GreenChennai/VellumBench](https://github.com/GreenChennai/VellumBench) 的
-> Kiln 导出核心（Rust，自研），**当前基线 v0.14.3**。五用例固定基准以浏览器渲染为基线
+> Kiln 导出核心（Rust，自研），**当前基线 v0.15.0**。五用例固定基准以浏览器渲染为基线
 > 平均 **97.76/100**，22 案例可编辑 PDF 对拍 **98.63/100**、文本一致率 100%。
 
 ## 工作流水线
@@ -189,7 +189,7 @@ python tools/review-station/review_station.py --root <项目>    # 算好 URL �
 | 三折页(双面) | `trifold` | 1754×1240 | 2x = 300dpi + 合 PDF |
 | 易拉宝 80×200cm | `rollup` | 2362×5906 | 2x = 150dpi |
 | PPT 页 16:9 | `slide` | 1280×720 | 2x = 2560×1440 |
-| 公众号双封面 | `gzh_cover.py` | 900×383 + 383×383 | 2x(另出合并图) |
+| 公众号双封面 | `gzh_cover.py` | Artboard 内部默认 900×383 + 383×383,非官方规格 | 2x(另出合并图) |
 
 > 完整 40+ 物料尺寸(社媒/电商/印刷/办公/广告)见
 > [material-catalog.md](references/material-catalog.md)；视觉风格有 123 风格方向速查
@@ -280,10 +280,11 @@ python scripts/imageops.py montage a.png b.png c.png d.png \
 **公众号双封面与正文排版**
 
 ```bash
-python scripts/gzh_cover.py new <slug> --title "标题" --theme blue
+python scripts/gzh_cover.py new <slug> --title "标题" --theme ink --layout band-editorial
 python scripts/gzh_cover.py export <slug>                      # 主/次/合并三图
-python scripts/gzh_article.py convert 文章.md --out a.html     # Markdown → 内联样式 HTML
-python scripts/gzh_article.py check a.html                     # 公众号兼容性自检
+python scripts/gzh_article.py convert 文章.md --out a.html --preview --cover-layout auto --cover-fx auto --cover-kicker "栏目" --cover-sub "主封面副题" --cover-sub-title "次条标题" # 正文 + 分层双封面 + 预览复制页
+python scripts/gzh_article.py check a.html                        # 公众号兼容性自检
+python scripts/gzh_preview_copy.py a.html                          # 已有 HTML 的复制页
 ```
 
 **模式 W(公众号图文)机检** —— 交付能被粘进微信编辑器的 HTML 前必跑
@@ -381,7 +382,7 @@ artboard/
 
 ## 致谢
 
-设计方法论与规则提炼自(思想借鉴，代码自写)：
+设计方法论与规则参考来源(具体使用范围见下表)；直接集成的软件组件另列如下：
 
 | 来源 | 许可 | 借鉴内容 |
 |---|---|---|
@@ -394,6 +395,16 @@ artboard/
 | [rembg](https://github.com/danielgatis/rembg) | MIT | 本地抠图引擎 |
 | [open-design](https://github.com/open-design) | Apache-2.0 | 成品 HTML linter 规则集(AI 味七宗罪判定)→ `check_slop.py` |
 | [hyperframes](https://github.com/) | Apache-2.0 | 动效确定性三件套(帧网格/settle 链)与 GIF/MP4 编码期望参数 |
+
+### 直接集成的第三方运行时
+
+| 来源 | 许可 | 使用方式 |
+|---|---|---|
+| [shader-effects-inc/shaders](https://github.com/shader-effects-inc/shaders) | MIT | Artboard 的 shader 代码来源于上游 v4.0.4（commit `81fd4ece5d493ca6c424a2af41f0e2c361ec8258`）；本地 runtime 映射 11 个效果入口，不重写 shader 算法。MIT 许可见 `vendor/shaders/LICENSES/shaders-LICENSE`。 |
+
+Artboard 的 `vendor/shaders/upstream.js`（2,589,367 bytes，SHA256 `CAD63C8EE9F907F9773772AC8CA03EBBE21F85CD9EF75C1D6B2C430EA8795290`）含本地 global/API wrapper；它不同于上游 npm `dist/js/bundle.js`（2,584,407 bytes，SHA256 `E00B8C9954C819910F1C8660C5035CA24F79814E752689F819F05C610299625E`），不是字节级原包，从上游源码重建的复现尚未验证。`pack.py` 仅从 Skill 授权 vendor 树或项目内真实目录收集 shader 文件；shader 树内不允许嵌套 symlink/junction，外部链接或嵌套链接返回 `SHADER_VENDOR_LINK_FAILED`。打包强制包含 `runtime.js`、`upstream.js` 与 MIT LICENSE；封面运行时校验三者固定 SHA256，改动后返回 `SHADER_VENDOR_HASH_MISMATCH`，缺失则返回 `SHADER_VENDOR_INCOMPLETE`。`src/fonts` 仅允许其下实体文件或 Skill 授权字体根（不能指向项目内 `src/` 之外的普通目录），越界链接返回 `FONT_LINK_FAILED`；`src` 根不能是联接。普通目录联接会因打包器不遍历别名而返回 `PROJECT_LINK_FAILED`；仅 `src/fonts`→Skill 字体根、`src/vendor`→Skill vendor 根、`src/vendor/shaders`→`SKILL_DIR/vendor/shaders` 完整根目录（不接受其 LICENSES、glsl 等子目录）这几类明确许可根例外。单个 ZIP 只能使用一种 shader vendor 来源；混用 Skill 树和项目本地树会以 `SHADER_VENDOR_ROOT_CONFLICT` 拒绝。封面门禁固定校验 `runtime.js` SHA256 `4510B13162748597896C5CA45E3FD509499BE9F670AEDDB7E7BF51A128B1A7E6`、`upstream.js` SHA256 `CAD63C8EE9F907F9773772AC8CA03EBBE21F85CD9EF75C1D6B2C430EA8795290` 和许可证 SHA256 `EEAAA26F5C65CB6DFEBF1C098AC2375FDCDB497CEBF105B0542F229482B106F4`。普通文件联接只可指向真实 `src/` 文件或明确许可的 Skill 资产。若多个不同源文件映射到同一 ZIP 路径（按大小写折叠比较），`pack.py` 返回 `PACK_DESTINATION_CONFLICT`，避免解压时重复条目覆盖。
+
+WebGPU 静态/动画导出通过 [GreenChennai/VellumBench](https://github.com/GreenChennai/VellumBench) 的显式 `--webgpu` lane；adapter 或首帧失败时不静默降级。
 
 字体：思源黑体/宋体(Noto CJK) · 得意黑(Smiley Sans) · 霞鹜文楷(LXGW WenKai) ·
 站酷快乐体(ZCOOL KuaiLe) · MiSans(小米) · 阿里巴巴普惠体 3.0 · HarmonyOS Sans(华为)。

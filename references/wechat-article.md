@@ -17,7 +17,7 @@
 | 尺寸 | 由画布决定,像素级控制 | 由内容撑开(长文可达 16000px+) |
 | 样式 | 可用 `<style>` / class / CSS 动画 | **只能全内联**;`<style>`、`@keyframes`、JS 全被剥离 |
 | 动效 | GIF / MP4(`animation.md` 的模式 P/S) | **只能内联 SVG + SMIL** |
-| 导出 | `export.py` → Kiln(v1.9 起唯一引擎) | **不导出**;发布走 **135 编辑器中转**(§八,实测 98%+ 还原度) |
+| 导出 | `export.py` → Kiln(v1.9 起唯一引擎) | **不直接发布**;需要时可选官方 135 编辑器中转,实际粘贴/渲染须在目标账号实测;当前版本还原率未独立复核,不作保证 |
 | 自检 | `check_overflow.py`+`design-review-rubric` | `check_wechat_svg.py`+本册 §十一 清单 |
 
 **共同点**(可直接复用 artboard 已有资产):一图一个焦点、层级 ≤3、强调 ≤2、
@@ -103,7 +103,7 @@
 
 ## §二 HTML 骨架与写法规范
 
-### 可直抄的骨架(秀米 / 135 / 公众号编辑器三兼容)
+### 结构示例(通用内联样式参考;目标编辑器须逐项验收,不承诺跨工具兼容)
 
 ```html
 <!-- ========== 品牌版 ========== -->
@@ -553,19 +553,19 @@ python scripts/upload_imgchr.py out/*.jpg --api-key "…"
 
 ---
 
-## §七 订阅号封面(不是正文,单独一套规矩)
+## §七 订阅号封面(Artboard 内部制作建议)
 
-公众号封面是**后台上传的静态图**,和正文完全分开。
+公众号封面素材由官方账号后台管理,与正文排版分开。下表是 Artboard 的制作约定,不是腾讯/微信官方尺寸或展示规则；尺寸参考第三方 135 编辑教程,实际效果以当前账号后台预览为准。
 
-| 项 | 要求 |
+| 项 | Artboard 内部建议(非平台要求) |
 |---|---|
-| 尺寸 | 大图 `900×383`(2.35:1) / 小图 `383×383`(1:1) / 二合一 `1283×383` |
-| 动画 | **必须静态** —— 封面不可能播动画,动画还会让截图停到随机相位 |
-| 字体 | 大字标题用**衬线/楷体**(看气质),小字信息用**无衬线**(看可读性) |
-| 主次 | **文案是主、画面是次**:背景元素统一压暗(整体 `DIM≈0.58`),标题加纯色底衬 |
-| 1:1 小图 | 文案**整体垂直居中**(列表里显示极小,不该为画面让位) |
+| 尺寸 | 默认大图 `900×383`(约 2.35:1) / 小图 `383×383`(1:1)；`1283×383` 仅为本地联审拼接示例 |
+| 动画 | 默认导出静态 PNG,便于预览与可重复验收；不据此推断平台不支持其他素材形式 |
+| 字体 | 大字标题可选**衬线/楷体**,小字信息优先**无衬线**(按主题与可读性决定) |
+| 主次 | 文案优先于背景:可压低背景对比,并为标题保留清晰承载面 |
+| 1:1 小图 | 文案可按内部模板居中排布；小尺寸下应检查标题与副题的可读性 |
 
-**「静态封面」不必重画** —— 复用同一套组件,导出前统一删掉 SMIL:
+**Artboard 的静态预览不必重画** —— 可复用同一套组件,导出前清理动画元素:
 
 ```python
 def strip_anim(svg):
@@ -590,108 +590,52 @@ if im.size != want: im.crop((0, 0, *want)).save(p, optimize=True)
 
 ---
 
-## §八 135 编辑器中转法(实测推荐的发布路径)
+## §八 135 预览复制页与官方编辑器中转
 
 ### 8.1 为什么要中转
 
-用户实测(**2026-09-22 本项目真实反馈**):
+历史用户反馈(**2026-09-22;当前版本未独立复测**):
 
 | 发布路径 | 还原度 |
 |---|---|
-| **① 本地 HTML → 135 编辑器 → 从 135「复制使用」→ 粘进公众号** | **98%+**(最佳) |
+| **① 本地 HTML → 135 编辑器 → 从 135「复制使用」→ 粘进公众号** | **约 98%+**(历史用户反馈;非通用保证) |
 | ② 本地 HTML → 秀米(粘贴/上传) → 公众号 | 明显差 |
 | ③ 本地 HTML → 直接粘进公众号 | 明显差 |
 
-原因(已从 135 的前端代码读出来,见 8.2/8.3):
-**135 的复制链路不是"过滤器"而是"规范化器"** —— 它把 HTML 收进自己的编辑区后,
-在复制时做一次「补元数据 + 结构规整」,输出的是一份**已被它验证过能在公众号里活下来**的 HTML。
-所以走一趟 135,等于让 135 替你做了一次"公众号兼容化"。
+这条流程仅来自历史用户反馈，不是对当前 135 线上版本或还原率的行为保证。
+135 可能会整理其编辑区内容，但 Artboard 不承诺它是白名单清洗器或兼容性证明；当前生成的预览复制页只负责预览与复制，实际粘贴结果必须在用户自己的 135/公众号账号中检查。
 
-### 8.2 135 的结构(从 `editor_styles` 模板页 + 前端脚本读出)
+### 8.2 本次集成边界（不重建 135）
 
-9 条硬事实:
+> 用户报告完整 135 编辑器在另一台电脑；当前工作区没有该编辑器源码，因此没有声称接入它。Artboard 只生成通用正文、预览与复制中转页，实际编辑仍在官方 135 网站。**不要把这份文档当作 135 API/DOM 规范，也不得新建本地编辑器或仿制其私有结构。**
 
-1. 底层编辑器 = **百度 UEditor**(`/js/ueditor/…`),编辑区是 `iframe` 里的 `contenteditable`。
-2. 根容器:`<section data-role="outer" class="article135" style="…background-color…">`
-3. 区块:`<section class="_135editor" data-id="…">` —— 135 的每块内容
-4. 文字:`<span class="135brush" data-brushtype="text" style="font-size:1.75em;color:#f49696;">`
-   —— 字号体系**以父级 `font-size:16px` 为基准用 `em`**
-5. 图片:`<img src="…" width="93" data-width="93px" data-ratio="1.1702" data-w="611" draggable="false" style="width:93px;…">`
-   —— `data-w`=原图宽、`data-ratio`=**高/宽**、`width`/`data-width`=显示宽;
-   这是它「图片自适应秒刷」的元数据。⚠️ **我们自己不要手写这几个属性** ——
-   135 可能会据此把图片改成固定 px 宽,反而破坏 `width:100%` 的自适应。
-6. 自由布局(它家的 SVG 玩法):
-   `data-role="absolute-layout" data-mode="svg" data-width/height/ratio` → 内含
-   `data-role="ratio"`(空 SVG 撑高) + 多个 `data-role="block"`(百分比 margin 定位) →
-   每块内嵌 `<svg viewbox="…">` → `<foreignObject data-role="block-content">` → 里面才是正常流内容
-   (`section[data-role="paragraph"]` → `p` → `span.135brush`)
-7. 横滑/轮播:`<section data-role="animate" dir="rtl" style="overflow-x:auto">` + 内部 `width:300%`
-   + flex 子项 `width:33.33%`(注意:它的 `data-role="animate"` 指的是**横向滑动**,不是动画)
-8. 镜像/翻转:`<section data-role="scale-fix" style="transform:rotateY(180deg);transform-origin:center center">`
-9. **它自己的模板里 `<animate>` / `<animateTransform>` 出现 0 次** —— 135 原生动效不靠 SMIL
-   (靠 GIF、横滑、以及它 SVG 编辑器的私有机制;其官方文档明说 SVG 动效需「保存同步」或插件才能到微信)
+当前预览复制页不读取或依赖任何 135 内部结构；若将来真要接入另一台电脑上的既有编辑器，先让用户提供其源码并明确授权，再设计 adapter。
 
-`data-role` 全集(实测):`outer` `absolute-layout` `ratio` `block` `block-content` `scale-fix`
-`target` `title` `paragraph` `animate`
+### 8.3 预览复制页的职责边界
 
-### 8.3 135 复制时到底做什么(读 `copy_editor_content.js`)
+Artboard 的复制页只对用户提供的通用 HTML 做本地预览与净化，提供复制 HTML/纯文本的浏览器能力和打开官方 135 的链接。它不调用、解析或仿制 135 内部 JavaScript/DOM，不上传图片、不操作账号、不发布内容。测试只覆盖 Artboard 自己的页面行为；真实 135 账号中的粘贴与最终呈现仍须由用户检查。
 
-```js
-editorHtml = getEditorHtml();                       // ← 关键: 拿的是规范化后的 HTML, 不是我们粘进去的原文
-document.addEventListener("copy", function (event) {
-  event.clipboardData.setData("text/html", editorHtml);
-  event.preventDefault();
-});
-document.execCommand("copy");
-// 失败则降级: 把规范化 HTML 写回编辑区 → 全选 → execCommand("copy")
+
+
+### 8.4 常驻预览复制页的使用流程
+
+Artboard 提供的是“预览 + 剪贴板传递”工具，不是 135 编辑器克隆，也不替用户操作账号或发布。`gzh_article.py convert --preview` 输出通用全内联正文 HTML 与 `*.preview-copy.html`；实际编辑始终使用官方 135 网站。`--cover-layout auto` 在提供 `--cover-sub` 时先试适合多层级文案的 `band-editorial`，未提供时选择无需副题的 `center-band`；若 band-editorial 的主/次标题断点不适配，auto 会回退 center-band，显式指定版式仍 fail closed。可用六族或 `legacy` 显式覆盖。可用 `--cover-kicker`、`--cover-sub`、`--cover-sub-title`、`--cover-sub-sub` 分别提供眉题、主封面副题、次条标题与次条副题。`--cover-fx auto` 使用版式默认的上游 MIT shader，`none` 显式关闭。封面导出前会运行静态检查；若 `COVER_CHECK_FAILED`，正文与预览页已产出但封面不导出。按 `cover_hint` 改写标题/断点或换版式后重跑，不能把检查失败的封面当成可交付物。
+
+```powershell
+# auto 会因主封副题选择 band-editorial；只出正文时显式 --no-cover
+python scripts/gzh_article.py convert article.md --out output/article.html --outdir output --theme ink --preview --cover-layout auto --cover-fx auto --cover-kicker "栏目" --cover-sub "主封面副题" --cover-sub-title "次条标题"
+
+# 已有正文 HTML 时，直接生成独立预览复制页；多篇/多品牌版本可重复 --doc
+python scripts/gzh_preview_copy.py output/article.html --label "品牌A版"
+python scripts/gzh_preview_copy.py --doc "品牌A=output/a.html" --doc "品牌B=output/b.html" --out output/preview-copy.html
 ```
 
-- `getEditorHtml()` 内部先 `clean_135helper()`(清自己的辅助节点)、规整空 `<p>`(转 `<br/>`),
-  最后返回 **`parse135EditorHtml(html)`** 的结果。
-- **`parse135EditorHtml()` 是「遍历 DOM 补元数据」**(给图片补 `width`/`data-w`/`data-ratio` 等),
-  **不是白名单清洗** —— 代码里看不到任何"按标签/属性黑名单删除"的逻辑。
-  → 这就是"走一趟 135 还原度高"的根本原因:**它补全,不删减**。
-- 复制后它会检测内容里有没有 `svg` / `section[data-tplid]` / `linear-gradient`,
-  命中则弹「公众号兼容性」提示 —— 反过来说,**含 `<svg>` 的内容走的是 135 的特殊处理分支**。
-- 另一条独立证据:135 的字符串表里有一条
-  `"animatetransform,animate,animatemotion"`(正是 SMIL 三件套),挂在它的「规则」字段
-  (`r_paragraph` / `r_separator`)上 —— **它明确知道并单独处理 SMIL**,不是当陌生标签丢掉。
+1. 浏览器打开生成的 `*.preview-copy.html`；用版本选择框切换篇目/品牌，在 iframe 中预览。
+2. 点击“复制当前篇目”。页面先移除 script/iframe、事件属性和 `javascript:` URL，再优先写入剪贴板 `text/html` + `text/plain`；Clipboard API 不可用时使用 `execCommand('copy')` 兼容回退，并显示结果。
+3. 点击“打开 135 编辑器”，在官方编辑区粘贴（不是源码模式）；核对排版后用 135 的“复制使用”，再粘贴到公众号。
+4. 图片不由该页面上传；本地/外链图片需在 135/公众号中实际确认，必要时重新上传。发布前用手机预览排版、图片和动画。
 
-### 8.4 结论与做法
-
-**结论:不需要为了 135 改生成器。** 我们输出的"干净内联样式 + `<section>` 嵌套 + 内联 SVG/SMIL",
-正好落在 135 愿意接受、且微信能存活的交集里。**要改的是发布流程,不是产物。**
-
-```
-① 本地打开 _预览.html → 选品牌 → 点「复制当前品牌成稿到公众号」
-② 粘进 135 编辑器的**编辑区**(不是源码模式,直接粘)
-③ 在 135 里肉眼过一遍(排版有无错位)
-④ 点 135 右侧「复制使用」→ 回公众号编辑器 Ctrl+V
-⑤ 在公众号里补充上传正文配图(= 1.jpg~10.jpg;135 不会替你上传图片)
-⑥ **用手机预览**确认动效还在
-```
-
-**✅ SMIL 动画能过 135 —— 已由用户实测确认(2026-09-22)。**
-所以**全程走 135 中转即可**,既拿到 98%+ 的排版还原度,动画也不用另外补。
-
-```
-① 本地打开 _预览.html → 选品牌 → 点「复制当前品牌成稿到公众号」
-② 粘进 135 编辑器的**编辑区**(不是源码模式,直接粘)
-③ 在 135 里肉眼过一遍(排版有无错位)
-④ 点 135 右侧「复制使用」→ 回公众号编辑器 Ctrl+V
-⑤ 在公众号里补充上传正文配图(= 1.jpg~10.jpg;135 不会替你上传图片)
-⑥ **用手机预览**确认一遍(排版 + 动效)
-```
-
-> 兜底(万一某次不灵):**排版仍走 135 中转,动画用 F12 补** ——
-> 在公众号编辑器按 F12 → 右键对应节点 → 「Edit as HTML」→ 把该 `<svg>…</svg>` 整段粘进去 → 关闭工具。
-
-**中转时注意 3 件事**:
-
-1. **图片仍需自己上传**(135 不代传);`data:` 内嵌图会被过滤 → 所以「轻量版 + 图床外链」组合最顺。
-2. **不要在 135 里继续编辑文字** —— 135 会给文字套 `.135brush`、可能把字号改写成 `em`,
-   改多了引入噪音。要改就回本地改 → 重新生成 → 重新粘。
-3. **不要用 135 的「保存同步」代替复制** —— 对普通图文没有额外收益,还会引入它自己的模板结构。
+剪贴板权限受浏览器、文件 URL 安全策略影响；如果两种复制路径均失败，页面会给出提示。不得据静态自检声称已登录 135 实测，也不得声称排版还原率或 SMIL 动画在所有客户端均有保证。改稿回到 Markdown/源 HTML 后重建并重新复制。
 
 ### 8.4bis 素材库图床硬约束 + 两条备份通道(2026-09 联网核对补充)
 
@@ -718,22 +662,9 @@ document.execCommand("copy");
 每格只验三件事:**动画是否播放、点击是否触发、静止态是否等于终态**。
 在拿到属性级端差实证之前,不向用户承诺端级差异细节,一律用「静态终态兜底」收口。
 
-### 8.5 135 关键结构速查(需要手写 135 原生片段时用)
+### 8.5 不实现私有编辑器协议
 
-```html
-<section data-role="outer" class="article135" style="background-color:#FBF6E9;box-sizing:border-box;">
-  <section class="_135editor">
-    <section data-role="paragraph" style="overflow:hidden;">
-      <p style="margin:0 0 15px;">
-        <span style="font-size:17.5px;color:#2A2620;" class="135brush" data-brushtype="text">文字</span>
-      </p>
-    </section>
-    <img src="…" style="width:100%;max-width:100%;display:block;margin:0 auto;" />
-  </section>
-</section>
-```
-
-> 常规任务**不需要手写 135 结构** —— 我们的产物直接粘进 135 就会被它规范化成这套。
+本地交付物不包含 135 的 HTML 片段、内部复制脚本或私有 DOM 示例。Agent 只按 8.4 使用通用正文与预览复制页；官方编辑器的实时粘贴与发布结果由用户在自己的账号中确认。
 
 ---
 
@@ -746,9 +677,9 @@ document.execCommand("copy");
 1-<品牌B>-<标题>-<日期>.html
 粘贴版-<品牌A>-<标题>-<日期>（轻量）.html  图片走同级相对路径, 粘编辑器用(内嵌版 2MB+ 太重)
 粘贴版-<品牌B>-…html
-_预览.html                             品牌切换 + 一键复制成稿(仅预览壳, 不粘进微信)
+*.preview-copy.html                     文章/品牌版本选择 + 手机宽度预览 + 富文本复制到 135
 1.jpg ~ N.jpg                          压缩后的上传图, 顺序 = 正文出现顺序
-封面大图-…-900x383.png / 封面小图-…-383x383.png / 双封面二合一-…-1283x383.png
+`cover-main-<slug>.png` / `cover-sub-<slug>.png` / `cover-merged-<slug>.png`（默认 scale=2：1800×766、766×766、2680×766；scale=1：900×383、383×383、1340×383）
 发布说明.md                             交付物 + 技术说明 + 事实来源表 + 发布步骤 + 质检 + 待确认
 配图对照表.md                           序号 / 位置 / 画面 / 原文件名
 _旧版-<风格>-v1/                        旧风格整套归档(换风格时整包移进来, 不要覆盖)
@@ -877,6 +808,8 @@ $PY $S/upload_imgchr.py out/*.jpg --cookie "…" --urls-out urls.json --key-pref
 | `check_wechat_svg.py` | 微信 SVG 白名单机检 | `python scripts/check_wechat_svg.py <文件或目录>` |
 | `check_mobile_width.py` | 窄屏溢出机检 | `python scripts/check_mobile_width.py <文件或目录>` |
 | `upload_imgchr.py` | 图床上传拿直链 | `python scripts/upload_imgchr.py <图…> --cookie …` |
-| `gzh_cover.py` | 图文绑定出同主题封面 | `python scripts/gzh_cover.py new <slug> --title "…"` |
+| `gzh_article.py` | Markdown → 正文、按文案层级自动选六族双封面与预览复制页 | `python scripts/gzh_article.py convert article.md --out output/article.html --preview --cover-layout auto --cover-fx auto --cover-kicker "…" --cover-sub "…"` |
+| `gzh_preview_copy.py` | 已有 HTML → 单文件预览/剪贴板中转 | `python scripts/gzh_preview_copy.py output/article.html --label "…"` |
+| `gzh_cover.py` | 只做封面时按六族出同主题三图 | `python scripts/gzh_cover.py new <slug> --title "…" --layout band-editorial` |
 
 > 参数的权威说明在脚本自身 `--help`(不在此复制);全量索引见 `docs/scripts.md`。

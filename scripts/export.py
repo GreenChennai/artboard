@@ -31,10 +31,12 @@
 """
 
 import argparse
+import copy
 import json
 import os
 import subprocess
 import sys
+import tempfile
 
 _SCRIPTS = os.path.dirname(os.path.abspath(__file__))
 if _SCRIPTS not in sys.path:
@@ -45,7 +47,7 @@ from _proc import run as run_tree          # noqa: E402  进程树超时(见 _pr
 DEFAULT_KILN = near_workspace(os.path.join("VellumBench", "dist", "Kiln-noGUI-CLI.exe"))
 DEFAULT_KILN_DEV = near_workspace(os.path.join("VellumBench", "target", "release", "kiln-cli.exe"))
 
-FIELDS = ("format", "path", "width", "height", "frames", "encoder", "warnings")
+FIELDS = ("format", "path", "width", "height", "frames", "encoder", "webgpu", "warnings")
 
 # Kiln stderr 里解析出的布局告警(合成画板回填/overflow 裁剪/grid 降级)
 kiln_layout_notes: list[str] = []
@@ -78,6 +80,16 @@ def _supports(path: str, flags: tuple) -> bool:
 # 双车道 + 动画时长的最低参数面契约
 NEED_FLAGS = ("--engine", "--height", "--vector", "--duration")
 
+WEBGPU_ENGINES_BY_FORMAT = {
+    "PNG": frozenset({"browser"}),
+    "GIF": frozenset({"browser-anim"}),
+    "MP4": frozenset({"browser-anim", "browser-anim-webcodecs"}),
+}
+
+
+def _webgpu_engine_allowed(fmt: str, engine: str) -> bool:
+    return engine in WEBGPU_ENGINES_BY_FORMAT.get(fmt.upper(), frozenset())
+
 
 def _candidates() -> list:
     """所有在位的 Kiln 候选(显式配置优先,去重)。"""
@@ -102,6 +114,34 @@ def find_kiln() -> str:
     return ""
 
 
+def _temporary_output_path(output: str):
+    """为 Kiln 建立同卷的随机私有目录,验证前不触碰最终文件。"""
+    final_path = os.path.abspath(output)
+    directory = os.path.dirname(final_path)
+    os.makedirs(directory, exist_ok=True)
+    stage = tempfile.TemporaryDirectory(prefix=".artboard-stage-", dir=directory)
+    path = os.path.join(stage.name, os.path.basename(final_path))
+    if os.path.islink(stage.name) or not os.path.isdir(stage.name):
+        stage.cleanup()
+        raise OSError("同卷临时导出目录不是安全目录")
+    return stage, path
+
+
+def _discard_temporary_output(stage, path: str) -> None:
+    if path:
+        try:
+            os.unlink(path)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            pass
+    if stage is not None:
+        try:
+            stage.cleanup()
+        except OSError:
+            pass
+
+
 def export_via_kiln(cli: str, args) -> tuple[int, dict, dict]:
     """Kiln CLI:退出码 0 且产出文件视为成功。
 
@@ -118,9 +158,13 @@ def export_via_kiln(cli: str, args) -> tuple[int, dict, dict]:
     if args.height > 0:
         # 与 SKILL.md「固定尺寸必带 --height」对齐
         cmd += ["--height", str(args.height)]
+    if getattr(args, "webgpu", False):
+        cmd += ["--webgpu"]
     if args.format in ("GIF", "MP4"):
         cmd += ["--fps", str(args.fps),
                 "--duration", str(args.max_wait)]
+        if getattr(args, "wall", False):
+            cmd += ["--wall"]
     if args.transparent:
         cmd += ["--transparent"]
     # --max-wait 只在用户显式给预算时下发:Kiln ≥0.14.1 把它当浏览器车道
@@ -276,6 +320,10 @@ def main() -> int:
                    help="不写色彩标签(关掉 ≠ 写 unknown);色程压缩仍保留。"
                         "仅当目标播放器对 bt709 标签处理异常时才用")
     p.add_argument("--transparent", action="store_true")
+    p.add_argument("--webgpu", action="store_true",
+                   help="强制 Kiln WebGPU 浏览器车道; adapter/上游渲染失败时禁止降级")
+    p.add_argument("--wall", action="store_true",
+                   help="GIF/MP4 使用墙钟实时采样;用于 requestAnimationFrame 或无确定性 seek 的动态画布")
     p.add_argument("--cmyk", action="store_true",
                    help="打印交付:追加导出 CMYK PDF + TIFF(印刷流程见 print-cmyk.md)")
     p.add_argument("--max-wait", type=float, default=15.0, dest="max_wait",
@@ -292,6 +340,14 @@ def main() -> int:
                    help="Kiln 浏览器车道不可用(engine_fallback)时,不自动改走 "
                         "export_fallback.py(PNG/JPG 默认自动兜底)")
     args = p.parse_args()
+    if args.webgpu and args.format.upper() not in ("PNG", "GIF", "MP4"):
+        emit({"ok": False, "error": "WEBGPU_FORMAT_UNSUPPORTED",
+              "detail": args.format, "supported": ["PNG", "GIF", "MP4"]})
+        return 2
+    if args.wall and args.format.upper() not in ("GIF", "MP4"):
+        emit({"ok": False, "error": "WALL_FORMAT_UNSUPPORTED",
+              "detail": args.format, "supported": ["GIF", "MP4"]})
+        return 2
 
     kiln = find_kiln()
     if not kiln:
@@ -312,14 +368,60 @@ def main() -> int:
                           "或设 ARTBOARD_KILN_CLI 指向 Kiln-noGUI-CLI.exe,"
                           "或改用 scripts/export_fallback.py(仅 PNG)"})
         return 2
+    if args.webgpu and not _supports(kiln, ("--webgpu",)):
+        emit({"ok": False, "error": "KILN_WEBGPU_UNSUPPORTED", "detail": kiln,
+              "missing_flags": ["--webgpu"],
+              "hint": "将 VellumBench 更新到支持 WebGPU 的版本,或设置 ARTBOARD_KILN_CLI 指向新版 kiln-cli"})
+        return 2
+    if args.wall and not _supports(kiln, ("--wall",)):
+        emit({"ok": False, "error": "KILN_WALL_UNSUPPORTED", "detail": kiln,
+              "missing_flags": ["--wall"],
+              "hint": "逐帧动态效果需支持 --wall 的 Kiln;升级 VellumBench/Kiln"})
+        return 2
 
     result: dict = {}
-    rc, err, engine_out = export_via_kiln(kiln, args)
+    temp_stage = None
+    temp_output = ""
+    export_args = args
+    if args.webgpu:
+        try:
+            temp_stage, temp_output = _temporary_output_path(args.output)
+            export_args = copy.copy(args)
+            export_args.output = temp_output
+        except OSError as exc:
+            _discard_temporary_output(temp_stage, temp_output)
+            emit({"ok": False, "error": "WEBGPU_TEMP_OUTPUT_FAILED", "detail": str(exc),
+                  "hint": "无法在目标目录创建同卷临时文件;原输出未触碰"})
+            return 1
+    rc, err, engine_out = export_via_kiln(kiln, export_args)
     if rc != 0:
+        _discard_temporary_output(temp_stage, temp_output)
         if engine_out:
             err["engine"] = engine_out
         emit(err)
         return rc
+    if args.webgpu and (
+        engine_out.get("webgpu") is not True
+        or not _webgpu_engine_allowed(args.format.upper(), str(engine_out.get("engine") or ""))
+        or bool(engine_out.get("engine_fallback"))
+    ):
+        _discard_temporary_output(temp_stage, temp_output)
+        expected = sorted(WEBGPU_ENGINES_BY_FORMAT.get(args.format.upper(), frozenset()))
+        emit({"ok": False, "error": "KILN_WEBGPU_UNVERIFIED",
+              "detail": engine_out, "expected_engines": expected,
+              "hint": "显式 --webgpu 导出必须由对应 browser lane 报告 webgpu=true 且无 engine_fallback;不接受静默降级;未验证临时产物已删除,原输出保留"})
+        return 1
+    if temp_output:
+        try:
+            os.replace(temp_output, args.output)
+            temp_output = ""
+            _discard_temporary_output(temp_stage, "")
+            temp_stage = None
+        except OSError as exc:
+            _discard_temporary_output(temp_stage, temp_output)
+            emit({"ok": False, "error": "WEBGPU_OUTPUT_COMMIT_FAILED", "detail": str(exc),
+                  "hint": "WebGPU 渲染已通过但无法原子替换最终文件;原输出未覆盖"})
+            return 1
 
     warnings: list[str] = []
     # 浏览器车道失败 → Kiln 降级自研引擎,结果带 engine_fallback:true。
@@ -347,10 +449,11 @@ def main() -> int:
     result = {"path": os.path.abspath(args.output), "format": args.format,
               "engine": str(engine_out.get("engine") or "kiln")}
     # 引擎自报字段回填:width/height/frames 来自引擎单行 JSON。
+    # WebGPU lane 的 engine_out.path 指向同目录临时文件,对外始终回报最终路径。
     # warnings 例外 —— 引擎侧是**计数**(int),直接回填会污染下方的字符串
     # 列表拼接(`2 + [...]` 抛 TypeError);改在下方转成一条可读告警。
     for k in FIELDS:
-        if k == "warnings":
+        if k in ("warnings", "path"):
             continue
         if engine_out.get(k) is not None:
             result[k] = engine_out[k]

@@ -1,9 +1,9 @@
 # artboard 脚本总表(生成物)
 
-> 由 `scripts/gen_script_index.py` 生成 @ 2026-10-19;**不要手改**。
+> 由 `scripts/gen_script_index.py` 生成 @ 2026-10-27;**不要手改**。
 > 权威参数 = 各脚本 `--help`;少数无 argparse 的脚本(junction/preflight/export_local 等)打印模块说明与用法;分册末尾「本册用到的脚本」是就近索引。
 
-## 脚本(56个)
+## 脚本(57个)
 
 | 脚本 | 用途(=docstring 首行) | 被哪些文档提到 |
 |---|---|---|
@@ -15,6 +15,7 @@
 | build_player.py | Build the map player HTML (assets/map/demo/map-player.html) from template + SVG  | README.md、docs/scripts.md、references/map-studio.md |
 | calc_size.py | artboard 尺寸计算器:px / mm / inch / DPI 互转,印刷导出一把算清。 | docs/scripts.md、references/export.md、references/material-catalog.md、references/print-cmyk.md、references/print-production.md、references/sizes-common.md |
 | check_brief.py | artboard 开工前检查单(Brief Gate)机检。 | docs/glossary.md、docs/scripts.md、references/intake.md |
+| check_component_registry.py | 组件注册体系机检:三层索引一致性 + token 契约 + 来源红线。 | components/registry/PIPELINE.md、docs/scripts.md |
 | check_credits.py | artboard 素材版权复核:img 目录 ↔ CREDITS.md 逐条对账。 | SKILL.md、docs/scripts.md、references/materials.md、references/mcp-assets.md、references/pipeline.md |
 | check_h5.py | artboard H5 交互页机检(模式 H;规范见 references/h5-interactive.md)。 | SKILL.md、docs/scripts.md、references/h5-interactive.md |
 | check_mobile_width.py | check_mobile_width.py — 手机窄屏「横向溢出」机检(零 token) | README.md、SKILL.md、docs/scripts.md、references/wechat-article.md |
@@ -22,7 +23,7 @@
 | check_px_baseline.py | 成片像素基线回归:改过影片/动效代码后,确认出图与冻结基线**没被动到别处**。 | README.md、docs/scripts.md、references/animation.md、references/review-loop.md |
 | check_review_cache.py | 缓存隔离审计:证明"缓存/抽稀只影响预览,不影响成片内容与预览完整性"。 | README.md、docs/scripts.md、references/review-loop.md |
 | check_review_ui.py | 审片台页面自检(不用浏览器):id 引用 / 页签配对 / 与影片页 DOM 是否一致。 | README.md、docs/scripts.md、references/review-loop.md |
-| check_slop.py | artboard AI 味与铁律机检(静态,零渲染)。 | README.md、SKILL.md、docs/scripts.md、references/cjk-typography-css.md、references/guardrails.md、references/pipeline.md… |
+| check_slop.py | artboard AI 味与铁律机检(静态,零渲染)。 | README.md、SKILL.md、components/registry/PIPELINE.md、docs/scripts.md、references/cjk-typography-css.md、references/guardrails.md… |
 | check_svg.py | artboard SVG 质量门(9 项结构机检;细则见 references/vector-drawing.md §4.7)。 | docs/glossary.md、docs/scripts.md、references/materials.md、references/vector-drawing.md |
 | check_wechat_svg.py | check_wechat_svg.py — 微信公众号图文/内联 SVG 动效机检(零 token) | README.md、SKILL.md、docs/gzh-guide.md、docs/scripts.md、references/wechat-article.md |
 | compare.py | artboard 复刻比对:参考图 vs 复刻导出图并排拼接,供视觉逐项核对。 | docs/glossary.md、docs/scripts.md、references/pipeline.md、references/replicate.md、references/review-loop.md |

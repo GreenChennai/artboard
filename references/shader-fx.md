@@ -1,5 +1,11 @@
 # Shader Effects · WebGPU 效果接入
 
+> ⚠️ **已弃用(2026-10):Artboard 不再把 `shader-effects-inc/shaders` 作为视觉来源。**
+> 弃用原因:产出效果不理想,且 WebGPU 运行时给静态出图带来环境依赖与失败面。
+> 现状:`vendor/shaders/`、`shader_fx.py`、`gzh_cover.py --cover-fx` 仅为**既有公众号封面运行时与历史项目**保留,不删除、不新增能力;
+> **新组件与新视觉一律改用 `components/registry/` 中的静态 CSS 组件 + `--ab-*` token**,不得再以 shader 作为默认质感来源。
+> 本文件保留为维护与排障存档(上游来源、SHA256、11 个效果入口等技术细节仍然有效)。
+
 > Artboard 随包携带 `vendor/shaders/upstream.js`，其中包含来源于上游的 shader 代码和本地 global/API wrapper；`vendor/shaders/runtime.js` 是 Artboard 参数与生命周期适配层，不实现 shader 算法。MIT 许可随包保留在 `vendor/shaders/LICENSES/shaders-LICENSE`。
 >
 > 上游来源：[shader-effects-inc/shaders](https://github.com/shader-effects-inc/shaders)，版本 `4.0.4` 的 tag 对应 commit `81fd4ece5d493ca6c424a2af41f0e2c361ec8258`。官方 npm 文件 `dist/js/bundle.js` 为 2,584,407 bytes，SHA256 `E00B8C9954C819910F1C8660C5035CA24F79814E752689F819F05C610299625E`；Artboard 本地 `upstream.js` 为 2,589,367 bytes，SHA256 `CAD63C8EE9F907F9773772AC8CA03EBBE21F85CD9EF75C1D6B2C430EA8795290`。两文件不同，因此本地文件不是字节级原包；从上游源码重建并验证构建复现尚未完成。Artboard 暴露 11 个效果入口。

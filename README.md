@@ -353,6 +353,8 @@ artboard/
 │   ├── styles-catalog.md    #   123 风格方向速查
 │   ├── styles/ formats/     #   视觉风格分册 / 印刷品类规范
 │   └── …                    #   构图/排版/色彩/数据可视化/印刷/矢量化/审片台等 55+ 分册
+├── components/              # 组件注册体系:registry/<category>/INDEX.md(索引) + <id>.md(正文)
+│                            #   三层渐进披露:SKILL 路由摘要 → 类目 INDEX → 组件文件
 ├── scripts/                 # preflight / scaffold / export / check_overflow / imageops …
 │                            #   地图:map_tiles / fetch_osm_data / svg_map / svg_iso /
 │                            #        render_3d(_vec) / build_player / compute_route / test_v7
@@ -380,6 +382,30 @@ artboard/
 - 爬虫素材的 `版权风险-` 前缀任何环节不得移除；
 - Cookie 只存本机 config.json(已被 gitignore)，无任何上传。
 
+## 开源组件与视觉来源
+
+Artboard 的组件与风格 token 参考了以下开源项目。我们提取的是**视觉规则与数值配方**,不建立运行时依赖;
+落地时统一重写为 Artboard 自建的 `--ab-*` token(见 `components/registry/TOKENS.md`),不复制上游组件代码。
+
+| 项目 | 链接 | 用途 | 状态 |
+| :--- | :--- | :--- | :--- |
+| Han Design | [you-want/han-design](https://github.com/you-want/han-design) | 新中式主题 token、印章/卷轴的视觉语义 | 使用中 |
+| Shuimo UI | [shuimo-design/shuimo-ui](https://github.com/shuimo-design/shuimo-ui) | 水墨墨色层级映射 | 使用中 |
+| CYBERCORE CSS | [sebyx07/cybercore-css](https://github.com/sebyx07/cybercore-css) | 赛博静态光效/边框/扫描线配方 | 使用中 |
+| Frostglass | [xvhuan/frostglass](https://github.com/xvhuan/frostglass) | 玻璃拟态模糊与半透明层数值 | 使用中 |
+| Puxel | [lumpenspace/puxel](https://github.com/lumpenspace/puxel) | 硬偏移阴影、像素边框规则 | 使用中 |
+| Cult UI | [nolly-studio/cult-ui](https://github.com/nolly-studio/cult-ui) | 极简克制的组件视觉基线 | 使用中 |
+| Galaxy (Uiverse) | [uiverse-io/galaxy](https://github.com/uiverse-io/galaxy) | 单个 CSS 效果的兜底检索源 | 备用 |
+| ~~Shaders~~ | ~~[shader-effects-inc/shaders](https://github.com/shader-effects-inc/shaders)~~ | ~~WebGPU 声明式视觉效果~~ | **已移除(效果不理想)** |
+
+维护规则:
+
+- 每次走完 `components/registry/PIPELINE.md` 的组件接入流程,同步更新此表;
+- “状态”只允许三值:`使用中` / `备用` / `已移除`;
+- 只列 Artboard **实际吸收或参考过**的库;不列传递依赖,不列仅“听说过”的库;
+- 许可证要求署名时,保留链接即满足基本归属;需要更正式致谢时另建 `ACKNOWLEDGEMENTS.md`,区分 Attribution 与 Thanks;
+- 本表与 `components/registry/` 实际内容不一致时,以 registry 为准并修正本表。
+
 ## 致谢
 
 设计方法论与规则参考来源(具体使用范围见下表)；直接集成的软件组件另列如下：
@@ -400,9 +426,9 @@ artboard/
 
 | 来源 | 许可 | 使用方式 |
 |---|---|---|
-| [shader-effects-inc/shaders](https://github.com/shader-effects-inc/shaders) | MIT | Artboard 的 shader 代码来源于上游 v4.0.4（commit `81fd4ece5d493ca6c424a2af41f0e2c361ec8258`）；本地 runtime 映射 11 个效果入口，不重写 shader 算法。MIT 许可见 `vendor/shaders/LICENSES/shaders-LICENSE`。 |
+| ~~[shader-effects-inc/shaders](https://github.com/shader-effects-inc/shaders)~~ | MIT | **已移除（效果不理想）**：不再作为 Artboard 的视觉来源，新组件禁止引用；`vendor/shaders/` 仅保留以兼容历史项目与公众号封面运行时，技术说明见下段（存档）。 |
 
-Artboard 的 `vendor/shaders/upstream.js`（2,589,367 bytes，SHA256 `CAD63C8EE9F907F9773772AC8CA03EBBE21F85CD9EF75C1D6B2C430EA8795290`）含本地 global/API wrapper；它不同于上游 npm `dist/js/bundle.js`（2,584,407 bytes，SHA256 `E00B8C9954C819910F1C8660C5035CA24F79814E752689F819F05C610299625E`），不是字节级原包，从上游源码重建的复现尚未验证。`pack.py` 仅从 Skill 授权 vendor 树或项目内真实目录收集 shader 文件；shader 树内不允许嵌套 symlink/junction，外部链接或嵌套链接返回 `SHADER_VENDOR_LINK_FAILED`。打包强制包含 `runtime.js`、`upstream.js` 与 MIT LICENSE；封面运行时校验三者固定 SHA256，改动后返回 `SHADER_VENDOR_HASH_MISMATCH`，缺失则返回 `SHADER_VENDOR_INCOMPLETE`。`src/fonts` 仅允许其下实体文件或 Skill 授权字体根（不能指向项目内 `src/` 之外的普通目录），越界链接返回 `FONT_LINK_FAILED`；`src` 根不能是联接。普通目录联接会因打包器不遍历别名而返回 `PROJECT_LINK_FAILED`；仅 `src/fonts`→Skill 字体根、`src/vendor`→Skill vendor 根、`src/vendor/shaders`→`SKILL_DIR/vendor/shaders` 完整根目录（不接受其 LICENSES、glsl 等子目录）这几类明确许可根例外。单个 ZIP 只能使用一种 shader vendor 来源；混用 Skill 树和项目本地树会以 `SHADER_VENDOR_ROOT_CONFLICT` 拒绝。封面门禁固定校验 `runtime.js` SHA256 `4510B13162748597896C5CA45E3FD509499BE9F670AEDDB7E7BF51A128B1A7E6`、`upstream.js` SHA256 `CAD63C8EE9F907F9773772AC8CA03EBBE21F85CD9EF75C1D6B2C430EA8795290` 和许可证 SHA256 `EEAAA26F5C65CB6DFEBF1C098AC2375FDCDB497CEBF105B0542F229482B106F4`。普通文件联接只可指向真实 `src/` 文件或明确许可的 Skill 资产。若多个不同源文件映射到同一 ZIP 路径（按大小写折叠比较），`pack.py` 返回 `PACK_DESTINATION_CONFLICT`，避免解压时重复条目覆盖。
+以下为历史运行时说明（已弃用，仅作存档，不作为推荐做法）：Artboard 的 `vendor/shaders/upstream.js`（2,589,367 bytes，SHA256 `CAD63C8EE9F907F9773772AC8CA03EBBE21F85CD9EF75C1D6B2C430EA8795290`）含本地 global/API wrapper；它不同于上游 npm `dist/js/bundle.js`（2,584,407 bytes，SHA256 `E00B8C9954C819910F1C8660C5035CA24F79814E752689F819F05C610299625E`），不是字节级原包，从上游源码重建的复现尚未验证。`pack.py` 仅从 Skill 授权 vendor 树或项目内真实目录收集 shader 文件；shader 树内不允许嵌套 symlink/junction，外部链接或嵌套链接返回 `SHADER_VENDOR_LINK_FAILED`。打包强制包含 `runtime.js`、`upstream.js` 与 MIT LICENSE；封面运行时校验三者固定 SHA256，改动后返回 `SHADER_VENDOR_HASH_MISMATCH`，缺失则返回 `SHADER_VENDOR_INCOMPLETE`。`src/fonts` 仅允许其下实体文件或 Skill 授权字体根（不能指向项目内 `src/` 之外的普通目录），越界链接返回 `FONT_LINK_FAILED`；`src` 根不能是联接。普通目录联接会因打包器不遍历别名而返回 `PROJECT_LINK_FAILED`；仅 `src/fonts`→Skill 字体根、`src/vendor`→Skill vendor 根、`src/vendor/shaders`→`SKILL_DIR/vendor/shaders` 完整根目录（不接受其 LICENSES、glsl 等子目录）这几类明确许可根例外。单个 ZIP 只能使用一种 shader vendor 来源；混用 Skill 树和项目本地树会以 `SHADER_VENDOR_ROOT_CONFLICT` 拒绝。封面门禁固定校验 `runtime.js` SHA256 `4510B13162748597896C5CA45E3FD509499BE9F670AEDDB7E7BF51A128B1A7E6`、`upstream.js` SHA256 `CAD63C8EE9F907F9773772AC8CA03EBBE21F85CD9EF75C1D6B2C430EA8795290` 和许可证 SHA256 `EEAAA26F5C65CB6DFEBF1C098AC2375FDCDB497CEBF105B0542F229482B106F4`。普通文件联接只可指向真实 `src/` 文件或明确许可的 Skill 资产。若多个不同源文件映射到同一 ZIP 路径（按大小写折叠比较），`pack.py` 返回 `PACK_DESTINATION_CONFLICT`，避免解压时重复条目覆盖。
 
 WebGPU 静态/动画导出通过 [GreenChennai/VellumBench](https://github.com/GreenChennai/VellumBench) 的显式 `--webgpu` lane；adapter 或首帧失败时不静默降级。
 

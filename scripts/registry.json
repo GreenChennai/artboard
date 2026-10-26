@@ -1,6 +1,6 @@
 {
   "_comment": "generated, do not edit — 由 scripts/gen_script_index.py 重建",
-  "generated_at": "2026-10-19",
+  "generated_at": "2026-10-27",
   "scripts": [
     {
       "name": "_config.py",
@@ -284,6 +284,16 @@
       ]
     },
     {
+      "name": "check_component_registry.py",
+      "group": "脚本",
+      "internal": false,
+      "purpose": "组件注册体系机检:三层索引一致性 + token 契约 + 来源红线。",
+      "used_by": [
+        "components/registry/PIPELINE.md",
+        "docs/scripts.md"
+      ]
+    },
+    {
       "name": "check_credits.py",
       "group": "脚本",
       "internal": false,
@@ -429,6 +439,7 @@
       "used_by": [
         "README.md",
         "SKILL.md",
+        "components/registry/PIPELINE.md",
         "docs/scripts.md",
         "references/cjk-typography-css.md",
         "references/guardrails.md",

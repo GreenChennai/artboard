@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.24.0 (未发布) — 组件注册体系:目录常驻、正文按需
+
+### Added
+
+- 新增 `components/registry/` 三层渐进披露的组件注册体系:主入口摘要(SKILL.md「组件库(按需加载)」段)→ 类目 `INDEX.md`(ID + 用途 + 加载条件)→ 组件 `<id>.md`(结构 / 核心 CSS / Token 依赖 / 禁忌)。首版 6 类目 20 组件:版式 3、文字 3、装饰 4、数据 3、状态与反馈 3、风格预设 4。
+- 新增 `components/registry/TOKENS.md`:组件视觉值的 `--ab-*` 命名空间契约与默认值真相源。组件 CSS 一律写 `var(--ab-x, <默认值>)`,脱离项目也可独立预览,项目内覆盖 `:root` 即换肤。
+- 新增 `components/registry/MASTER.md`(全量扁平清单,类目 INDEX 无命中时才读)与 `components/registry/PIPELINE.md`(Step 1 判缺口 → Step 2 四过滤器 → Step 3 注册挂载 → Step 4 回归验证 → Step 5 记录来源)。
+- 新增 `scripts/check_component_registry.py`:机检三层索引一致性、frontmatter `id`/`category`/`tokens`、MASTER 双向一致、token 是否登记、组件是否引用已移除的视觉源、主入口摘要行数上限(26 行)、组件超 100 行是否带目录。
+- README 新增「开源组件与视觉来源」章节:Han Design、Shuimo UI、CYBERCORE CSS、Frostglass、Puxel、Cult UI 为使用中,Uiverse Galaxy 为备用,Shaders 标为已移除;附维护规则(状态仅三值、不列传递依赖、与 registry 冲突时以 registry 为准)。
+
+### Changed
+
+- `SKILL.md` 版本 1.23.0 → 1.24.0;新增「组件库(按需加载)」路由段(16 行,只做路由不承载 CSS),索引路径写全 `components/registry/<category>/INDEX.md`。
+- 组件来源命名统一为真实仓库名(`nolly-studio/cult-ui`),不写简称,便于追溯许可证。
+
+### Removed / Deprecated
+
+- `shader-effects-inc/shaders` 从视觉来源清单移除(效果不理想):README 开源来源表与致谢中标为已移除,`references/shader-fx.md` 顶部加弃用横幅,SKILL 资源索引标注「已弃用」。`vendor/shaders/` 与相关脚本保留,仅服务既有公众号封面运行时与历史项目,新组件禁止引用。
+
+### Verification
+
+- `python scripts/check_component_registry.py`:8 / 8 项通过(0 FAIL,0 WARN)——6 类目 INDEX ↔ 组件文件双向一致、MASTER 20 条一致、组件 frontmatter 与 token 契约全部登记、SKILL 路由段 16 行未超上限。
+- `python scripts/gen_script_index.py --check`:生成物与当前脚本状态一致(84 个脚本,新增脚本已登记)。
+- `git diff --check` 通过。
+
 ## v1.23.0 (未发布) — 公众号预览复制、双封面与官方 WebGPU shader
 
 ### Added

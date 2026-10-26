@@ -32,7 +32,7 @@ INTERNAL = {"junction.py", "config_gui.py", "gen_script_index.py", "selfcheck.py
             "check_gzh_shader_vendor.py", "check_gzh_layout_tokens.py",
             "check_gzh_article_cover.py"}
 SCAN_GLOBS = ["SKILL.md", "README.md", "references/**/*.md", "docs/*.md", "fonts/*.md",
-              "tools/**/*.md"]
+              "tools/**/*.md", "components/**/*.md"]
 
 
 def docstring_purpose(path: str) -> str:

@@ -1,7 +1,7 @@
 ---
 name: artboard
 description: Use when the user wants a finished graphic produced from copy or a reference image, or wants an existing design revised — 海报、banner、小红书封面、公众号封面、主 KV、信息长图、数据图、名片、A4 海报、三折页、易拉宝、PPT 页、二维码物料; 动态海报、GIF、MP4、口播信息卡、图解动画卡、科普动画卡等视频场景卡; 片头动画、片尾动画、内容概括动画、章节卡、转场卡等视频动效件(按口播/教程/vlog/短片/MV 配动效); 成片/长动效的**审片**(逐帧审阅、元素拾取、审片意见落盘、像素基线回归、缓存隔离审计,子技能 references/review-loop.md + tools/review-station); H5 页面、移动端落地页、互动页、邀请函 H5 等轻量交互页(模式 H); 地图/城市地图/路网/区位图/街道底图、2.5D 等轴测与 3D 城市、地图 KV、多网点分布图、地图动画(车流/通勤/导航)、地图播放器 H5(子技能 references/map-studio.md); 印刷/打样/烫金/UV/模切/专色/裁切线等印前工艺; 公众号文章/微信图文/秀米排版(模式 W); SVG/EPS/AI/可编辑 PDF 等矢量工程文件交付; 抠图/调色/滤镜/压缩/水印/切片等位图工序; 图标/几何图形/极简插画; 多稿同出/给几个方案; 品牌色/logo/VI 一致性; 把文案变成图片、复刻一张设计图、换风格重做、改稿但说不清哪里不满意. 风格像 Illustrator/Photoshop 做的设计图,不是网页交互风. Not for 网页 UI、视频剪辑、纯 AI 生图. Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.23.0
+version: 1.24.0
 ---
 
 # artboard · HTML 海报工作室
@@ -74,7 +74,7 @@ version: 1.23.0
 | **视频动效(片头/片尾/概括/章节/转场)** | references/video-motion.md | 做**一整件**片头动画/片尾动画/内容概括/章节卡/转场,或按视频类型配动效、出分镜表/卡点表时(**必读**;模式 V) |
 | 动效分册 | references/animation.md | 动图任务(GIF/MP4)或**视频桥场景卡**时 |
 | 视觉特效 43 式 | references/effects.md | 需要特效配方时(通常写 HTML 时) |
-| **上游 Shader Effects WebGPU** | references/shader-fx.md | 使用官方 shader 背景/视频动效、公众号双封面材质或排查 WebGPU 时；必须走 `--webgpu`，失败不静默降级 |
+| **上游 Shader Effects WebGPU(已弃用)** | references/shader-fx.md | 不用于新组件/新视觉;仅维护既有公众号封面运行时或排查 WebGPU 时读;必须走 `--webgpu`,失败不静默降级 |
 | **伪3D与空间感** | references/depth-3d.md | 标题要立体/画面要前后空间/要厚度时 |
 | 标题手法库 | references/title-fx.md | 标题需要描边/蒙版/错位等处理时 |
 | **对比度与色彩工程** | references/color-contrast.md | 定配色 tokens、文字压图、自检"看不清"时(WCAG 定义 + 遮罩数值 + 色盲) |
@@ -117,6 +117,28 @@ version: 1.23.0
 | 审片台工具 | tools/review-station/README.md | 要起审片台/改审片台 UI/查它的 HTTP 契约时 |
 | 模型下载 | scripts/fetch_model.py | 本地 VQA 模型缺失且需要时 |
 | 环境部署 | scripts/setup_kiln.py / setup_ffmpeg.py | 预检报缺失时;升级 Kiln 加 `--force` |
+
+
+## 组件库(按需加载)
+
+Artboard 维护一套组件注册表,按功能分类存放于 `components/registry/`。
+需要某个组件时,按下列协议读取,**不要凭记忆生成样式**。
+
+| 类目 | 覆盖内容 | 索引文件 |
+| :--- | :--- | :--- |
+| 版式 | 画布比例、留白节奏、栅格 | `components/registry/layout/INDEX.md` |
+| 文字 | 标题系统、字重对比、字距规则 | `components/registry/typography/INDEX.md` |
+| 装饰 | 印章、光效、纹理、边框 | `components/registry/ornament/INDEX.md` |
+| 数据 | 数字展示、统计块、标签组 | `components/registry/data-display/INDEX.md` |
+| 状态与反馈 | 标签、徽章、提示条 | `components/registry/feedback/INDEX.md` |
+| 风格预设 | 新中式/赛博/玻璃/极简等 token 集 | `components/registry/style-presets/INDEX.md` |
+
+**加载协议**
+
+1. 先读对应类目 `INDEX.md`(一行一个组件:ID + 用途 + 加载条件)。
+2. 命中后**只**读该组件 `<id>.md`,不读同类目其他文件。
+3. 类目无命中,再读 `components/registry/MASTER.md`(全量扁平清单,仅 ID + 标题)。
+4. **未读组件文件不得自行发明样式**;确无可用组件,记录「缺口」并按 `components/registry/PIPELINE.md` 走接入流程。
 
 ## 流水线(Step 0–7,含 1.5/4.5 两个子步,细则见 references/pipeline.md)
 

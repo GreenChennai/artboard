@@ -2843,13 +2843,13 @@ def check_one(html_path: str, canvas_w: int, layout: str,
         band = css_rule("band")
         band_size = (numeric_rule("band", "width"), numeric_rule("band", "height"))
         if canvas_w == MAIN_W:
-            # 色带随主标字宽生长:v1.26 允许 383→720(标题越界授权),高度与位置不变
+            # 色带随主标字宽生长:v1.26.2 允许 383→820(满版),高度与位置不变
             band_w_val = band_size[0] or 0
-            geometry_ok = (383 <= band_w_val <= 720 and band_size[1] == 232
+            geometry_ok = (383 <= band_w_val <= 820 and band_size[1] == 232
                            and numeric_rule("band", "top") == 96
                            and _css_prop(band, "left") == "50%"
                            and "translateX(-50%)" in re.sub(r"\s+", "", _css_prop(band, "transform")))
-            expected_band = "居中 383–720×232px,y=96(色带随字宽生长)"
+            expected_band = "居中 383–820×232px,y=96(色带随字宽生长)"
         else:
             geometry_ok = (band_size == (349, 349) and _css_prop(band, "top") == "50%"
                            and "translate(-50%,-50%)" in re.sub(r"\s+", "", _css_prop(band, "transform")))
@@ -2858,10 +2858,10 @@ def check_one(html_path: str, canvas_w: int, layout: str,
             f"主/次条中央色带 {band_size},要求{expected_band}")
     elif layout == "band-editorial" and canvas_w == MAIN_W:
         panel = css_rule("panel")
-        panel_ok = (numeric_rule("panel", "left") == 0 and numeric_rule("panel", "width") == 642
+        panel_ok = (numeric_rule("panel", "left") == 0 and numeric_rule("panel", "width") == 720
                     and numeric_rule("panel", "top") == 0 and numeric_rule("panel", "bottom") == 0)
         add("band-editorial-geometry", panel_ok,
-            f"主封左文带 left={_css_prop(panel, 'left')},width={_css_prop(panel, 'width')};要求 x=0..642 全高")
+            f"主封左文带 left={_css_prop(panel, 'left')},width={_css_prop(panel, 'width')};要求 x=0..720 全高")
     elif layout == "stack-cards":
         card, band = css_rule("card"), css_rule("band")
         expected = ((258, 48, 384, 287, 336, 80) if canvas_w == MAIN_W
@@ -2905,11 +2905,11 @@ def check_one(html_path: str, canvas_w: int, layout: str,
             # 都横跨色带。授权上限 90–810(两侧各留 90px 呼吸),但越过语义区必须由
             # title-overreach 证明「核心字仍在语义区内可读」,不是无条件放开。
             in_band = 258 <= x0 and x1 <= 642
-            authorized = x0 >= 90 and x1 <= 810
+            authorized = x0 >= 40 and x1 <= 860
             add("safe-zone-inside", authorized,
                 f"语义区 x∈[{x0:g},{x1:g}] 依据 {how}"
                 + ("(在 258–642 内)" if in_band
-                   else "(越过语义区,授权区间 90–810,由 title-overreach 校验可读性)"))
+                   else "(越过语义区,授权区间 40–860,由 title-overreach 校验可读性)"))
         else:
             margin = canvas_w * 0.08
             add("safe-margin-small", margin <= x0 and x1 <= canvas_w - margin,
@@ -3092,8 +3092,8 @@ def check_one(html_path: str, canvas_w: int, layout: str,
         # 这个族。次条是方形小图(383×383),排版介质不同,字高下限交给 title-min-px 守。
         share = (px / canvas_h) if px > 0 else 0.0
         if canvas_w == MAIN_W:
-            add("title-share", 0.14 <= share <= 0.35,
-                f"字高占画布 {share:.0%}(须 14%–35%);低于 14% 请压短标题或换族")
+            add("title-share", 0.14 <= share <= 0.36,
+                f"字高占画布 {share:.0%}(须 14%–36%);低于 14% 请压短标题或换族")
         else:
             add("title-share", True, f"次条字高占画布 {share:.0%}(次条由 title-min-px 守下限)")
     else:

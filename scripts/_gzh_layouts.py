@@ -670,18 +670,40 @@ CB_CSS_SUB = """
 # 单侧 ≤2 行。字号不能按"平面物料"线性给,而要按「字数档 × 画布占比」给上限,
 # 再由实际字宽反推 —— 否则短标题会被 base 锁死,长标题会被安全区压成小字。
 CANVAS_H = 383                 # 主封面画布高(900×383)
-TITLE_SHARE_CAP = 0.33         # 主标字高占画布高的硬上限(参考 #9 的 33%)
+TITLE_SHARE_CAP = 0.36         # 主标字高占画布高的硬上限(满版:4 字可到 132px)
 TITLE_HARD_CAP = 12            # 文案预算:主标可见字符上限(与 check 的 title-char-cap 同源)
-TITLE_COL_MAX = 720            # 主标授权行宽上限:x≈90–810(语义守 383,字形可越)
+TITLE_COL_MAX = 820            # 主标授权行宽上限:x≈40–860(语义守 383,字形可越)
 CENTER_BAND = (258, 642)       # 中央语义安全区:x 区间
-TITLE_CEILING = {1: 127, 2: 127, 3: 127, 4: 120, 5: 108, 6: 96,
-                 7: 84, 8: 84, 9: 72, 10: 72, 11: 64, 12: 64}
+TITLE_CEILING = {1: 137, 2: 137, 3: 137, 4: 132, 5: 130, 6: 120,
+                 7: 104, 8: 96, 9: 84, 10: 76, 11: 70, 12: 64}
 SUB_TITLE_STEPS = {1: 170, 2: 160, 3: 137, 4: 112, 5: 96, 6: 96}
 SUB_TITLE_MIN_PX = 22          # 次条可读下限(与 check 的 title-min-px 同源)
 SINGLE_LINE_MIN_PX = 64        # 主标一行可读下限:字号到这就不拆行(8–12 字直排的依据)
 SUB_CANVAS = 383               # 次条方图边长
-SUB_BLOCK_H_RATIO = 0.80       # 方图标题块高占画布比(手机缩到指甲盖大仍能读)
-SUB_BLOCK_W_RATIO = 0.82       # 方图标题块宽占画布比(两侧各留 9% 呼吸)
+SUB_TOP_ZONE = 53              # 方图标题块上沿:眉题(6px 起)之下再留 10px 呼吸
+SUB_BOTTOM_ZONE = 53           # 方图标题块下沿:与上沿对称,保证块中心=画布中心
+SUB_BLOCK_H_RATIO = (SUB_CANVAS - SUB_TOP_ZONE - SUB_BOTTOM_ZONE) / SUB_CANVAS  # ≈0.72:标题块居中且不碰眉题/副题
+SUB_BLOCK_W_RATIO = 0.84       # 方图标题块宽占画布比(两侧各留 8% 呼吸)
+SUB_LINE_HEIGHT = 1.12         # 方图标题行高:与 CSS 的 .t line-height 同源,块高按它反推
+
+# 次条铁律:标题永远压在方图正中,眉题/副题贴边固定,任何内容都不得把标题挤偏。
+# 各族的 .safe 仍是 flex 居中容器,但只让 .t 参与垂直居中;其余信息件绝对定位到上下带。
+SUB_CENTER_CSS = """
+/* 次条:标题垂直居中(不看眉题/副题多少),眉题贴顶、副题贴底 */
+.safe > .t { line-height: 1.12; text-align: center; align-self: center; }
+.safe > .kicker { position: absolute; top: 6px; left: 0; right: 0;
+  font-size: 13px; text-align: center; text-indent: 0; color: @KICKER@; }
+.safe > .kicker::before { display: none; }
+.safe > .sub { position: absolute; bottom: 10px; left: 0; right: 0;
+  text-align: center; margin: 0; }
+.safe > .mark, .safe > .rule { display: none; }
+"""
+
+
+def sub_center_css(t: dict) -> str:
+    """次条居中样式的主题特化:深底用 muted(accent 在深底上常低于 4.5:1),浅底用 accent。"""
+    color = "var(--c-muted)" if is_dark(t) else "var(--c-accent)"
+    return SUB_CENTER_CSS.replace("@KICKER@", color)
 
 
 def title_ceiling(n: int) -> int:
@@ -1126,7 +1148,9 @@ def fit_sub_title(text: str, col: int, floor: int, max_lines: int = 2,
         ttl = break_lines(raw, lines, chars, even=100, allow_pair_lines=True)
     per_line = max(1, -(-visible_len(plain(ttl)) // max(1, ttl.count("<br>") + 1)))
     line_count = max(1, ttl.count("<br>") + 1)
-    by_h = int(SUB_CANVAS * SUB_BLOCK_H_RATIO / (line_count * 1.12))
+    # 块高必须用 CSS 的真实行高算:此前按 1.12 估、CSS 写 1.3,4 字方图 136px
+    # 实际 354px > 画布,眉题被挤出画布顶边、标题也不居中。
+    by_h = int(SUB_CANVAS * SUB_BLOCK_H_RATIO / (line_count * SUB_LINE_HEIGHT))
     # 栏宽也是硬约束:plate-page 次条只有 206px 文字列,方图大字要让位给它
     col_w = min(SUB_CANVAS * SUB_BLOCK_W_RATIO, col * 0.97)
     by_w = int(col_w / (per_line * 1.02))
@@ -1175,19 +1199,19 @@ def _center_band(t, d, sub=False):
 # ================================================================ 族二:band-editorial
 
 BE_CSS = """
-/* 左文带横穿左侧三分线,覆盖 0–642 全高;文字列 90–642(扣 10% 安全边距后最大化) */
-.panel { left: 0px; top: 0px; bottom: 0px; width: 642px;
+/* 左文带横穿左侧 80% 版面,覆盖 0–720 全高;文字列 84–720(满版,右侧留 180px 呼吸) */
+.panel { left: 0px; top: 0px; bottom: 0px; width: 720px;
   background: var(--c-plate); border: 1px solid var(--c-line); }
 .panel::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px;
   background: var(--c-accent); }
-.safe { left: 90px; top: 30px; bottom: 30px; width: 552px;
+.safe { left: 84px; top: 30px; bottom: 30px; width: 636px;
   display: flex; flex-direction: column; justify-content: center;
   align-items: flex-start; text-align: left; gap: 13px; }
 .kicker { font: 600 14px/1 var(--font-sans); color: var(--c-accent);
   letter-spacing: .30em; display: flex; gap: 10px; align-items: center; }
 .kicker::before { content: ""; width: 22px; height: 2px; background: var(--c-accent); }
 .t { font: 700 var(--t-size)/1.2 var(--font-display); color: var(--c-ink);
-  letter-spacing: .01em; max-width: 552px; }
+  letter-spacing: .01em; max-width: 636px; }
 .sub { font: 400 17px/1.5 var(--font-sans); color: var(--c-muted);
   letter-spacing: .08em; max-width: 470px; }
 .wm { right: -40px; top: 50%; transform: translateY(-50%); white-space: nowrap;
@@ -1212,7 +1236,7 @@ BE_CSS_SUB = """
   background: var(--c-accent); }
 /* 文字栏 295:left 56 + 295 = 351,落在 8% 安全边距(352.36)内。
    原来写 315 会顶到 371 —— 面板右边界 361,文字直接压着描边出去。 */
-.safe { left: 56px; top: 22px; bottom: 22px; width: 295px;
+.safe { left: 50%; top: 22px; bottom: 22px; width: 295px; transform: translateX(-50%);
   display: flex; flex-direction: column; justify-content: center;
   align-items: flex-start; text-align: left; gap: 11px; }
 .kicker { font: 600 12px/1 var(--font-sans); color: var(--c-accent);
@@ -1228,7 +1252,7 @@ BE_CSS_SUB = """
 def _band_editorial(t, d, sub=False):
     # 主封文字栏 560(8–10 字直排)/ 次条 295(方图大字 2 字一行)
     ttl, main_px = (fit_sub_title(d["title"], 295, 28, 2) if sub
-                    else fit_title(d["title"], 552, 28, 2))
+                    else fit_title(d["title"], 636, 28, 2))
     parts = []
     if d["kicker"]:
         parts.append(f'<div class="kicker" data-role="info">{esc(d["kicker"])}</div>')
@@ -1395,12 +1419,13 @@ def _giant_caps(t, d, sub=False):
         longest = max(1, max(len(x) for x in ttl.split("<br>")))
     else:
         ttl = break_lines(d["title"], 4, 5, even=100) if n > 5 else break_lines(d["title"], 1)
-        # 四档上限取「字数档 × 画布占比」:2 字 127 / 3 字 118 / 4 字 108 / 5 字 96
-        main_px = 127 if n <= 2 else 118 if n <= 3 else 108 if n <= 4 else 96
+        # 四档上限取「字数档 × 画布占比」:1–3 字 137 / 4 字 132 / 5 字 118(与 title-share 36% 同源)
+        main_px = 137 if n <= 3 else 132 if n <= 4 else 118
         # 字号必须同时满足「最长行装得下」和「总高度不超框」;行宽上限放宽到 720
         longest = max(1, max(len(x) for x in ttl.split("<br>")))
         rows = ttl.count("<br>") + 1
-        main_px = min(main_px, int(TITLE_COL_MAX * 0.96 / longest), int(340 / rows))
+        main_px = min(main_px, int(CANVAS_H * TITLE_SHARE_CAP),
+                      int(TITLE_COL_MAX * 0.96 / longest), int(340 / rows))
     # 色块宽度按"最长行"定,不按容器宽定 —— 否则断行后各行宽窄不一,色块撑歪成台阶
     # 色块要含左右各 16px 内边距(tone 的 padding),否则字形会顶出色块边缘
     block_w = min(TITLE_COL_MAX if not sub else 307,
@@ -1648,6 +1673,8 @@ def render(layout: str, t: dict, d: dict, font_vars: str,
     # 次条字号由 fit_sub_title 按「块高 80% + 栏宽」反推,不再二次用字数档压回来:
     # 方图缩到手机指甲盖大时,4 字压到 112px 就只剩半屏,传达不起来。
     pat, fx = resolve_visual_layers(layout, pattern, fx)
+    if sub:
+        css = css + "\n" + sub_center_css(t)
     flat_sub = sub and d.get("sub_mode") == "flat"
     if flat_sub:
         # flat 只作用于次条:禁用其底纹/shader,用纯主题底色而保留 plate-page 的照片。

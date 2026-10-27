@@ -1,5 +1,22 @@
 # Changelog
 
+## v1.26.3 (未发布) — 双封面:次条标题居中 + 主封满版
+
+### Changed
+
+- **次条标题强制居中**:眉题绝对定位到上沿 6px、副题到下沿 10px,标题块只做水平+垂直居中(`SUB_CENTER_CSS` / `sub_center_css()`)。此前眉题、标题、副题在同一条 flex 流里,内容一多眉题就被顶出画布、标题也偏。
+- **次条标题块高 80% → 72%**,行高统一 1.12(`SUB_BLOCK_H_RATIO` / `SUB_LINE_HEIGHT`):4 字 2+2 从 136px 降到 123px,块上沿落在 53px,不再压住眉题。
+- **主封满版**:`TITLE_SHARE_CAP` 0.33 → 0.36、`TITLE_COL_MAX` 720 → 820、`TITLE_CEILING` 提到 1–3 字 137 / 4 字 132 / 5 字 130 / 6 字 120 / 7 字 104 / 8 字 96 / 9 字 84 / 10 字 76 / 11 字 70 / 12 字 64;`center-band` 色带随字宽长到 383–820px(高 232、上沿 96 不变)。
+- **`giant-caps` 主封实体字加大**:≤3 字 137px、4 字 132px、5 字 118px,并补一道画布高 36% 的字高上限(否则 2 字 150px 会触发 `title-share` 失败)。
+- **`band-editorial` 面板 642 → 720(满版)**,文字列 552 → 636、左起 90 → 84;次条 `.safe` 改为水平居中。
+- checker 口径同步:`center-band-geometry` 色带 383–820、`band-editorial-geometry` 面板 720、`safe-zone-inside` 主封授权 40–860、`title-share` 主封上限 0.36。
+
+### Verification
+
+- `check_gzh_layout_tokens.py` 33/33、`check_gzh_article_cover.py` 10/10、`check_component_registry.py` 8/8 PASS。
+- 三张真实出图 2566×766:`center-band` 主标 120px、色带宽 819;`band-editorial` 主标 74px、面板 720;`giant-caps` 4 字 132px。三张次条均为 123px、块上沿 53px、眉题贴顶不被截断、标题水平+垂直居中。
+- 文档同步:`references/formats/gzh-cover.md`、`references/gzh-cover-layouts.md`(面板/文字列/字号阶/次条块高与居中铁律)。
+
 ## v1.26.2 (未发布) — 双封面:主标直排 + 次条大字方图 + 无缝单图
 
 ### Changed

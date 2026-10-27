@@ -66,6 +66,35 @@
   --ab-badge-bg: var(--ab-ink);
   --ab-badge-ink: var(--ab-paper);
   --ab-warn: #c9761f;
+  /* 风格预设专有(--ab-style-<name>-*:只放该风格独有的值) */
+  --ab-style-cn-ink-2: #4a463f;
+  --ab-style-cn-ink-3: #8a8272;
+  --ab-style-cn-seal-size: 52px;
+  --ab-style-cn-texture-alpha: 0.045;
+  --ab-style-cyber-grid: 32px;
+  --ab-style-cyber-glitch: 2px;
+  --ab-style-cyber-glow-alpha: 0.55;
+  --ab-style-glass-blur: var(--ab-glass-blur, 16px);
+  --ab-style-glass-saturate: 165%;
+  --ab-style-glass-tint: rgba(255, 255, 255, 0.12);
+  --ab-style-glass-edge: rgba(255, 255, 255, 0.38);
+  --ab-style-pixel-unit: 4px;
+  --ab-style-pixel-paper: #e8e0c4;
+  --ab-style-pixel-ink: #1c1a17;
+  --ab-style-pixel-accent: #9c2b26;
+  --ab-style-pixel-shadow: 6px 6px 0 #1c1a17;
+  --ab-style-y2k-chrome-hi: #eaf2ff;
+  --ab-style-y2k-chrome-lo: #93a9d6;
+  --ab-style-y2k-stroke: 3px;
+  --ab-style-y2k-fill: #ffd8e6;
+  --ab-style-y2k-window: #dfe8ff;
+  --ab-style-neu-surface: #e9edf3;
+  --ab-style-neu-light: #ffffff;
+  --ab-style-neu-dark: #c9cfd9;
+  --ab-style-neu-depth: 18px;
+  --ab-style-min-rule: 1px;
+  --ab-style-min-title-weight: 500;
+  --ab-style-min-margin: 12%;
 }
 ```
 
@@ -83,6 +112,7 @@
 | 新中式 | `--ab-seal-ink/rotate` `--ab-gold` `--ab-xuan` | ornament.seal-stamp / preset | 东方感 |
 | 数据 | `--ab-stat-size/unit-size` `--ab-label-size` | data-display.* | 数据层级 |
 | 反馈 | `--ab-badge-bg/ink` `--ab-warn` | feedback.* | 语义强度 |
+| 风格预设 | `--ab-style-cn-*` `--ab-style-cyber-*` `--ab-style-glass-*` `--ab-style-pixel-*` `--ab-style-y2k-*` `--ab-style-neu-*` `--ab-style-min-*` | style-presets/* | 只影响该风格;基础角色仍走 `--ab-*` |
 
 ## 四条硬规则
 

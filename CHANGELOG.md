@@ -1,5 +1,26 @@
 # Changelog
 
+## v1.25.0 (未发布) — 七风格预设:从"关键词"到"数值配方"
+
+### Added
+
+- 风格预设由 4 个扩到 7 个:新增「复古像素」「Y2K」「新拟态」;既有「新中式」「赛博」「玻璃拟态」「极简」按统一格式重写。
+- 每个预设固定 7 段:触发关键词 → 适用海报类型(含不适配场景)→ Design Token 清单(含默认值与作用)→ 核心 CSS 模块(可直接拼入单文件 HTML)→ 字体建议 → 禁忌清单 → 参考仓库(仅记录来源,不建立依赖)。frontmatter 保留 `id`/`category`/`styles`/`tokens`/`sources`/`status`。
+- `components/registry/TOKENS.md` 新增 `--ab-style-*` 命名空间:28 个 token 按风格分组(cn / cyber / glass / pixel / y2k / neu / min),同文件分组表加「风格预设」行。基础角色仍走 `--ab-*`,风格 token 只覆盖该风格独有的值。
+- `docs/samples/style-expansion/`:同一 Brief(Y2K 千禧夜)的 `before.html`(无预设裸做)与 `after.html`(按预设拼装)对照样张,用于 `check_slop.py` 前后机检。
+
+### Changed
+
+- `scripts/check_component_registry.py` 的 `STYLES` 白名单由 4 个扩到 7 个风格标签。
+- `style-presets/INDEX.md` 改为 7 行,加载条件用任务语言写(承载触发词,不再只写风格名);`MASTER.md` 20 → 23 条。
+- README「开源组件与视觉来源」补充已核实上游:zhui、gameboy-css-framework、pxlkit、y2k-ui-lib、astryx、oat、NothingCN、Neumorphism-UI、neumorphic-react、Liquid-Glass-Vue、magicui;「状态」仍只允许 使用中 / 备用 / 已移除。
+
+### Verification
+
+- `python scripts/check_component_registry.py`:8 / 8 项通过(0 FAIL,0 WARN),含 7 个预设 ↔ INDEX 双向一致、token 全部登记。
+- `python scripts/check_slop.py`:before.html 8 × P0 + 1 × P1(阻断),after.html 0 发现 —— 差异完全来自预设的 token 与规则约束。
+- 未做像素级对比:本机无 Kiln(ARTBOARD_KILN_CLI 未配置)且缺 playwright,无法渲染 PNG;本次验证止于静态机检 + 单文件 HTML 样张。
+
 ## v1.24.0 (未发布) — 组件注册体系:目录常驻、正文按需
 
 ### Added

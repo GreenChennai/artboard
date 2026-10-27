@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Y2K 千禧夜 · 派对海报</title>
+<style>
+  :root{
+    --ab-bg: #eef2fb;
+    --ab-paper: #ffffff;
+    --ab-ink: #101a3a;
+    --ab-primary: #2b3f7a;
+    --ab-accent: #ff2e93;
+    --ab-muted: #5c6684;
+    --ab-radius: 6px;
+    --ab-space-3: 12px;
+    --ab-space-4: 16px;
+    --ab-space-5: 24px;
+    --ab-space-6: 40px;
+    --ab-font-body: "PingFang SC", "Source Han Sans SC", sans-serif;
+    --ab-font-display: "Impact", "Haettenschweiler", "思源黑体 Black", "PingFang SC", sans-serif;
+    --ab-style-y2k-chrome-hi: #eaf2ff;
+    --ab-style-y2k-chrome-lo: #93a9d6;
+    --ab-style-y2k-stroke: 3px;
+    --ab-style-y2k-fill: #ffd8e6;
+    --ab-style-y2k-window: #dfe8ff;
+  }
+  *{ box-sizing: border-box; margin: 0; padding: 0; }
+  body{
+    background: var(--ab-bg);
+    color: var(--ab-ink);
+    font-family: var(--ab-font-body);
+    display: grid;
+    place-items: center;
+    padding: var(--ab-space-6);
+  }
+  .poster{
+    inline-size: 1080px;
+    block-size: 1440px;
+    padding: 86px 76px;
+    background: var(--ab-paper);
+    border: var(--ab-style-y2k-stroke) solid var(--ab-ink);
+    border-radius: var(--ab-radius);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ab-space-5);
+    position: relative;
+    overflow: hidden;
+  }
+  /* 镀铬标题:蓝银金属渐变裁字,零模糊 */
+  .ab-y2k-chrome{
+    background: linear-gradient(180deg,
+      var(--ab-style-y2k-chrome-hi) 0%,
+      var(--ab-style-y2k-chrome-lo) 46%,
+      var(--ab-paper) 52%,
+      var(--ab-style-y2k-chrome-lo) 58%,
+      var(--ab-style-y2k-chrome-hi) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--ab-ink);
+    font-family: var(--ab-font-display);
+    font-size: 132px;
+    line-height: 1.34;
+    letter-spacing: 0.01em;
+  }
+  .kicker{
+    font-size: 16px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ab-primary);
+  }
+  /* 旧界面窗口:标题栏 + 内容区 */
+  .ab-y2k-window{
+    border: var(--ab-style-y2k-stroke) solid var(--ab-ink);
+    border-radius: var(--ab-radius);
+    overflow: hidden;
+    background: var(--ab-paper);
+  }
+  .ab-y2k-window::before{
+    content: "My Poster 2000";
+    display: block;
+    padding: var(--ab-space-3) var(--ab-space-4);
+    background: linear-gradient(180deg, var(--ab-style-y2k-window), var(--ab-style-y2k-chrome-lo));
+    border-block-end: var(--ab-style-y2k-stroke) solid var(--ab-ink);
+    font-size: 13px;
+    letter-spacing: 0.06em;
+  }
+  .window-body{ padding: var(--ab-space-5); display: grid; gap: var(--ab-space-4); }
+  .row{ display: flex; justify-content: space-between; align-items: baseline; }
+  .row span:first-child{ color: var(--ab-muted); font-size: 15px; letter-spacing: 0.04em; }
+  .row span:last-child{ font-size: 20px; font-weight: 600; }
+  .ab-y2k-card{
+    background: var(--ab-style-y2k-fill);
+    border: var(--ab-style-y2k-stroke) solid var(--ab-ink);
+    border-radius: var(--ab-radius);
+    padding: var(--ab-space-5);
+    display: grid;
+    gap: var(--ab-space-3);
+  }
+  .card-title{ font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ab-primary); }
+  .card-value{ font-size: 46px; font-weight: 700; letter-spacing: 0; }
+  .card-note{ font-size: 15px; color: var(--ab-muted); }
+  .footer{ margin-top: auto; display: flex; justify-content: space-between; font-size: 14px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ab-muted); }
+</style>
+</head>
+<body>
+  <main class="poster">
+    <p class="kicker">Shanghai · 2026.10.31</p>
+    <h1 class="ab-y2k-chrome">千禧夜<br>Y2K PARTY</h1>
+    <div class="ab-y2k-window">
+      <div class="window-body">
+        <div class="row"><span>时间</span><span>22:00 入场</span></div>
+        <div class="row"><span>地点</span><span>外滩仓库 3 号</span></div>
+        <div class="row"><span>阵容</span><span>DJ 阵列 · 现场乐队</span></div>
+      </div>
+    </div>
+    <section class="ab-y2k-card">
+      <p class="card-title">Dress Code</p>
+      <p class="card-value">银 · 粉 · 海军蓝</p>
+      <p class="card-note">粗描边、金属光泽、亮片;拒绝全黑。</p>
+    </section>
+    <p class="footer"><span>千禧夜</span><span>限量 300 席</span></p>
+  </main>
+</body>
+</html>

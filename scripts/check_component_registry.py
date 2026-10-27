@@ -41,7 +41,7 @@ CATEGORIES = {
     "feedback": "状态与反馈",
     "style-presets": "风格预设",
 }
-STYLES = {"新中式", "赛博", "玻璃拟态", "极简"}
+STYLES = {"新中式", "赛博", "玻璃拟态", "复古像素", "Y2K", "新拟态", "极简"}
 BANNED_SOURCES = ("shader-effects-inc/shaders",)
 SKILL_SECTION_MAX_LINES = 26
 

@@ -26,8 +26,11 @@
 | `style-preset.cyber` | 赛博科技预设 | 风格预设 |
 | `style-preset.glass` | 玻璃拟态预设 | 风格预设 |
 | `style-preset.minimal` | 极简预设 | 风格预设 |
+| `style-preset.retro-pixel` | 复古像素预设 | 风格预设 |
+| `style-preset.y2k` | Y2K 预设 | 风格预设 |
+| `style-preset.neumorphism` | 新拟态预设 | 风格预设 |
 
 ## 盘点口径
 
-- 总数 20;新增/下线后本表行数与 `find components/registry -name '*.md' | wc -l` 的对应关系见 `components/registry/PIPELINE.md` Step 4。
+- 总数 23;新增/下线后本表行数与 `find components/registry -name '*.md' | wc -l` 的对应关系见 `components/registry/PIPELINE.md` Step 4。
 - 只有组件文件、没有索引条目 = 不存在;只有索引条目、没有组件文件 = 坏链接,二者都算未接入完成。

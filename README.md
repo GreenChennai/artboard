@@ -395,6 +395,17 @@ Artboard 的组件与风格 token 参考了以下开源项目。我们提取的�
 | Frostglass | [xvhuan/frostglass](https://github.com/xvhuan/frostglass) | 玻璃拟态模糊与半透明层数值 | 使用中 |
 | Puxel | [lumpenspace/puxel](https://github.com/lumpenspace/puxel) | 硬偏移阴影、像素边框规则 | 使用中 |
 | Cult UI | [nolly-studio/cult-ui](https://github.com/nolly-studio/cult-ui) | 极简克制的组件视觉基线 | 使用中 |
+| Zhui | [zhui-team/zhui](https://github.com/zhui-team/zhui) | 国风克制小元素(角标/分隔线)的尺度 | 使用中 |
+| Game Boy CSS Framework | [keinan21/gameboy-css-framework](https://github.com/keinan21/gameboy-css-framework) | 4 色受限色板与像素级间距 | 使用中 |
+| Pxlkit | [joangeldelarosa/pxlkit](https://github.com/joangeldelarosa/pxlkit) | 图标像素对齐的一致性 | 备用 |
+| Y2K UI Lib | [cjlaserna/y2k-ui-lib](https://github.com/cjlaserna/y2k-ui-lib) | 粗海军蓝描边、粉彩填充、窗口结构配方 | 使用中 |
+| Astryx | [facebook/astryx](https://github.com/facebook/astryx) | 多主题 token 的组织方式(Y2K 为其主题之一) | 备用 |
+| Oat UI | [knadh/oat](https://github.com/knadh/oat) | 零依赖语义化结构、耐久布局 | 使用中 |
+| Nothing CN | [JassinAlSafe/NothingCN](https://github.com/JassinAlSafe/NothingCN) | 减法组件尺度与克制间距 | 使用中 |
+| Neumorphism UI | [nregret/Neumorphism-UI](https://github.com/nregret/Neumorphism-UI) | sm/md/lg 三层深度体系与凸起/凹陷双态 | 使用中 |
+| Neumorphic React | [mrturck/neumorphic-react](https://github.com/mrturck/neumorphic-react) | 柔光阴影的数值配方 | 备用 |
+| Liquid Glass Vue | [mianbeishiwole/Liquid-Glass-Vue](https://github.com/mianbeishiwole/Liquid-Glass-Vue) | 玻璃层次深度与光泽折射的叠放顺序 | 使用中 |
+| Magic UI | [magicuidesign/magicui](https://github.com/magicuidesign/magicui) | 静态 Hero 光晕与网格层叠 | 备用 |
 | Galaxy (Uiverse) | [uiverse-io/galaxy](https://github.com/uiverse-io/galaxy) | 单个 CSS 效果的兜底检索源 | 备用 |
 | ~~Shaders~~ | ~~[shader-effects-inc/shaders](https://github.com/shader-effects-inc/shaders)~~ | ~~WebGPU 声明式视觉效果~~ | **已移除(效果不理想)** |
 

@@ -341,6 +341,36 @@ def bg_recipe_css(name: str, t: dict) -> str:
     return ""
 
 
+BG_PHOTO_CSS = """
+/* 生图/用户图背景:铺满 + 左重右轻 scrim(标题在左,右侧透出画面) */
+.poster > .ab-bg-layer { --bg-alpha: 1; background-image: var(--bg-photo);
+  background-position: center; background-size: cover; background-repeat: no-repeat; }
+.poster > .ab-bg-layer::after { inset: 0; background-image: var(--bg-photo-scrim); }
+"""
+
+BG_PHOTO_MAX_BYTES = 2_600_000   # 内联 data URI 上限(超过让调用方压图,避免产物失控)
+BG_PHOTO_EXTS = (".png", ".jpg", ".jpeg", ".webp")
+
+
+def bg_photo_layer(t: dict, data_uri: str) -> tuple[str, str]:
+    """把一张图片做成外层背景层:返回 (root 变量 CSS, 层 CSS)。
+
+    图片以 data URI 内联,导出链路(Kiln/离线浏览器)不依赖外部文件,也不会
+    因为相对路径失效而在成品里留白。
+    """
+    if not data_uri.startswith("data:image/"):
+        raise ValueError("背景图必须是 data:image/* 内联 URI")
+    dark = is_dark(t)
+    bg = t["bg"]
+    near = _rgb_alpha(bg, .58 if not dark else .46)
+    far = _rgb_alpha(bg, .26 if not dark else .14)
+    clear = _rgb_alpha(bg, 0.0)
+    scrim = f"linear-gradient(90deg, {near} 0%, {far} 62%, {clear} 88%)"
+    root = (".poster { --bg-photo: url(\"" + data_uri + "\");"
+            f" --bg-photo-scrim: {scrim}; }}")
+    return root, BG_PHOTO_CSS
+
+
 def resolve_bg_recipe(want: str) -> str:
     """校验/归一背景配方:'', 'none', 'auto' → 空;非法值抛 ValueError 交给调用方报错。"""
     if want in (None, "", "auto", "none"):
@@ -484,10 +514,17 @@ def root_vars(t: dict, font_vars: str, font_faces: str = "") -> str:
 
 def canvas(w: int, h: int, t: dict, layout: str, pattern: str, tone: str,
            size: int, body: str, css: str, title: str, kind: str, fx: str = "",
-           sub_mode: str = "same", bg_recipe: str = "") -> str:
-    bg_css = (BG_LAYER_BASE_CSS + bg_recipe_css(bg_recipe, t)) if bg_recipe else ""
-    bg_tag = (f'<div class="ab-bg-layer" data-bg-recipe="{bg_recipe}"'
-              ' aria-hidden="true"></div>' if bg_recipe else "")
+           sub_mode: str = "same", bg_recipe: str = "", bg_photo: str = "") -> str:
+    bg_css = ""
+    if bg_recipe:
+        bg_css = BG_LAYER_BASE_CSS + bg_recipe_css(bg_recipe, t)
+    elif bg_photo:
+        photo_root, photo_css = bg_photo_layer(t, bg_photo)
+        bg_css = BG_LAYER_BASE_CSS + photo_root + photo_css
+    bg_attr = (f' data-bg-recipe="{bg_recipe}"' if bg_recipe
+               else (' data-bg-photo="1"' if bg_photo else ""))
+    bg_tag = (f'<div class="ab-bg-layer"{bg_attr} aria-hidden="true"></div>'
+              if (bg_recipe or bg_photo) else "")
     pat = pattern_css(pattern, t) if pattern not in ("", "none") else ""
     pat_block = f"\n  {pat}" if pat else ""
     tone_cls = f" tone-{tone}" if tone != "none" else ""
@@ -641,6 +678,10 @@ TITLE_CEILING = {1: 127, 2: 127, 3: 127, 4: 120, 5: 108, 6: 96,
                  7: 84, 8: 84, 9: 72, 10: 72, 11: 64, 12: 64}
 SUB_TITLE_STEPS = {1: 170, 2: 160, 3: 137, 4: 112, 5: 96, 6: 96}
 SUB_TITLE_MIN_PX = 22          # 次条可读下限(与 check 的 title-min-px 同源)
+SINGLE_LINE_MIN_PX = 64        # 主标一行可读下限:字号到这就不拆行(8–12 字直排的依据)
+SUB_CANVAS = 383               # 次条方图边长
+SUB_BLOCK_H_RATIO = 0.80       # 方图标题块高占画布比(手机缩到指甲盖大仍能读)
+SUB_BLOCK_W_RATIO = 0.82       # 方图标题块宽占画布比(两侧各留 9% 呼吸)
 
 
 def title_ceiling(n: int) -> int:
@@ -882,7 +923,7 @@ def title_particle_edges(markup: str) -> list[str]:
 
 
 def plan_lines(text: str, max_lines: int = 2, max_chars: int | None = None,
-               even: int = 3):
+               even: int = 3, allow_pair_lines: bool = False):
     """把标题切成「行数尽量少、行宽尽量均、且不产生孤字」的行列表。
 
     max_chars: 单行可容纳的最大字数(次条 383 宽要按这个约束,否则断出来的行放不下)。
@@ -907,6 +948,10 @@ def plan_lines(text: str, max_lines: int = 2, max_chars: int | None = None,
     t = raw.strip()
     units = _units(t)
     n = len(units)
+    # 组合枚举是 C(n, k-1):n 一大就指数爆炸(200 字的测试标题曾把检查卡死 5 分钟)。
+    # 标题超过 24 个单元已不是标题,直接放弃断行交给 CSS 自动换行。
+    if n > 24:
+        return None
     unit_offsets = [0]
     for unit in units:
         unit_offsets.append(unit_offsets[-1] + len(unit))
@@ -935,7 +980,7 @@ def plan_lines(text: str, max_lines: int = 2, max_chars: int | None = None,
             if max_chars and any(l > max_chars for l in lens):
                 continue
             # 孤字:单行只有 1 个字,或多行里有一行只有 2 个字(视觉上等同孤字)
-            if any(l <= 1 or (l == 2 and k > 1) for l in lens):
+            if any(l <= 1 or (l == 2 and k > 1 and not allow_pair_lines) for l in lens):
                 continue
             bad_lead = any(line.lstrip()[:1] in NO_LEAD for line in firsts[1:])
             bad_tail = any(line.rstrip()[-1:] in NO_TAIL for line in firsts[:-1])
@@ -969,9 +1014,9 @@ def plan_lines(text: str, max_lines: int = 2, max_chars: int | None = None,
 
 
 def break_lines(text: str, max_lines: int = 2, max_chars: int | None = None,
-                even: int = 3) -> str:
+                even: int = 3, allow_pair_lines: bool = False) -> str:
     """plan_lines 的 <br> 化版本;算不出来就原样返回(交给 CSS 兜底)。"""
-    lines = plan_lines(text, max_lines, max_chars, even)
+    lines = plan_lines(text, max_lines, max_chars, even, allow_pair_lines)
     return "<br>".join(lines) if lines else (text or "")
 
 
@@ -1021,12 +1066,10 @@ def title_px(text: str, base: int, floor: int, relax: int = 1, col: int = 383,
     base = min(base, cap, int(CANVAS_H * TITLE_SHARE_CAP))
     w = _em(text, 0.02) or 1.0
     fit = int(min(col * 0.96, TITLE_COL_MAX * 0.96) / w)
-    # 核心字约束:中央语义区(383)至少要容下最长行 60% 的字,否则越界授权就变成
-    # "整行悬在带外"——check 的 title-overreach 正是按这个口径判定,这里先算进字号,
-    # 让产物天然达标,而不是靠报错回退。骨架族栏宽 <383 时本式不产生影响。
-    core_need = max(2, -(-longest_line_chars(text) * 3 // 5))
-    by_core = int(383 // core_need)   # 与 check 的 capacity 同口径(语义区按 383 计)
-    size = min(base, fit, by_core)
+    # 不再按「中央 383 区容纳 60% 字」压字号:参考样本里 8–10 字主标本来就从左到右
+    # 直排,压字号只会把小图里的标题压没。越界由 check 的 title-bleed 守边界(90–810),
+    # 多行方案才额外要求核心字可读。
+    size = min(base, fit)
     return size if size >= floor else floor
 
 
@@ -1042,41 +1085,53 @@ def sub_px(text: str, base: int, floor: int, col: int = 315,
 
 def fit_title(text: str, col: int, floor: int, max_lines: int = 2,
               cap: int | None = None) -> tuple[str, int]:
-    """在 max_lines 行内选「字号最大」的断法;多行要大 8% 以上才值得拆。
+    """主标断行:一行放得下就用一行,只有一行会被压到不可读才拆。
 
-    为什么不能先断行再定字号:6 字排一行是 54px,8 字断两行反而 81px ——
-    字号随字数上升,版面就崩了。这里对每种行数各算一次字号,取更大者;
-    平手时选行数少的(少行更稳,更不容易压边)。
+    参考样本里换行的都是「插画/物件已经占了 40%–55% 版面」的版式,或标题超长;
+    纯文字版式把 8–10 字拆成 4+4,缩略图上一眼看到的是两截短句,信息反而断开。
+    所以规则是:单行字号 >= SINGLE_LINE_MIN_PX 就锁定单行(8–10 字直排的依据),
+    否则才在 max_lines 内找能把字号抬起来的断法。
     """
     n = visible_len(plain(text))
     cap = cap if cap is not None else title_ceiling(n)
-    best: tuple[str, int] | None = None
-    for lines in range(1, max(1, max_lines) + 1):
+    single = break_lines(text, 1, n)
+    size = title_px(single, cap, floor, col=col, cap=cap)
+    if size >= max(floor, SINGLE_LINE_MIN_PX) or max_lines < 2:
+        return (single, size)
+    best: tuple[str, int] = (single, size)
+    for lines in range(2, max(1, max_lines) + 1):
         chars = -(-n // lines)              # 向上取整,保证不超行
         ttl = break_lines(text, lines, chars)
-        size = title_px(ttl, cap, floor, col=col, cap=cap)
-        # 少行优先:多行必须比现方案大 8% 以上才值得拆。否则 6 字会被平分成
-        # 3+3(秋日新/品发布,拆词),色带还只跟最长行缩回 383,标题反而越界。
-        # 阈值而非「严格更大」:两方案的 top 字号常常只差 1px,靠比较数值会把
-        # 少行方案判负。
-        if best is None or size > best[1] * 1.08:
-            best = (ttl, size)
-    return best if best else (text, floor)
+        s = title_px(ttl, cap, floor, col=col, cap=cap)
+        if s > best[1] * 1.04:              # 多行得明显更大才值得牺牲直排
+            best = (ttl, s)
+    return best
 
 
 def fit_sub_title(text: str, col: int, floor: int, max_lines: int = 2,
                   cap: int | None = None) -> tuple[str, int]:
-    """次条版 fit_title:字阶用 sub_title_step,不继承主标比例。"""
-    n = visible_len(plain(text))
-    cap = cap if cap is not None else sub_title_step(n)
-    best: tuple[str, int] | None = None
-    for lines in range(1, max(1, max_lines) + 1):
-        chars = -(-n // lines)
-        ttl = break_lines(text, lines, chars)
-        size = sub_px(ttl, cap, floor, col=col, cap=cap)
-        if best is None or size >= best[1]:
-            best = (ttl, size)
-    return best if best else (text, floor)
+    """次条(方图)标题:手机缩到指甲盖大,所以要「字大、占满、以换行为主」。
+
+    方图 383×383 里 4 字不再直排,而是 2+2、块高占画布 80%;字数 1–2 才单行。
+    含显式 <br> 时按用户硬边界走,只估字号。
+    """
+    raw = text or ""
+    n = visible_len(plain(raw))
+    if re.search(r"<br\s*/?>|\r?\n", raw, flags=re.I):
+        ttl = raw
+    else:
+        lines = 1 if n <= 2 else min(2, max(1, max_lines))
+        chars = -(-n // lines) if n else 1
+        # 次条允许 2 字一行(方图大字的设计),主标题的"孤字"禁忌在这里不适用
+        ttl = break_lines(raw, lines, chars, even=100, allow_pair_lines=True)
+    per_line = max(1, -(-visible_len(plain(ttl)) // max(1, ttl.count("<br>") + 1)))
+    line_count = max(1, ttl.count("<br>") + 1)
+    by_h = int(SUB_CANVAS * SUB_BLOCK_H_RATIO / (line_count * 1.12))
+    # 栏宽也是硬约束:plate-page 次条只有 206px 文字列,方图大字要让位给它
+    col_w = min(SUB_CANVAS * SUB_BLOCK_W_RATIO, col * 0.97)
+    by_w = int(col_w / (per_line * 1.02))
+    size = max(floor, min(by_h, by_w, cap if cap is not None else SUB_TITLE_STEPS[1]))
+    return (ttl, size)
 
 
 def _center_band(t, d, sub=False):
@@ -1120,21 +1175,21 @@ def _center_band(t, d, sub=False):
 # ================================================================ 族二:band-editorial
 
 BE_CSS = """
-/* 左文带横穿左侧三分线,覆盖 0–642 全高;文字仍从安全区 x=274 起 */
+/* 左文带横穿左侧三分线,覆盖 0–642 全高;文字列 90–642(扣 10% 安全边距后最大化) */
 .panel { left: 0px; top: 0px; bottom: 0px; width: 642px;
   background: var(--c-plate); border: 1px solid var(--c-line); }
 .panel::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 6px;
   background: var(--c-accent); }
-.safe { left: 274px; top: 30px; bottom: 30px; width: 348px;
+.safe { left: 90px; top: 30px; bottom: 30px; width: 552px;
   display: flex; flex-direction: column; justify-content: center;
   align-items: flex-start; text-align: left; gap: 13px; }
 .kicker { font: 600 14px/1 var(--font-sans); color: var(--c-accent);
   letter-spacing: .30em; display: flex; gap: 10px; align-items: center; }
 .kicker::before { content: ""; width: 22px; height: 2px; background: var(--c-accent); }
 .t { font: 700 var(--t-size)/1.2 var(--font-display); color: var(--c-ink);
-  letter-spacing: .01em; max-width: 348px; }
+  letter-spacing: .01em; max-width: 552px; }
 .sub { font: 400 17px/1.5 var(--font-sans); color: var(--c-muted);
-  letter-spacing: .08em; max-width: 320px; }
+  letter-spacing: .08em; max-width: 470px; }
 .wm { right: -40px; top: 50%; transform: translateY(-50%); white-space: nowrap;
   font: 800 150px/1 var(--font-display); letter-spacing: -.02em;
   color: var(--c-ink); opacity: .07; }
@@ -1171,9 +1226,9 @@ BE_CSS_SUB = """
 
 
 def _band_editorial(t, d, sub=False):
-    # 文字栏 348 / 次条 295:行数与字号一起由 fit_*_title 选(挑字号最大的断法)
+    # 主封文字栏 560(8–10 字直排)/ 次条 295(方图大字 2 字一行)
     ttl, main_px = (fit_sub_title(d["title"], 295, 28, 2) if sub
-                    else fit_title(d["title"], 348, 28, 2))
+                    else fit_title(d["title"], 552, 28, 2))
     parts = []
     if d["kicker"]:
         parts.append(f'<div class="kicker" data-role="info">{esc(d["kicker"])}</div>')
@@ -1335,10 +1390,9 @@ def _giant_caps(t, d, sub=False):
     # 巨字族的标题被同一个底色块框住:必须断成等宽行,否则块里是锯齿。
     # 行数上限 4:13 字以内,主封按 4 行才有 4/4/3/2 这类齐整断法。
     if sub:
-        ttl = break_lines(d["title"], 4, 4, even=100)
+        # 次条方图:字要大、块要占满。复用统一的大字方图算法(4 字 → 2+2、块高 80%)
+        ttl, main_px = fit_sub_title(d["title"], 307, 28, 2)
         longest = max(1, max(len(x) for x in ttl.split("<br>")))
-        rows = ttl.count("<br>") + 1
-        main_px = max(28, min(int(307 / longest), int(300 / rows)))
     else:
         ttl = break_lines(d["title"], 4, 5, even=100) if n > 5 else break_lines(d["title"], 1)
         # 四档上限取「字数档 × 画布占比」:2 字 127 / 3 字 118 / 4 字 108 / 5 字 96
@@ -1348,7 +1402,9 @@ def _giant_caps(t, d, sub=False):
         rows = ttl.count("<br>") + 1
         main_px = min(main_px, int(TITLE_COL_MAX * 0.96 / longest), int(340 / rows))
     # 色块宽度按"最长行"定,不按容器宽定 —— 否则断行后各行宽窄不一,色块撑歪成台阶
-    block_w = min(TITLE_COL_MAX if not sub else 307, int(longest * main_px * 1.06))
+    # 色块要含左右各 16px 内边距(tone 的 padding),否则字形会顶出色块边缘
+    block_w = min(TITLE_COL_MAX if not sub else 307,
+                  int(longest * main_px * 1.06) + 32)
     parts = []
     if d["kicker"]:
         parts.append(f'<div class="kicker" data-role="info">{esc(d["kicker"])}</div>')
@@ -1579,7 +1635,8 @@ def make_data(title, kicker="", sub="", footer="", num="", title_en="",
 
 def render(layout: str, t: dict, d: dict, font_vars: str,
            sub: bool = False, pattern: str = "auto", tone: str = "auto",
-           fx: str = "", font_faces: str = "", bg_recipe: str = "") -> str:
+           fx: str = "", font_faces: str = "", bg_recipe: str = "",
+           bg_photo: str = "") -> str:
     """渲染一张封面 HTML。调用方保证 layout 已校验。
 
     fx: 着色器底材名(见 SHADER_FX);空/auto 时取族默认;'none' 关掉。
@@ -1588,9 +1645,8 @@ def render(layout: str, t: dict, d: dict, font_vars: str,
     res = fn(t, d, sub)
     body, size, css = res[0], res[1], res[2]
     extra = res[3] if len(res) > 3 else {}
-    if sub:
-        # 次条独立字阶:按次条自身字数取上限(不再用主标 ×0.62 缩排)
-        size = min(size, sub_title_step(visible_len(plain(d["title"]))))
+    # 次条字号由 fit_sub_title 按「块高 80% + 栏宽」反推,不再二次用字数档压回来:
+    # 方图缩到手机指甲盖大时,4 字压到 112px 就只剩半屏,传达不起来。
     pat, fx = resolve_visual_layers(layout, pattern, fx)
     flat_sub = sub and d.get("sub_mode") == "flat"
     if flat_sub:
@@ -1602,18 +1658,24 @@ def render(layout: str, t: dict, d: dict, font_vars: str,
     full_css = css + ("\n/* 强调处理 */\n" + tone_css if tone_css else "")
     # 族内算出的量(如色块宽度)——必须进变量,否则 CSS 里 var(--x) 取不到值
     if extra:
+        # 长度类计量必须带单位:--block-w: 288 是无效 CSS 长度,var() 会退化成 auto
+        def _decl(k, v):
+            name = k.replace("_", "-")
+            unit = "px" if isinstance(v, int) and name.endswith(("-w", "-size")) else ""
+            return f"--{name}: {v}{unit};"
         full_css += "\n/* 版式计量 */\n.poster { " + " ".join(
-            f"--{k.replace('_', '-')}: {v};" for k, v in extra.items()) + " }\n"
+            _decl(k, v) for k, v in extra.items()) + " }\n"
     w, h = (383, 383) if sub else (900, 383)
     title = re.sub(r"<br\s*/?>", " ", plain(d["title"]) or "", flags=re.I)
     if fx:
         body = fx_canvas(fx, t) + body
     if flat_sub:
-        bg_recipe = ""  # flat 次条是纯色底,不叠外层背景
+        bg_recipe, bg_photo = "", ""  # flat 次条是纯色底,不叠外层背景
     return canvas(w, h, t, layout, pat, ton, size, body,
                   root_vars(t, font_vars, font_faces) + full_css,
                   title, "sub" if sub else "main", fx=fx,
-                  sub_mode=d.get("sub_mode", "same"), bg_recipe=bg_recipe)
+                  sub_mode=d.get("sub_mode", "same"), bg_recipe=bg_recipe,
+                  bg_photo=bg_photo)
 
 
 def layout_list_text() -> str:

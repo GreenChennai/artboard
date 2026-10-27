@@ -56,9 +56,16 @@ python $S/gzh_cover.py export my-post --only main
   ```bash
   python $S/check_overflow.py <项目>/src --width 900 --height 383
   ```
-- **合一图(默认交付)**:主封面(左)+ 间隔 + 次条(右)等高拼接,`kiln-cli img stitch` 纯像素搬运
-  (v1.9 起,不再用 Pillow),单张原始比例不变。间隔/底色可调:`merge my-post --gap 80 --bg "#0f1b3d"`。
+- **合一图(默认交付)**:主封面(左)+ 次条(右)等高拼接,默认间隔 **0**(v1.26.2 起,出片即可上传,不留白缝),
+  `kiln-cli img stitch` 纯像素搬运(v1.9 起,不再用 Pillow),单张原始比例不变。
+  确需留白或换底色时显式覆盖:`merge my-post --gap 80 --bg "#0f1b3d"`;导出时也可加 `export my-post --gap 80`。
   这张合一图**就是**公众号后台上传件;分件只在被明确要求时用 `--split` 出。
+- **背景优先级(高 → 低)**:① 实拍/生图照片层(`new --bg-image <图>`,已有项目用 `bg-attach` 挂图)
+  → ② AI 生图提示词(`bg-prompt` 生成 `bg-prompt.txt`,交给生图工具出图后 `bg-attach` 挂回)
+  → ③ CSS 配方(`--bg-recipe`,八套见 references/gzh-cover-backgrounds.md)。
+  照片层与配方互斥,同传报 `BAD_BG_COMBO`;`--bg-recipe` 与 shader 底材也互斥,`--fx auto` 时 shader 让位。
+  照片必须**无文字**(提示词整段写明 NO TEXT,让模型画字必糊),单文件 ≤2.6MB,超出报 `BG_IMAGE_TOO_LARGE`;
+  解码失败 `BG_IMAGE_DECODE_FAILED`,缺 Pillow `BG_IMAGE_PILLOW_MISSING`。
 
 ## 三、正文排版:从 Markdown 到公众号
 

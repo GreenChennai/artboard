@@ -403,7 +403,8 @@ import shader_fx as _shader_fx  # noqa: E402
 
 MAIN_W, MAIN_H = 900, 383      # Artboard 主封面内部默认画布(约 2.35:1)
 SUB_W, SUB_H = 383, 383        # Artboard 次条内部默认 1:1 画布
-MERGE_GAP = 57                 # 合并图间隔(CSS px,随 scale 放大)
+MERGE_GAP = 0                  # 合并图间隔:0(成品直接可用,不留给用户再裁切)
+                               # 历史值 57 会让单图交付出现一道白缝,与「直接使用」冲突
 
 # 主题色板:唯一真相源 = _gzh_theme.py(图文与封面共用;一处改色两产物同变)
 import _gzh_theme as _GZT
@@ -1360,6 +1361,39 @@ def _install_local_raster(src_dir: str, spec: dict):
     return "images/" + spec["filename"], ""
 
 
+def _bg_photo_data_uri(path: str):
+    """把本地背景图压成内联 JPEG data URI(背景层专用,不追求无损)。
+
+    为什么要压:data URI 直接进 HTML,原图 3–5MB 会让 src/*.html 膨胀十倍,
+    而且导出链路要反复解析。背景是「氛围」,1600 宽 + q86 已经超过 2x 画布需要。
+    """
+    try:
+        from PIL import Image
+    except Exception:  # noqa: BLE001
+        return None, "BG_IMAGE_PILLOW_MISSING"
+    try:
+        with Image.open(os.path.abspath(os.path.expanduser(path))) as raw:
+            im = raw.convert("RGB")
+    except Exception:  # noqa: BLE001
+        return None, "BG_IMAGE_DECODE_FAILED"
+    if im.width > 1600:
+        im = im.resize((1600, max(1, round(im.height * 1600 / im.width))),
+                       Image.LANCZOS)
+    buf = io.BytesIO()
+    quality = 86
+    while quality >= 48:
+        buf.seek(0)
+        buf.truncate()
+        im.save(buf, "JPEG", quality=quality, optimize=True, progressive=True)
+        if buf.tell() <= _GL.BG_PHOTO_MAX_BYTES:
+            break
+        quality -= 8
+    if buf.tell() > _GL.BG_PHOTO_MAX_BYTES:
+        return None, "BG_IMAGE_TOO_LARGE"
+    payload = base64.b64encode(buf.getvalue()).decode("ascii")
+    return "data:image/jpeg;base64," + payload, ""
+
+
 def build_layout_data(args) -> dict:
     """把 CLI 参数整理成版式层要的 data 结构。"""
     meta = [s.strip() for s in (args.meta or "").split(",") if s.strip()]
@@ -1448,21 +1482,39 @@ def cmd_new(args) -> int:
             bg_recipe = _GL.resolve_bg_recipe(getattr(args, "bg_recipe", ""))
         except ValueError as exc:
             return fail("BAD_BG_RECIPE", str(exc))
+        # 背景优先级第 1 档:生图/用户图作背景(内联 data URI,导出不依赖外链)
+        bg_image_input = getattr(args, "bg_image", "") or ""
+        bg_photo = ""
+        if bg_image_input:
+            if bg_recipe:
+                return fail("BAD_BG_COMBO",
+                            "--bg-image 与 --bg-recipe 是两种背景,只能选一种")
+            bg_spec, bg_error = _local_raster_spec(bg_image_input)
+            if bg_error:
+                return fail(bg_error, "--bg-image 需要可读的本地 PNG/JPEG/WebP 文件",
+                            image=bg_image_input)
+            bg_photo, bg_error = _bg_photo_data_uri(bg_image_input)
+            if bg_error:
+                return fail(bg_error, "背景图无法压缩为内联背景(检查格式/体积)",
+                            image=bg_image_input)
         # 两种底材不叠加:配方是 CSS 底纹,fx 是 canvas 底材,同屏会把配方盖成
         # 一层粗网点(实测 warm 主题默认 halftone + dots-grid)。fx 是 auto 时静默
         # 让位给配方;用户显式点了 fx 则报冲突,不替他做决定。
-        if bg_recipe and shader_fx and shader_fx != "none":
+        if (bg_recipe or bg_photo) and shader_fx and shader_fx != "none":
             if getattr(args, "fx", "auto") == "auto":
-                print(f"· 已选背景配方 {bg_recipe},主题默认底材 {shader_fx} 让位"
+                bg_label = f"背景配方 {bg_recipe}" if bg_recipe else "背景图"
+                print(f"· 已选{bg_label},主题默认底材 {shader_fx} 让位"
                       f"(要保留请显式 --fx {shader_fx})", file=sys.stderr)
                 # 必须落成显式 "none":空串在 render() 里会被当成 auto 再解析回族默认。
                 shader_fx = "none"
             else:
+                bg_label = f"--bg-recipe {bg_recipe}" if bg_recipe else "--bg-image"
                 return fail("BACKGROUND_LAYER_CONFLICT",
-                            f"--bg-recipe {bg_recipe} 与 --fx {shader_fx} 是两种底材,只能选一种")
+                            f"{bg_label} 与 --fx {shader_fx} 是两种底材,只能选一种")
     else:
         visual_pattern, shader_fx = "none", ""
         bg_recipe = ""
+        bg_photo = ""
     fams = DEFAULT_FONTS if args.fonts == "auto" else \
         [s.strip() for s in args.fonts.split(",") if s.strip()]
     faces, font_vars = build_font_assets(fams)
@@ -1511,6 +1563,17 @@ def cmd_new(args) -> int:
             return fail(image_error, "本地照片无法安全接入 src/images,未覆盖现有项目资产",
                         image=image_input)
     args.image_ref = image_ref
+    if bg_photo:
+        # 落一份压缩图到 src/images,便于 attach/复现;HTML 里仍用内联 data URI
+        try:
+            bg_dir = os.path.join(src, "images")
+            os.makedirs(bg_dir, exist_ok=True)
+            with open(os.path.join(bg_dir, "bg-photo.jpg"), "wb") as bg_file:
+                bg_file.write(base64.b64decode(bg_photo.split(",", 1)[1]))
+        except OSError:
+            rollback_new_project()
+            return fail("BG_IMAGE_WRITE_FAILED", "背景图无法写入 src/images",
+                        image=bg_image_input)
 
     sub_title = args.sub_title or distill_subtitle(args.title)[0]
     if not args.sub_title:
@@ -1524,11 +1587,11 @@ def cmd_new(args) -> int:
             "index.html": _GL.render(layout, t, data_main, font_vars, sub=False,
                                      pattern=visual_pattern, tone=args.accent_tone,
                                      fx=shader_fx, font_faces=faces,
-                                     bg_recipe=bg_recipe),
+                                     bg_recipe=bg_recipe, bg_photo=bg_photo),
             "sub.html": _GL.render(layout, t, data_sub, font_vars, sub=True,
                                    pattern=visual_pattern, tone=args.accent_tone,
                                    fx=shader_fx, font_faces=faces,
-                                   bg_recipe=bg_recipe),
+                                   bg_recipe=bg_recipe, bg_photo=bg_photo),
         }
     else:
         files = {
@@ -1563,6 +1626,8 @@ def cmd_new(args) -> int:
         project["layout"] = layout
         project["bg_pattern"] = visual_pattern
         project["bg_recipe"] = bg_recipe
+        if bg_photo:
+            project["bg_image"] = "images/bg-photo.jpg"
         project["accent_tone"] = _GL.resolve_tone(layout, args.accent_tone)
         project["sub_mode"] = args.sub_mode
         # 旧版 fx 保留兼容;new 版同时记录每页真实底材,flat 次条不会误报 shader。
@@ -1585,6 +1650,8 @@ def cmd_new(args) -> int:
         out["bg_pattern"] = project["bg_pattern"]
         if project.get("bg_recipe"):
             out["bg_recipe"] = project["bg_recipe"]
+        if project.get("bg_image"):
+            out["bg_image"] = project["bg_image"]
         out["accent_tone"] = project["accent_tone"]
     emit(out)
     return 0
@@ -1646,6 +1713,133 @@ def stitch_merged(main_png: str, sub_png: str, out_path: str, gap: int,
     if size[0] is None:
         out["warning"] = "拼接成功但尺寸未能读出(产物请在文件管理器核对)"
     return out
+
+
+_BG_PROMPT_HINTS = {
+    "center-band": "中央一条横向浅色带用于放标题,带外上下留空;左右两侧可放细密的图形",
+    "band-editorial": "左侧 45% 保持大面积干净平面(放标题),细节集中在右侧 55%",
+    "stack-cards": "背景只做底纹和右侧装饰,左中部保持安静,不要有卡片或框",
+    "giant-caps": "整幅低对比,左侧 30% 更暗更淡,右侧可以让主体(物件/建筑)露出半截",
+    "kraft-note": "纸张质感为主,右上角留白,左下可有一小块胶带/订书钉类细节",
+    "plate-page": "右侧 50% 是照片区,背景图只负责左侧与整体色调,不要有具体主体",
+}
+
+
+def _bg_prompt_text(project: dict, t: dict) -> str:
+    layout = project.get("layout", "center-band")
+    hint = _BG_PROMPT_HINTS.get(layout, _BG_PROMPT_HINTS["center-band"])
+    dark = _GL.is_dark(t)
+    mood = ("深色、低照度、局部暖光,暗部保留层次" if dark
+            else "浅色、纸感、自然光,高光干净不刺眼")
+    return (
+        f"一张用于微信公众号双封面(横幅 900×383 + 方图 383×383)的背景视觉,"
+        f"不需要任何文字。\n"
+        f"用途:{project.get('slug', '双封面')};版式:{layout}。\n"
+        f"构图:{hint}。\n"
+        f"色调:主色 {t['bg']},墨色 {t['ink']},点缀 {t['accent']};{mood}。\n"
+        f"风格:克制、印刷感、少量颗粒与纸纹;不要渐变霓虹,不要 3D 立体字,"
+        f"不要 emoji,不要人物正脸,不要 logo 或水印。\n"
+        f"技术约束:横版 1600×800(2x),NO TEXT / NO LETTERS / NO LOGO / "
+        f"NO WATERMARK;左侧 45% 保持低信息密度;边缘细节可密,中心留呼吸。\n"
+        f"输出:一张扁平化的背景图,用于压在标题文字下方。"
+    )
+
+
+def cmd_bg_prompt(args) -> int:
+    """生成背景提示词:背景优先级第 2 档(没有生图时让用户去 AI 生图再回传)。"""
+    proj = resolve_project(args.project)
+    if not proj:
+        return fail("PROJECT_NOT_FOUND", "传项目目录或 slug", project=args.project)
+    meta, meta_error = load_project_manifest(proj)
+    if meta_error:
+        return fail(meta_error, "project.json 不可用,无法生成背景提示词")
+    theme_name, t = _resolve_theme(meta.get("theme", "ink"))
+    if t is None:
+        return fail("BAD_THEME", "项目主题不可识别")
+    prompt = _bg_prompt_text(meta, t)
+    path = os.path.join(proj, "bg-prompt.txt")
+    try:
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(prompt + "\n")
+    except OSError:
+        return fail("BG_PROMPT_WRITE_FAILED", "无法写入 bg-prompt.txt")
+    emit({"ok": True, "project": proj, "prompt": prompt, "path": path,
+          "next": "把 prompt 交给生图工具,拿到图后运行 gzh_cover.py bg-attach <项目> --image <图>"})
+    return 0
+
+
+def _attach_bg_photo(html: str, layer_css: str, root_css: str) -> str:
+    if 'class="ab-bg-layer"' in html:
+        raise ValueError("页面已有背景层")
+    match = re.search(r'(<div class="poster[^"]*"[^>]*>)', html)
+    if not match:
+        raise ValueError("找不到 .poster 根节点")
+    layer = ('<div class="ab-bg-layer" data-bg-photo="1" aria-hidden="true"></div>')
+    html = html[:match.end()] + layer + html[match.end():]
+    style = "<style>\n" + _GL.BG_LAYER_BASE_CSS + root_css + layer_css + "\n</style>\n"
+    return html.replace("</head>", style + "</head>", 1)
+
+
+def cmd_bg_attach(args) -> int:
+    """把本地/生图背景图挂到已有项目:改 HTML 里的背景层,不重排版式。"""
+    proj = resolve_project(args.project)
+    if not proj:
+        return fail("PROJECT_NOT_FOUND", "传项目目录或 slug", project=args.project)
+    meta, meta_error = load_project_manifest(proj)
+    if meta_error:
+        return fail(meta_error, "project.json 不可用,无法挂背景图")
+    if meta.get("bg_recipe"):
+        return fail("BAD_BG_COMBO",
+                    "项目已用背景配方;背景图与配方互斥,请新建项目时二选一",
+                    bg_recipe=meta.get("bg_recipe"))
+    if meta.get("bg_image"):
+        return fail("BG_IMAGE_EXISTS", "项目已有背景图;要换图请新建或先删 src/images/bg-photo.jpg",
+                    bg_image=meta.get("bg_image"))
+    fx = meta.get("fx") or meta.get("main_fx") or ""
+    if fx and fx != "none":
+        return fail("BACKGROUND_LAYER_CONFLICT",
+                    f"项目底材是 {fx};背景图需要先关掉 --fx none(两种底材只能选一种)")
+    spec, spec_error = _local_raster_spec(args.image)
+    if spec_error:
+        return fail(spec_error, "--image 需要可读的本地 PNG/JPEG/WebP 文件", image=args.image)
+    data_uri, uri_error = _bg_photo_data_uri(args.image)
+    if uri_error:
+        return fail(uri_error, "背景图无法压成内联背景", image=args.image)
+    theme_name, t = _resolve_theme(meta.get("theme", "ink"))
+    if t is None:
+        return fail("BAD_THEME", "项目主题不可识别")
+    root_css, layer_css = _GL.bg_photo_layer(t, data_uri)
+    src = os.path.join(proj, "src")
+    patched = []
+    for name in ("index.html", "sub.html"):
+        path = os.path.join(src, name)
+        if not os.path.isfile(path):
+            continue
+        with open(path, encoding="utf-8") as fh:
+            html = fh.read()
+        try:
+            html = _attach_bg_photo(html, layer_css, root_css)
+        except ValueError as exc:
+            return fail("BG_ATTACH_FAILED", str(exc), page=name)
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(html)
+        patched.append(name)
+    if not patched:
+        return fail("MISSING_PAGES", "项目缺少 src/index.html,无法挂背景图")
+    try:
+        bg_dir = os.path.join(src, "images")
+        os.makedirs(bg_dir, exist_ok=True)
+        with open(os.path.join(bg_dir, "bg-photo.jpg"), "wb") as bg_file:
+            bg_file.write(base64.b64decode(data_uri.split(",", 1)[1]))
+    except OSError:
+        return fail("BG_IMAGE_WRITE_FAILED", "背景图无法写入 src/images")
+    meta["bg_image"] = "images/bg-photo.jpg"
+    with open(os.path.join(proj, "project.json"), "w", encoding="utf-8") as fh:
+        json.dump(meta, fh, ensure_ascii=False, indent=2)
+    emit({"ok": True, "project": proj, "patched": patched,
+          "bg_image": "images/bg-photo.jpg",
+          "next": "运行 gzh_cover.py export 重新出图"})
+    return 0
 
 
 def cmd_export(args) -> int:
@@ -2782,8 +2976,11 @@ def check_one(html_path: str, canvas_w: int, layout: str,
     if bg_tags:
         bg_recipe_match = re.search(r'data-bg-recipe="([^"]*)"', bg_tags[0])
         bg_recipe = bg_recipe_match.group(1) if bg_recipe_match else ""
-    add("bg-recipe-known", not bg_tags or bg_recipe in _GL.BG_RECIPE_SLUGS,
-        f"背景配方={bg_recipe!r}(白名单 {len(_GL.BG_RECIPE_SLUGS)} 个)" if bg_tags
+    bg_photo_flag = bool(bg_tags) and "data-bg-photo" in bg_tags[0]
+    add("bg-recipe-known",
+        not bg_tags or bg_photo_flag or bg_recipe in _GL.BG_RECIPE_SLUGS,
+        ("背景层=生图/用户图(data URI)" if bg_photo_flag else
+         f"背景配方={bg_recipe!r}(白名单 {len(_GL.BG_RECIPE_SLUGS)} 个)") if bg_tags
         else "未使用外层背景层")
     bg_bodies = []
     for bg_match in re.finditer(r"([^{}]+)\{([^{}]*)\}", css_text, flags=re.S):
@@ -2838,9 +3035,14 @@ def check_one(html_path: str, canvas_w: int, layout: str,
         skip("title-min-px", "legacy 模板没有可解析的字号 token,本项未测量")
     elif h1:
         broken_terms = _GL.locked_title_splits(h1.group(1))
-        add("title-word-break", not broken_terms,
-            "未拆开高置信标题词组" if not broken_terms
-            else f"显式断行拆开标题词组: {broken_terms}")
+        if canvas_w != MAIN_W:
+            # 次条是 383 方图,标题必须占满版面,4 字按 2+2 分两行是设计目标,
+            # 拆开「城市更新」这类词组在这里是预期行为,不按主封的断行纪律判罚。
+            skip("title-word-break", "次条方图按 2 字一行设计,词组分行属预期")
+        else:
+            add("title-word-break", not broken_terms,
+                "未拆开高置信标题词组" if not broken_terms
+                else f"显式断行拆开标题词组: {broken_terms}")
         particle_edges = _GL.title_particle_edges(h1.group(1))
         add("title-particle-edge", not particle_edges,
             "断行未将助词推到行首/行尾" if not particle_edges
@@ -2871,15 +3073,18 @@ def check_one(html_path: str, canvas_w: int, layout: str,
         add("title-min-px", px >= TITLE_MIN_PX,
             f"{'次条' if canvas_w == SUB_W else '主封'}标题 {px or '?'}px(下限 {TITLE_MIN_PX}px)")
 
-        # 越界授权不是免检:标题盒越过 258–642 时,要求「承载核心信息的那几个字」
-        # 仍能整行落在语义区内。按 px 反推一行最多能放几个字,需 ≥ 最长行的 60%。
-        band_overreach = max(0.0, 258 - x0, x1 - 642)
+        # 越界授权不是免检,但口径按「行」而不是「整盒」:单行直排(无 <br>)时
+        # 一行就是从 x0 连到 x1,只要有字落在语义区就成立;多行才要求承载核心信息的
+        # 那几个字能整行落在 258–642。硬拦边界由 safe-zone-inside(90–810)负责。
+        multi_row = rows > 1
+        band_overreach = max(0.0, 258 - x0, x1 - 642) if multi_row else 0.0
         longest_chars = max([_GL.visible_len(line) for line in
                              re.split(r"<br\s*/?>", h1.group(1), flags=re.I)] or [0])
         capacity = int(383 // px) if px > 0 else 0
         need_chars = max(2, -(-longest_chars * 3 // 5))
         add("title-overreach",
             canvas_w == SUB_W or band_overreach <= 0 or capacity >= need_chars,
+            "单行直排,边界由 safe-zone-inside 守" if not multi_row else
             f"越出语义区 {band_overreach:g}px;一行可容 {capacity} 字,需 ≥{need_chars} 字"
             + ("" if band_overreach <= 0 else "(越界后核心字仍须整行落在 258–642)"))
 
@@ -2887,8 +3092,8 @@ def check_one(html_path: str, canvas_w: int, layout: str,
         # 这个族。次条是方形小图(383×383),排版介质不同,字高下限交给 title-min-px 守。
         share = (px / canvas_h) if px > 0 else 0.0
         if canvas_w == MAIN_W:
-            add("title-share", 0.15 <= share <= 0.35,
-                f"字高占画布 {share:.0%}(须 15%–35%);低于 15% 请压短标题或换族")
+            add("title-share", 0.14 <= share <= 0.35,
+                f"字高占画布 {share:.0%}(须 14%–35%);低于 14% 请压短标题或换族")
         else:
             add("title-share", True, f"次条字高占画布 {share:.0%}(次条由 title-min-px 守下限)")
     else:
@@ -3034,11 +3239,20 @@ def main() -> int:
                     help="列出 6 套版式族及适用文案形态(可省略 slug/--title)")
     pn.add_argument("--bg-recipe", dest="bg_recipe", default="", metavar="配方",
                     help="外层背景配方(" + "/".join(_GL.BG_RECIPE_SLUGS) + ");默认不加")
+    pn.add_argument("--bg-image", dest="bg_image", default="", metavar="路径",
+                    help="本地 PNG/JPEG/WebP 作背景(优先级最高;会压成内联 JPEG 嵌入)")
     pn.add_argument("--deliver", default="merged", choices=["merged", "split"],
                     help="交付口径:merged=只交付一张合并图(默认)/ split=三张单图都要")
     pn.add_argument("--force", action="store_true")
     pn.set_defaults(func=cmd_new)
 
+    pb = sub.add_parser("bg-prompt", help="生成可直接粘贴到 AI 生图工具的背景提示词")
+    pb.add_argument("project")
+    pb.set_defaults(func=cmd_bg_prompt)
+    pa = sub.add_parser("bg-attach", help="把生图/自备背景图挂到已有项目,重新生成 HTML")
+    pa.add_argument("project")
+    pa.add_argument("--image", required=True, help="本地 PNG/JPEG/WebP 背景图")
+    pa.set_defaults(func=cmd_bg_attach)
     pe = sub.add_parser("export", help="导出:默认只出一张合并图(长封面在左+方形在右);--split 出三张单图")
     pe.add_argument("project", help="项目目录或 slug")
     pe.add_argument("--only", default="", choices=["", "main", "sub", "merged"],

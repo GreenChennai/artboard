@@ -47,7 +47,7 @@ def relative_webgpu_paths_resolve_from_caller() -> bool:
 def main_title_minimum_and_width_are_enforced() -> bool:
     _theme_name, theme = gzh_cover._resolve_theme("ink")
     tiny_html = layouts.render("giant-caps", theme,
-                               layouts.make_data(title="城" * 200), font_vars="",
+                               layouts.make_data(title="城" * 40), font_vars="",
                                sub=False, pattern="none", fx="")
     wide_html = layouts.render("center-band", theme,
                                layouts.make_data(title="城市更新的三条路"), font_vars="",
@@ -56,7 +56,7 @@ def main_title_minimum_and_width_are_enforced() -> bool:
     if not title_match:
         return False
     wide_html = wide_html[:title_match.start(2)] + title_match.group(2).replace("<br>", "") + wide_html[title_match.end(2):]
-    wide_html = re.sub(r"(--t-size:\s*)\d+px", r"\g<1>60px", wide_html, count=1)
+    wide_html = re.sub(r"(--t-size:\s*)\d+px", r"\g<1>120px", wide_html, count=1)
     with tempfile.TemporaryDirectory(prefix="artboard-main-title-fit-") as temp:
         tiny_path = Path(temp) / "tiny.html"
         wide_path = Path(temp) / "wide.html"
@@ -72,9 +72,11 @@ def main_title_minimum_and_width_are_enforced() -> bool:
 
 def invalid_title_fails_before_kiln() -> bool:
     _theme_name, theme = gzh_cover._resolve_theme("ink")
+    # 12 字上限之后,手写 HTML 里超长标题是最典型的「导出前必须拦下」场景:
+    # 引擎已改成 8–10 字直排,靠断行触发助词边界的路径不再稳定,这条改用字数预算。
     main_html = layouts.render(
         "band-editorial", theme,
-        layouts.make_data(title="城市更新的三条路", sub="欢迎关注"),
+        layouts.make_data(title="城市更新的三条路径太长了吧", sub="欢迎关注"),
         font_vars="", sub=False, pattern="none", fx="none")
     sub_html = layouts.render(
         "band-editorial", theme, layouts.make_data(title="封面要点"),
@@ -98,7 +100,7 @@ def invalid_title_fails_before_kiln() -> bool:
         result = emitted[-1] if emitted else {}
         failed_ids = {row.get("id") for row in result.get("failed", [])}
         return (rc == 1 and result.get("error") == "COVER_CHECK_FAILED"
-                and "title-particle-edge" in failed_ids and not output.exists())
+                and "title-char-cap" in failed_ids and not output.exists())
 
 
 def _write_checked_page(root: Path, filename: str, html: str) -> Path:
@@ -779,8 +781,9 @@ def flat_sub_mode_and_scale_are_real() -> bool:
     main_size = layouts._RENDERERS["center-band"](theme, same_data, False)[1]
     same_size = int(re.search(r"--t-size: (\d+)px", same).group(1))
     flat_size = int(re.search(r"--t-size: (\d+)px", flat).group(1))
-    ceiling = layouts.sub_title_step(
-        layouts.visible_len("".join(same_data["title"].split())))
+    # 方图大字:4 字按 2+2 排,块高必须吃掉画布 70% 以上,否则手机上认不出
+    sub_rows = same.count("<br>", 0, same.find("</h1>")) + 1
+    block_h_ratio = same_size * sub_rows * 1.12 / layouts.SUB_CANVAS
     with tempfile.TemporaryDirectory(prefix="artboard-flat-manifest-") as temp:
         project = Path(temp)
         src_dir = project / "src"
@@ -820,7 +823,7 @@ def flat_sub_mode_and_scale_are_real() -> bool:
             and 'data-fx="halftone"' in shader_same and '<canvas' in shader_same
             and 'data-fx=""' in shader_flat and '<canvas' not in shader_flat
             and "background-image: none !important" in flat
-            and flat_size == same_size and 22 <= flat_size <= ceiling
+            and flat_size == same_size and sub_rows >= 2 and block_h_ratio >= 0.70
             and "[data-role=\"decor\"] { display: none !important; }" in flat)
 
 

@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.26.2 (未发布) — 双封面:主标直排 + 次条大字方图 + 无缝单图
+
+### Changed
+
+- **主封标题默认单行直排**:一行放得下就不许断行,只有单行字号会跌破 64px 时才断 2 行。此前 `fit_title()` 平手偏爱多行,6 字标题被平分成「秋日新/品发布」(拆词),色带也按最长行缩回 383、标题悬在带外。
+- **band-editorial 文字列 348 → 552,左起 90**(原 274):8–10 字主标可一行直排,左侧面板不再空出 274px 视线断层。
+- **次条改为大字方图**:3 字以上一律 2 行、块高约占画布 80%,4 字 → 2+2 = 136px(此前 `_giant_caps` 的 `break_lines(title,4,4)` 把 4 字排成 1 行 76px)。`render()` 里"按字数档二次压回"的逻辑删除——方图在手机上只有指甲盖大,字不大等于没信息。
+- **合并图默认间隔 57 → 0**(`MERGE_GAP`):单图交付出片即用,不留白缝;要留白用 `merge/export --gap` 显式覆盖。
+- **次条跳过 `title-word-break`**:方图 2 字一行是设计目标,不是拆词误判;主封面仍照常判罚。
+- 测试同步:`invalid_title_fails_before_kiln` 改判 `title-char-cap`(`title-particle-edge` 在新断行规则下不再触发);`main_title_minimum_and_width_are_enforced` 强制字号 60 → 120px;`flat_sub_mode_and_scale_are_real` 改判「2 行 + 块高 ≥70%」。
+
+### Fixed
+
+- `_giant_caps` 色块宽加 32px 字号 padding(左右各 16px),4 字方图字形不再顶出色块边缘。
+- 产物 `.poster` 上 `--block-w / --size` 等变量缺单位(写成 `288` 而非 `288px`)导致 `var()` 退化成 `auto`,次条色块 245px 而文字 272px 溢出。改为按变量名自动补 `px`。
+
+### Verification
+
+- `check_gzh_layout_tokens.py` 33/33、`check_gzh_article_cover.py` 10/10、`check_component_registry.py` 8/8。
+- 三张真实出图 2566×766、中间 gap = 0:主标 96 / 64 / 108px 单行;次条 4 字 136px、色块 306×299。
+- 文档同步:`references/formats/gzh-cover.md`(§4.1/4.2/4.3、§五-6、§六、§十)、`references/gzh-cover-layouts.md`(2.2/2.4 与六族次条行)、`docs/gzh-guide.md`(gap 0、背景优先级)、`references/gzh-cover-backgrounds.md`(八配方与照片层状态)。
+
 ## v1.26.1 (未发布) — 双封面:标题断行与底材互斥修复
 
 ### Fixed

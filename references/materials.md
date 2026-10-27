@@ -46,10 +46,8 @@
 | 2 | 爬虫兜底:bing / baidu / **huaban / iconfont / pinterest**(需 Cookie:装 `tools/asset-bridge` 扩展后由 MCP **自动抓写**——`assets_cookie` tool,或 `python -m artboard_mcp cookie --site iconfont`;也可在扩展 popup 手动抓) / **miankoutu**(免抠 PNG 聚合站,签名 API 免 Cookie) | **不确定** | **文件名自动加前缀 `版权风险-`** |
 | 2.5 | **Bridge 素材站**(asset_hunt 多站编排,0927 迭代):**vector4free**(免费矢量,S3 预览图页内取;授权逐条各异→前缀)/ **svgrepo**(30 万 SVG,Cloudflare 盾→页内 fetch;多数 CC0→前缀)/ **gahag**(日系照片+矢量,**明示 Public Domain**→无前缀但 ACworks 条款自查;**日文关键词命中更高**) | 题材 Iconify/API 覆盖不了时;一条命令:`python scripts/asset_hunt.py --query <词> --theme <主题> --sites svgrepo,gahag,…` | 按站点(见 asset_hunt.SITES) |
 
-> Cookie 插件(MV3,Edge/Chrome 通用;旧 cookie-extension 已删除,由 asset-bridge 全面替代):`tools/asset-bridge/` →「加载解压缩的扩展」→ 登录目标站 → Cookie 抓取走 MCP 自动写 config.json,无需手动粘贴。Cookie 只存本机。iconfont 是矢量/图标源(`--source iconfont`);huaban/pinterest/miankoutu 用 `--source` 显式指定,不进 auto 通道。
+> Cookie 插件(MV3,Edge/Chrome 通用):`tools/asset-bridge/` →「加载解压缩的扩展」→ 登录目标站 → Cookie 抓取走 MCP 自动写 config.json,无需手动粘贴。Cookie 只存本机。iconfont 是矢量/图标源(`--source iconfont`);huaban/pinterest/miankoutu 用 `--source` 显式指定,不进 auto 通道。
 > **miankoutu 通道**:`--source miankoutu` 直搜免抠 PNG(透明底,适合产品/吉祥物贴纸),搜索免 Cookie(内置签名),下载按源站自动带 Referer;聚合源无统一授权,保留风险前缀;版权禁词会静默返回空。
-
-> 
 
 **风险机制(先做出来,随后再换):**
 - 爬虫来源图片**默认视为版权不确定**,`fetch_asset.py` 自动加 `版权风险-` 文件名前缀 + CREDITS 标记。

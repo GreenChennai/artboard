@@ -38,7 +38,8 @@ version: 1.25.0
   `--with-cover`,同主题三图齐出;版式 `--cover-layout auto` 根据内容选择:有主封副题先用 `band-editorial`,
   无副题用 `center-band`;若两条标题显式断点不适配,auto 会回退 `center-band`，显式版式仍 fail closed。可选六族或 `legacy`。提供 `--cover-kicker`、`--cover-sub`、
   `--cover-sub-title`、`--cover-sub-sub` 填满主/次封面的层级;`--cover-fx auto` 按族接官方 shader,
-  `none` 关闭。直接用 `gzh_cover.py new` 时,显式 `--bg-pattern` 优先于自动 shader；CSS 底纹与 shader 都显式启用会报冲突,不可静默忽略;`--no-cover` 是逃生口且交付需说明);
+  `none` 关闭(11 个效果入口与参数见 `references/shader-fx.md`)。
+  直接用 `gzh_cover.py new` 时,显式 `--bg-pattern` 优先于自动 shader；CSS 底纹与 shader 都显式启用会报冲突,不可静默忽略;`--no-cover` 是逃生口且交付需说明);
   `convert` 导出前运行 `gzh_cover.py check`；若 `COVER_CHECK_FAILED`，按 `cover_hint` 改写标题/断点或换族，不能当成可交付封面。显式坏词组/助词断点必须修正；`legacy` 的 partial coverage 要明示。只出封面用 `gzh_cover.py`。主题唯一真相源 `scripts/_gzh_theme.py`。
   需要 135 中转时用 `gzh_article.py convert --preview` 或 `gzh_preview_copy.py`；
   预览复制页只做篇目选择/预览/富文本复制，实际编辑始终使用官方 135 网站，
@@ -74,7 +75,6 @@ version: 1.25.0
 | **视频动效(片头/片尾/概括/章节/转场)** | references/video-motion.md | 做**一整件**片头动画/片尾动画/内容概括/章节卡/转场,或按视频类型配动效、出分镜表/卡点表时(**必读**;模式 V) |
 | 动效分册 | references/animation.md | 动图任务(GIF/MP4)或**视频桥场景卡**时 |
 | 视觉特效 43 式 | references/effects.md | 需要特效配方时(通常写 HTML 时) |
-| **上游 Shader Effects WebGPU(已弃用)** | references/shader-fx.md | 不用于新组件/新视觉;仅维护既有公众号封面运行时或排查 WebGPU 时读;必须走 `--webgpu`,失败不静默降级 |
 | **伪3D与空间感** | references/depth-3d.md | 标题要立体/画面要前后空间/要厚度时 |
 | 标题手法库 | references/title-fx.md | 标题需要描边/蒙版/错位等处理时 |
 | **对比度与色彩工程** | references/color-contrast.md | 定配色 tokens、文字压图、自检"看不清"时(WCAG 定义 + 遮罩数值 + 色盲) |

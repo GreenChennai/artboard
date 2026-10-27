@@ -18,9 +18,6 @@
 | 极简 | `JassinAlSafe/NothingCN` · `nolly-studio/cult-ui` | 颜色 token、字体栈对比、克制基线 |
 | 兜底 | `uiverse-io/galaxy` | 按关键词淘单个 CSS 效果 |
 
-> **已移除**:`shader-effects-inc/shaders`。接入后效果不理想,不再作为视觉源,
-> 新组件**禁止**引用它;既有引用按 `README.md` 的"已移除"口径清理并标 deprecated。
-
 ## Step 2 · 适配 Artboard 约束(四项过滤器)
 
 1. **静态优先**:默认态即完整视觉;hover/click 改写为静态变体,只有导出 GIF 时才追加最小 keyframes。
@@ -54,7 +51,7 @@ git diff --check
 ## Step 5 · 记录来源
 
 组件 frontmatter 的 `sources` 指向真实参考库;同步更新 `README.md` 的
-"开源组件与视觉来源"表(状态只允许 `使用中` / `备用` / `已移除`)。
+"开源组件与视觉来源"表(状态只允许 `使用中` / `备用`)。
 不一致时以 registry 为准,修正 README。
 
 ## 组件文件模板

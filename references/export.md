@@ -8,9 +8,6 @@
 2. **export_fallback.py**(独立 Playwright):仅 PNG 的最后兜底;
 3. 都不可用 → 报错(`KILN_NOT_FOUND`)。
 
-> WPI 三级引擎(v1.8 及以前)已整体退役:`wpi_path`、`wpi_cli_exe`、
-> `setup_wpi.py`、`ARTBOARD_WPI` 均已删除,遇到旧文档/旧脚本提及即过时。
-
 ## 双路径
 
 | | 主路径 `export.py` | 兜底 `export_fallback.py` |

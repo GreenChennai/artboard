@@ -42,12 +42,10 @@ python scripts/to_vector.py --source <项目>/src --outdir <项目>/export --for
 已知边界:中文在 EPS 中仍可能轮廓化(不可改字);可编辑交付请使用 AI/PDF，
 AI 路线保留 CID 真文本、避免 Type3/逐元素剪切蒙版；`@property` 数字滚动为静态终值。
 
-## 2. 与 v1.8 的差异
+## 2. 文本保真与验收
 
-- poppler + Ghostscript + pikepdf + scikit-image 全链退役(setup_vector.py 删除)
-- WebHtml2VectorEdit / VectorEdit2WebHtml / text_run_merger 退役(Kiln 原生直出)
-- 中文 PDF 从"整句轮廓"升级为"CID 真文本可选中"
-- 相似度自检(SSIM)随浏览器基线退役;保真度走上游 bench/fidelity.py
+- 中文 PDF/AI 为 CID 真文本：可选中、可复制、可在 Illustrator 整句改字；EPS 中文仍可能轮廓化。
+- 矢量产物由 Kiln 原生直出；保真度走上游 `bench/fidelity.py` 验收。
 
 ## 3. 逆向重维护(kiln-cli import)
 

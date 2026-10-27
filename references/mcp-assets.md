@@ -47,8 +47,7 @@
 
 ## 3. 素材 Bridge(浏览器扩展,`tools/asset-bridge/`)
 
-**升级自旧插件 cookie-extension(已删除)**:Cookie 抓取与"导出本页素材 JSON"(clipboard 旧通道,现由本扩展 popup 承接)
-**原样保留**;新增**被本机服务调用**的滚动/分页采集。
+**能力**：Cookie 抓取与“导出本页素材 JSON”(扩展 popup 承接)，外加**被本机服务调用**的滚动/分页采集。
 
 ```
 浏览器扩展 --WS--> bridge.py 常驻服务(127.0.0.1:随机端口) <--WS-- server.py(assets_fetch_page)

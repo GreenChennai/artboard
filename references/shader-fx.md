@@ -1,10 +1,7 @@
 # Shader Effects · WebGPU 效果接入
 
-> ⚠️ **已弃用(2026-10):Artboard 不再把 `shader-effects-inc/shaders` 作为视觉来源。**
-> 弃用原因:产出效果不理想,且 WebGPU 运行时给静态出图带来环境依赖与失败面。
-> 现状:`vendor/shaders/`、`shader_fx.py`、`gzh_cover.py --cover-fx` 仅为**既有公众号封面运行时与历史项目**保留,不删除、不新增能力;
-> **新组件与新视觉一律改用 `components/registry/` 中的静态 CSS 组件 + `--ab-*` token**,不得再以 shader 作为默认质感来源。
-> 本文件保留为维护与排障存档(上游来源、SHA256、11 个效果入口等技术细节仍然有效)。
+> **适用面**：公众号双封面(`gzh_cover.py --fx`)、WebGPU 视频卡与 `shader_fx.py` 独立底图导出。
+> 平面海报/主 KV/长图的默认质感走 `components/registry/` 的静态 CSS 组件 + `--ab-*` token，不用 shader。
 
 > Artboard 随包携带 `vendor/shaders/upstream.js`，其中包含来源于上游的 shader 代码和本地 global/API wrapper；`vendor/shaders/runtime.js` 是 Artboard 参数与生命周期适配层，不实现 shader 算法。MIT 许可随包保留在 `vendor/shaders/LICENSES/shaders-LICENSE`。
 >
@@ -14,7 +11,7 @@
 
 | 场景 | 用法 |
 |---|---|
-| 平面图、主 KV、长图、公众号双封面 | 静态 WebGPU shader 作为底层质感；标题、图表和正文仍在独立 HTML 层 |
+| 公众号双封面、独立底图导出 | 静态 WebGPU shader 作为底层质感；标题、图表和正文仍在独立 HTML 层 |
 | 视频卡、片头、章节卡、转场 | 保持官方 animation loop；用上游组件的 `speed` 控制动态节奏 |
 | 135 图文正文 | 用 `gzh_article.py convert --preview` 生成通用内联正文和预览复制页；shader 画面作为独立素材，不把文章变成 canvas，也不仿制 135 私有 DOM |
 | 照片/产品主体 | 不用 shader 代替真实素材 |

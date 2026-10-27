@@ -34,8 +34,7 @@
 - 静态检查:`python $S/gzh_cover.py check <slug>`。六个新族做完整几何/安全区检查；无 `--layout` 的 legacy 旧模板会返回 `coverage=partial` 并标出跳过项,不要把“未测量”当通过。
 - 产物命名:`cover-main-<slug>.png` / `cover-sub-<slug>.png` / `cover-merged-<slug>.png`,
   文件名自带用途,可直接在公众号后台上传。
-- 导出主路径与全技能一致(**Kiln 原生引擎** → `scripts/export.py`;旧 WPI 主链 v1.8 及以前
-  已退役);合并图是纯像素拼接(`kiln-cli img stitch`),**不重新渲染 HTML**,单张内容零形变、零重采样。
+- 导出主路径与全技能一致(**Kiln 原生引擎** → `scripts/export.py`);合并图是纯像素拼接(`kiln-cli img stitch`),**不重新渲染 HTML**,单张内容零形变、零重采样。
 
 ---
 

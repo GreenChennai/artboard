@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.25.1 (未发布) — 文档去"路牌"
+
+### Changed
+
+- SKILL.md 主路由表删掉「上游 Shader Effects WebGPU(已弃用)」一行(该表每次加载都占 token);`--cover-fx` 的功能说明就地补一句指向 `references/shader-fx.md`,不再单列一条已弃用条目。
+- `references/shader-fx.md` 顶部弃用横幅改为「适用面」:只写现行范围(公众号双封面 / WebGPU 视频卡 / `shader_fx.py` 独立底图导出),平面海报与主 KV 走 `components/registry/` 的静态 CSS 组件。
+- README:开源来源表删掉 `~~Shaders~~` 已移除行,「状态」规则由三值收为两值(使用中 / 备用);致谢「直接集成的第三方运行时」把 shader 行改写为现行事实(公众号封面 WebGPU 底纹运行时 + 11 个效果入口指向 shader-fx.md);"历史运行时说明(已弃用,仅作存档)"整段压成两条现行事实(SHA256 门禁与链接许可)。
+- `components/registry/PIPELINE.md` 删掉 shader「已移除」提示块,README 状态口径同步为两值。
+- 同类路牌一并清掉:`references/export.md` 的 WPI 退役注记块、`references/formats/gzh-cover.md` 的"旧 WPI 主链已退役"半句、`references/vector-export.md` §2 由「与 v1.8 的差异」改为「文本保真与验收」(只留现行事实)、`references/materials.md` 与 `references/mcp-assets.md` 的"旧 cookie-extension 已删除"括注。
+
+### Verification
+
+- `python scripts/selfcheck.py --only refs,route,stale,nums`:route 66/66 覆盖、stale 0 违规、nums 5 组一致;refs 仍为 4 条既有 FAIL(README / docs/map 指向 `docs/ITERATION.md`、`docs/map/adr/` 等"本地留档、不进仓库"的过程文档,非本次引入)。
+- `python scripts/check_component_registry.py`:8 / 8 项通过(0 FAIL,0 WARN)。
+- `git diff --check` 通过。
 ## v1.25.0 (未发布) — 七风格预设:从"关键词"到"数值配方"
 
 ### Added

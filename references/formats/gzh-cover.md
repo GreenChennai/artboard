@@ -235,6 +235,7 @@
 | `MISSING_EXPORTS` | 合并前单张未导出 | 默认 `export` 已直接出单图;用 `--split` 时先 `export --only main` / `--only sub` |
 | `TITLE_TOO_LONG` | 主标超过 12 个可见字符 | 压短文案,或换行数更多的族;不要靠缩字号硬塞 |
 | `BAD_BG_RECIPE` | `--bg-recipe` 不在 8 个配方内 | 8 个可选值见 `--help`;不确定就不加 |
+| `BACKGROUND_LAYER_CONFLICT` | `--bg-recipe` 与 `--fx` 同时显式指定(两种底材) | 二选一:要配方就 `--fx none`,要 shader 就去掉 `--bg-recipe`;`--fx auto` 时不报错,主题默认 shader 自动让位 |
 | `STITCH_FAILED` | 合并图拼接失败(`kiln-cli img stitch`) | 检查两张单张 PNG 是否存在且未损坏 |
 | `EXISTS` | 项目已存在 | 换 slug 或 `--force` |
 

@@ -279,9 +279,13 @@ def bg_recipe_css(name: str, t: dict) -> str:
                 f" repeating-linear-gradient(0deg, {soft} 0 6px, transparent 6px 26px),"
                 f" repeating-linear-gradient(90deg, {soft} 0 6px, transparent 6px 26px); }}")
     if name == "dots-grid":
-        return (".poster > .ab-bg-layer { --bg-alpha: .55;"
+        # 点阵是「纸的肌理」不是「网」:alpha 压到 .3、点径 1px,12px 一格,
+        # 在 2x 出图上刚好是一层浅网点;原来的 .55/1.2px 会变成粗布颗粒,
+        # 背景抢过标题(实测 c1 warm 样本)。
+        dot = _rgb_alpha(ink, .20)   # 点要看得见:叠在 --bg-alpha 上还要剩一层浅网点
+        return (".poster > .ab-bg-layer { --bg-alpha: .60;"
                 " background-image:"
-                f" radial-gradient(circle at 50% 50%, {soft} 1.2px, transparent 1.4px);"
+                f" radial-gradient(circle at 50% 50%, {dot} 1px, transparent 1.6px);"
                 " background-size: 12px 12px; }")
     if name == "tear":
         # 撕纸:纸卡 + 底边锯齿,drop-shadow 让白描边露出来
@@ -1017,7 +1021,13 @@ def title_px(text: str, base: int, floor: int, relax: int = 1, col: int = 383,
     base = min(base, cap, int(CANVAS_H * TITLE_SHARE_CAP))
     w = _em(text, 0.02) or 1.0
     fit = int(min(col * 0.96, TITLE_COL_MAX * 0.96) / w)
-    return min(base, fit) if fit >= floor else floor
+    # 核心字约束:中央语义区(383)至少要容下最长行 60% 的字,否则越界授权就变成
+    # "整行悬在带外"——check 的 title-overreach 正是按这个口径判定,这里先算进字号,
+    # 让产物天然达标,而不是靠报错回退。骨架族栏宽 <383 时本式不产生影响。
+    core_need = max(2, -(-longest_line_chars(text) * 3 // 5))
+    by_core = int(383 // core_need)   # 与 check 的 capacity 同口径(语义区按 383 计)
+    size = min(base, fit, by_core)
+    return size if size >= floor else floor
 
 
 def sub_px(text: str, base: int, floor: int, col: int = 315,
@@ -1032,7 +1042,7 @@ def sub_px(text: str, base: int, floor: int, col: int = 315,
 
 def fit_title(text: str, col: int, floor: int, max_lines: int = 2,
               cap: int | None = None) -> tuple[str, int]:
-    """在 max_lines 行内选「字号最大」的断法;字号差 1px 内优先少行。
+    """在 max_lines 行内选「字号最大」的断法;多行要大 8% 以上才值得拆。
 
     为什么不能先断行再定字号:6 字排一行是 54px,8 字断两行反而 81px ——
     字号随字数上升,版面就崩了。这里对每种行数各算一次字号,取更大者;
@@ -1045,8 +1055,11 @@ def fit_title(text: str, col: int, floor: int, max_lines: int = 2,
         chars = -(-n // lines)              # 向上取整,保证不超行
         ttl = break_lines(text, lines, chars)
         size = title_px(ttl, cap, floor, col=col, cap=cap)
-        # 同字号时取行数更多的断法:行内字更少 → 更不容易压边/越过语义区
-        if best is None or size >= best[1]:
+        # 少行优先:多行必须比现方案大 8% 以上才值得拆。否则 6 字会被平分成
+        # 3+3(秋日新/品发布,拆词),色带还只跟最长行缩回 383,标题反而越界。
+        # 阈值而非「严格更大」:两方案的 top 字号常常只差 1px,靠比较数值会把
+        # 少行方案判负。
+        if best is None or size > best[1] * 1.08:
             best = (ttl, size)
     return best if best else (text, floor)
 

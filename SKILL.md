@@ -1,7 +1,7 @@
 ---
 name: artboard
 description: Use when the user wants a finished graphic produced from copy or a reference image, or wants an existing design revised — 海报、banner、小红书封面、公众号封面、主 KV、信息长图、数据图、名片、A4 海报、三折页、易拉宝、PPT 页、二维码物料; 动态海报、GIF、MP4、口播信息卡、图解动画卡、科普动画卡等视频场景卡; 片头动画、片尾动画、内容概括动画、章节卡、转场卡等视频动效件(按口播/教程/vlog/短片/MV 配动效); 成片/长动效的**审片**(逐帧审阅、元素拾取、审片意见落盘、像素基线回归、缓存隔离审计,子技能 references/review-loop.md + tools/review-station); H5 页面、移动端落地页、互动页、邀请函 H5 等轻量交互页(模式 H); 地图/城市地图/路网/区位图/街道底图、2.5D 等轴测与 3D 城市、地图 KV、多网点分布图、地图动画(车流/通勤/导航)、地图播放器 H5(子技能 references/map-studio.md); 印刷/打样/烫金/UV/模切/专色/裁切线等印前工艺; 公众号文章/微信图文/秀米排版(模式 W); SVG/EPS/AI/可编辑 PDF 等矢量工程文件交付; 抠图/调色/滤镜/压缩/水印/切片等位图工序; 图标/几何图形/极简插画; 多稿同出/给几个方案; 品牌色/logo/VI 一致性; 把文案变成图片、复刻一张设计图、换风格重做、改稿但说不清哪里不满意. 风格像 Illustrator/Photoshop 做的设计图,不是网页交互风. Not for 网页 UI、视频剪辑、纯 AI 生图. Create poster/banner/KV/social-cover/infographic images from copy or reference images via HTML rendering.
-version: 1.26.0
+version: 1.26.1
 ---
 
 # artboard · HTML 海报工作室
@@ -39,7 +39,7 @@ version: 1.26.0
   无副题用 `center-band`;若两条标题显式断点不适配,auto 会回退 `center-band`，显式版式仍 fail closed。可选六族或 `legacy`。提供 `--cover-kicker`、`--cover-sub`、
   `--cover-sub-title`、`--cover-sub-sub` 填满主/次封面的层级;`--cover-fx auto` 按族接官方 shader,
   `none` 关闭(11 个效果入口与参数见 `references/shader-fx.md`)。
-  直接用 `gzh_cover.py new` 时,显式 `--bg-pattern` 优先于自动 shader；CSS 底纹与 shader 都显式启用会报冲突,不可静默忽略;`--no-cover` 是逃生口且交付需说明);新增 `--bg-recipe` 走外层背景层(kraft-paper/gingham/dots-grid/tear/ticket/window/rays/curtain,配方见 `references/gzh-cover-backgrounds.md`);主标硬上限 12 个可见字符(超出报 `TITLE_TOO_LONG`),次条缺省时自动从主标提炼 2–4 字。
+  直接用 `gzh_cover.py new` 时,显式 `--bg-pattern` 优先于自动 shader；CSS 底纹与 shader 都显式启用会报冲突,不可静默忽略;`--no-cover` 是逃生口且交付需说明);新增 `--bg-recipe` 走外层背景层(kraft-paper/gingham/dots-grid/tear/ticket/window/rays/curtain,配方见 `references/gzh-cover-backgrounds.md`;`--bg-recipe` 与 shader 底材互斥,`--fx auto` 时 shader 自动让位);主标硬上限 12 个可见字符(超出报 `TITLE_TOO_LONG`),次条缺省时自动从主标提炼 2–4 字。
   `convert` 导出前运行 `gzh_cover.py check`；若 `COVER_CHECK_FAILED`，按 `cover_hint` 改写标题/断点或换族，不能当成可交付封面。显式坏词组/助词断点必须修正；`legacy` 的 partial coverage 要明示。只出封面用 `gzh_cover.py`。主题唯一真相源 `scripts/_gzh_theme.py`。
   需要 135 中转时用 `gzh_article.py convert --preview` 或 `gzh_preview_copy.py`；
   预览复制页只做篇目选择/预览/富文本复制，实际编辑始终使用官方 135 网站，

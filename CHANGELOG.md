@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.26.1 (未发布) — 双封面:标题断行与底材互斥修复
+
+### Fixed
+
+- 主标断行 `fit_title()`:多行方案必须比少行方案大 8% 以上才采用。此前 6 字标题会被平分成「秋日新/品发布」(拆词),色带也只按最长行缩回 383,标题整行悬在带外。
+- 主标字号新增核心字约束 `by_core = 383 // ceil(最长行字数 × 0.6)`:越界授权后必须在中央 383 语义区内保住最长行 60% 的字,否则 `title-overreach` 必失败(实测 6 字 96 → 95px)。
+- `--bg-recipe` 与 shader 底材互斥:`--fx auto` 时主题默认底材让位并打印提示;显式 `--fx` 同用时返回 `BACKGROUND_LAYER_CONFLICT`。此前两种底材同屏,配方被 halftone 网点盖成一层粗布纹。
+- `dots-grid` 配方参数:点径 1px、ink 20%、层 α .6(原 1.2px / 8% / .55 在 2x 出图上要么看不见、要么反客为主)。
+
+### Changed
+
+- 本机安装 Kiln 0.15.0(`scripts/setup_kiln.py`),三组样张改为真实渲染验证(2680×766 单图),不再只有静态机检。
+
+### Verification
+
+- 三组真实出图:`秋日新品发布`(center-band + dots-grid + warm)、`城市更新/三条路径`(band-editorial + kraft-paper + ink)、`今日开业`(giant-caps + ticket + red),每张 `check` 0 违规、`export` 单图 2680×766。
+- 修后主标:6 字一行 95px(色带 637px),4 字 120px;`title-overreach` / `safe-zone-inside` / `title-share` 全通过。
+
 ## v1.26.0 (未发布) — 双封面:标题重新定级 + 单图交付 + 背景层
 
 ### Breaking

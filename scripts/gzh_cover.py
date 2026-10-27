@@ -1448,6 +1448,18 @@ def cmd_new(args) -> int:
             bg_recipe = _GL.resolve_bg_recipe(getattr(args, "bg_recipe", ""))
         except ValueError as exc:
             return fail("BAD_BG_RECIPE", str(exc))
+        # 两种底材不叠加:配方是 CSS 底纹,fx 是 canvas 底材,同屏会把配方盖成
+        # 一层粗网点(实测 warm 主题默认 halftone + dots-grid)。fx 是 auto 时静默
+        # 让位给配方;用户显式点了 fx 则报冲突,不替他做决定。
+        if bg_recipe and shader_fx and shader_fx != "none":
+            if getattr(args, "fx", "auto") == "auto":
+                print(f"· 已选背景配方 {bg_recipe},主题默认底材 {shader_fx} 让位"
+                      f"(要保留请显式 --fx {shader_fx})", file=sys.stderr)
+                # 必须落成显式 "none":空串在 render() 里会被当成 auto 再解析回族默认。
+                shader_fx = "none"
+            else:
+                return fail("BACKGROUND_LAYER_CONFLICT",
+                            f"--bg-recipe {bg_recipe} 与 --fx {shader_fx} 是两种底材,只能选一种")
     else:
         visual_pattern, shader_fx = "none", ""
         bg_recipe = ""

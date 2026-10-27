@@ -729,7 +729,10 @@ def _make_covers(args, md_text: str, theme_name: str) -> dict:
             return cover_error
         # 封面跟图文落在同一个 outdir(传 --outdir 时),否则用户去 studio_dir 里翻图
         outdir = getattr(args, "outdir", "") or ""
+        # v1.26 默认单图交付:export 默认只出 cover-<slug>.png;要主/次单张才显式 --split
         cmd_exp = [sys.executable, cover_py, "export", new_payload["project"]]
+        if getattr(args, "cover_split", False):
+            cmd_exp.append("--split")
         if outdir:
             cmd_exp += ["--outdir", outdir]
         r_exp = _proc.run(cmd_exp, timeout=300)
@@ -913,6 +916,8 @@ def main() -> int:
                     help="auto:有主封副题先用 band-editorial,否则 center-band;标题不适配时回退 center-band;可选六族/legacy")
     pc.add_argument("--cover-fx", default="auto", choices=COVER_FX_CHOICES,
                     help="背景 shader 效果(auto=版式默认;none=关闭;11种MIT上游效果)")
+    pc.add_argument("--cover-split", dest="cover_split", action="store_true",
+                    help="封面分三张出图(主/次/合并);默认只出一张合一图 cover-<slug>.png")
     pc.set_defaults(func=cmd_convert)
 
     pd = sub.add_parser("demo", help="生成示例文章并转换(自检兼容性)")

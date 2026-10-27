@@ -1,0 +1,3 @@
+# 钉死 shader runtime 的字节哈希:必须按 LF 检出,否则 Windows(autocrlf=true)下
+# scripts/shader_fx.py 的 PINNED_VENDOR_SHA256 全部失配,gzh_cover 会直接拒绝导出。
+vendor/shaders/** text eol=lf

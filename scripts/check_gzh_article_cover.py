@@ -283,6 +283,48 @@ def markdown_attributes_are_escaped_and_checked() -> bool:
             and "<a " not in blocked and "<img " not in blocked)
 
 
+def cover_export_defaults_to_single_image() -> bool:
+    """默认只出一张合一图;要主/次单张必须显式 --cover-split。"""
+    with tempfile.TemporaryDirectory(prefix="artboard-article-single-deliverable-") as temp:
+        root = Path(temp)
+
+        def run_pair(cover_split: bool):
+            args = argparse.Namespace(
+                input=str(root / "story.md"), title="故事标题", cover_title="", slug="story",
+                theme="ink", cover_layout="center-band", cover_sub="", cover_fx="none",
+                cover_image="", cover_kicker="", cover_sub_title="", cover_sub_sub="",
+                cover_num="", outdir="", cover_split=cover_split)
+            exports: list[list[str]] = []
+
+            def fake_direct(command, **_kwargs):
+                cmd = list(command)
+                payload = ({"ok": True, "project": str(root / "story")}
+                           if cmd[2] == "new" else
+                           {"ok": True, "coverage": "complete", "reports": []})
+                return subprocess.CompletedProcess(
+                    cmd, 0, stdout=json.dumps(payload, ensure_ascii=False), stderr="")
+
+            def fake_export(command, timeout=0, **_kwargs):
+                cmd = list(command)
+                exports.append(cmd)
+                payload = {"ok": True, "exports": [{"output": str(root / "cover.png")}]}
+                return gzh_article._proc.Result(
+                    0, json.dumps(payload), "", False, cmd, 0.01)
+
+            with patch("subprocess.run", side_effect=fake_direct), \
+                    patch.object(gzh_article._proc, "run", side_effect=fake_export):
+                result = gzh_article._make_covers(args, "# Story\n", "ink")
+            return result, exports
+
+        single_result, single_exports = run_pair(False)
+        split_result, split_exports = run_pair(True)
+        return bool(single_result.get("ok") and split_result.get("ok")
+                    and single_exports and split_exports
+                    and "--split" not in single_exports[-1]
+                    and "--split" in split_exports[-1]
+                    and len(single_result.get("images") or []) == 1)
+
+
 def main() -> int:
     checks = {
         "plate_page_image_forwarded": plate_page_image_reaches_cover_cli(),
@@ -295,6 +337,7 @@ def main() -> int:
         "auto_layout_fallback_reuses_only_its_own_created_project":
             auto_layout_fallback_reuses_only_its_own_created_project(),
         "long_article_name_preview_path_is_bounded": long_article_name_preview_is_bounded(),
+        "cover_export_defaults_to_single_image": cover_export_defaults_to_single_image(),
     }
     failed = [name for name, passed in checks.items() if not passed]
     print(json.dumps({"ok": not failed, "checks": checks, "failed": failed}, ensure_ascii=False))

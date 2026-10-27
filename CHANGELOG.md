@@ -1,5 +1,41 @@
 # Changelog
 
+## v1.26.0 (未发布) — 双封面:标题重新定级 + 单图交付 + 背景层
+
+### Breaking
+
+- 主封标题可见字符硬上限 **20 → 12**(`TITLE_TOO_LONG`),超限须改文案或换族;过去能过的长标题会被拒。
+- `export` 默认只出**一张合一图** `cover-<slug>.png`(长封面在左 + 方形在右,即后台上传件);要旧的三张分件须显式 `--split`(图文链路用 `gzh_article.py convert --cover-split`)。
+
+### Added
+
+- 字号引擎( `scripts/_gzh_layouts.py` ):`TITLE_CEILING` 按字数档给上限 64–127px,新增 `title_px()/fit_title()/fit_sub_title()`;主标授权列宽 `TITLE_COL_MAX=720`(色带/色块宽度按实际列宽写进产物,不再写死 383)。
+- 次条独立字阶 `SUB_TITLE_STEPS`(1–6 字 = 170/160/137/112/96/96px)+ `SUB_TITLE_MIN_PX=22`,不再用主标 ×0.62。
+- 标题越界守卫:`title-overreach`(越出 258–642 时要求容量足够,即 `capacity>=need`)、`title-share` 0.15–0.35、`safe-zone-inside` 主封放宽到 90–810 并标注越界事实。
+- 次条自动提炼 `distill_subtitle()`:≤4 字原样,否则取分隔符首段或前 2–4 字;`--sub-title` 缺省时提示提炼结果,右侧方图不再出现缩排。
+- 单图交付:单张渲染到 `export/.parts` 再拼接;`--only merged` 改为幂等;`gzh_article.py` 新增 `--cover-split`。
+- 外层背景层 `--bg-recipe` :kraft-paper / gingham / dots-grid / tear / ticket / window / rays / curtain,纯 CSS `.ab-bg-layer` + 伪元素;`project.json` 记录 `bg_recipe`,flat 次条自动隐藏。
+- 4 项背景机检:`bg-recipe-known` / `bg-layer-budget` / `bg-text-safe` / `bg-offline`。
+- 文档与样张:`docs/gzh-cover-v2-plan.md`(328 行方案)、`references/gzh-cover-backgrounds.md`(三层背景体系 316 行)、`docs/samples/gzh-cover-v2/`(同文案改前 54px / 改后 96px)。
+- `.gitattributes` :`vendor/shaders/**` 强制 LF,修复 `core.autocrlf=true` 导致 SHA256 门禁误报 `SHADER_VENDOR_HASH_MISMATCH`。
+
+### Changed
+
+- `check_gzh_layout_tokens.py` 33 项(新增独立次条字阶、13 字拒绝、200 字巨型字用例);`check_gzh_article_cover.py` 10 项(新增默认单图用例)。
+- `font-count` 上限 3 → 2;新增 `title-budget`(剥 script/style 后 CJK ≤28 字)与 `info-layers`(≤3);`center-band-geometry` 色带宽度 383–720。
+- 主封标题行数上限:center-band / band-editorial / kraft-note / plate-page 2 行,stack-cards / giant-caps 4 行(plate-page 由 3 收为 2)。
+- 文档同步:`SKILL.md` 1.25.0→1.26.0(模式 W 改单图交付、12 字上限、`--bg-recipe` 路由)、README、`docs/gzh-guide.md`、`references/formats/gzh-cover.md`、`references/gzh-cover-layouts.md`(0.62 与 20 字措辞全部改为独立字阶与 12 字)。
+
+### Verification
+
+- `scripts/check_gzh_layout_tokens.py` :33 / 33 PASS。
+- `scripts/check_gzh_article_cover.py` :10 / 10 PASS。
+- `scripts/check_component_registry.py` :8 / 8 通过(0 FAIL,0 WARN)。
+- `selfcheck.py --only refs,route,stale,nums` :route 68/68、stale 0、nums 5 组一致;refs 为 4 条既有基线 FAIL(指向本地留档、不进仓库的过程文档)。
+- `gen_script_index.py --check` :84 个脚本一致;`git diff --check` 通过。
+- E2E:`new <abs> --title 秋日新品发布 --layout center-band --bg-recipe dots-grid` → `check` 0 违规 → 产物 `--t-size: 96px`(改前 54px),背景层 4 项全 True。
+- 未做像素级渲染对比:本机无 Kiln(`ARTBOARD_KILN_CLI` 空)与 playwright;`check_slop.py` 前后样张均 0 发现,但不替代字号核验。
+
 ## v1.25.1 (未发布) — 文档去"路牌"
 
 ### Changed

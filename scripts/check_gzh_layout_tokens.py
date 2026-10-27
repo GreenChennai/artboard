@@ -47,7 +47,7 @@ def relative_webgpu_paths_resolve_from_caller() -> bool:
 def main_title_minimum_and_width_are_enforced() -> bool:
     _theme_name, theme = gzh_cover._resolve_theme("ink")
     tiny_html = layouts.render("giant-caps", theme,
-                               layouts.make_data(title="城" * 100), font_vars="",
+                               layouts.make_data(title="城" * 200), font_vars="",
                                sub=False, pattern="none", fx="")
     wide_html = layouts.render("center-band", theme,
                                layouts.make_data(title="城市更新的三条路"), font_vars="",
@@ -260,8 +260,8 @@ def ancestor_visibility_and_layout_cascade_are_checked() -> bool:
     return True
 
 
-def twenty_one_char_title_is_rejected() -> bool:
-    title = "春" * 21
+def thirteen_char_title_is_rejected() -> bool:
+    title = "春" * 13
     _theme_name, theme = gzh_cover._resolve_theme("ink")
     markup = layouts.render("center-band", theme, layouts.make_data(title=title),
                             font_vars="", sub=False, pattern="none", fx="")
@@ -608,7 +608,7 @@ def shader_audit_matches_runtime_selector() -> bool:
 
 def emoji_title_width_is_conservative() -> bool:
     _theme_name, theme = gzh_cover._resolve_theme("ink")
-    data = layouts.make_data(title="😀" * 20)
+    data = layouts.make_data(title="😀" * 10)
     markup = layouts.render("center-band", theme, data, font_vars="", sub=False,
                             pattern="none", fx="")
     with tempfile.TemporaryDirectory(prefix="artboard-emoji-title-width-") as temp:
@@ -779,7 +779,8 @@ def flat_sub_mode_and_scale_are_real() -> bool:
     main_size = layouts._RENDERERS["center-band"](theme, same_data, False)[1]
     same_size = int(re.search(r"--t-size: (\d+)px", same).group(1))
     flat_size = int(re.search(r"--t-size: (\d+)px", flat).group(1))
-    ceiling = layouts.sub_size(main_size)
+    ceiling = layouts.sub_title_step(
+        layouts.visible_len("".join(same_data["title"].split())))
     with tempfile.TemporaryDirectory(prefix="artboard-flat-manifest-") as temp:
         project = Path(temp)
         src_dir = project / "src"
@@ -962,8 +963,8 @@ def main() -> int:
          poster_pseudo_title_and_animated_resources_are_rejected()),
         ("ancestor-visibility-and-layout-css-cascade-are-checked",
          ancestor_visibility_and_layout_cascade_are_checked()),
-        ("twenty-one-character-title-rejected",
-         twenty_one_char_title_is_rejected()),
+        ("thirteen-character-title-rejected",
+         thirteen_char_title_is_rejected()),
         ("literal-angle-brackets-count-as-visible-title-text",
          literal_angle_bracket_title_counts_consistently()),
         ("plate-page-local-photo-required-and-preserved",
@@ -993,7 +994,7 @@ def main() -> int:
          stray_zwj_does_not_merge_plain_title_text()),
         ("hangul-lvt-jamo-count-and-break-as-one-grapheme",
          hangul_jamo_syllables_count_and_break_as_one_grapheme()),
-        ("flat-sub-mode-and-0.62-scale-are-real",
+        ("flat-sub-mode-and-independent-sub-scale-are-real",
          flat_sub_mode_and_scale_are_real()),
         ("all-layouts-pass-static-geometry",
          every_layout_passes_static_geometry()),

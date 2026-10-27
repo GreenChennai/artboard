@@ -15,7 +15,7 @@
 | build_player.py | Build the map player HTML (assets/map/demo/map-player.html) from template + SVG  | README.md、docs/scripts.md、references/map-studio.md |
 | calc_size.py | artboard 尺寸计算器:px / mm / inch / DPI 互转,印刷导出一把算清。 | docs/scripts.md、references/export.md、references/material-catalog.md、references/print-cmyk.md、references/print-production.md、references/sizes-common.md |
 | check_brief.py | artboard 开工前检查单(Brief Gate)机检。 | docs/glossary.md、docs/scripts.md、references/intake.md |
-| check_component_registry.py | 组件注册体系机检:三层索引一致性 + token 契约 + 来源红线。 | components/registry/PIPELINE.md、docs/scripts.md |
+| check_component_registry.py | 组件注册体系机检:三层索引一致性 + token 契约 + 来源红线。 | components/registry/PIPELINE.md、docs/gzh-cover-v2-plan.md、docs/scripts.md |
 | check_credits.py | artboard 素材版权复核:img 目录 ↔ CREDITS.md 逐条对账。 | SKILL.md、docs/scripts.md、references/materials.md、references/mcp-assets.md、references/pipeline.md |
 | check_h5.py | artboard H5 交互页机检(模式 H;规范见 references/h5-interactive.md)。 | SKILL.md、docs/scripts.md、references/h5-interactive.md |
 | check_mobile_width.py | check_mobile_width.py — 手机窄屏「横向溢出」机检(零 token) | README.md、SKILL.md、docs/scripts.md、references/wechat-article.md |
@@ -23,7 +23,7 @@
 | check_px_baseline.py | 成片像素基线回归:改过影片/动效代码后,确认出图与冻结基线**没被动到别处**。 | README.md、docs/scripts.md、references/animation.md、references/review-loop.md |
 | check_review_cache.py | 缓存隔离审计:证明"缓存/抽稀只影响预览,不影响成片内容与预览完整性"。 | README.md、docs/scripts.md、references/review-loop.md |
 | check_review_ui.py | 审片台页面自检(不用浏览器):id 引用 / 页签配对 / 与影片页 DOM 是否一致。 | README.md、docs/scripts.md、references/review-loop.md |
-| check_slop.py | artboard AI 味与铁律机检(静态,零渲染)。 | README.md、SKILL.md、components/registry/PIPELINE.md、docs/scripts.md、references/cjk-typography-css.md、references/guardrails.md… |
+| check_slop.py | artboard AI 味与铁律机检(静态,零渲染)。 | README.md、SKILL.md、components/registry/PIPELINE.md、docs/gzh-cover-v2-plan.md、docs/scripts.md、references/cjk-typography-css.md… |
 | check_svg.py | artboard SVG 质量门(9 项结构机检;细则见 references/vector-drawing.md §4.7)。 | docs/glossary.md、docs/scripts.md、references/materials.md、references/vector-drawing.md |
 | check_wechat_svg.py | check_wechat_svg.py — 微信公众号图文/内联 SVG 动效机检(零 token) | README.md、SKILL.md、docs/gzh-guide.md、docs/scripts.md、references/wechat-article.md |
 | compare.py | artboard 复刻比对:参考图 vs 复刻导出图并排拼接,供视觉逐项核对。 | docs/glossary.md、docs/scripts.md、references/pipeline.md、references/replicate.md、references/review-loop.md |
@@ -38,8 +38,8 @@
 | fetch_model.py | artboard 模型分发:VQA / OCR 模块打包与下载部署。 | README.md、SKILL.md、docs/scripts.md、docs/setup.md、references/materials.md |
 | fetch_osm_data.py | Fetch OSM vector layers (buildings/roads/water/green/rail) for a bbox via ONE | README.md、docs/scripts.md、references/map-studio.md |
 | fetch_svg.py | artboard 矢量素材获取:Iconify 图标(按需 + 离线缓存 + 逐集许可)。 | docs/scripts.md、docs/svg-licenses.md、references/materials.md、references/vector-drawing.md |
-| gzh_article.py | 公众号文章排版器:Markdown → 微信公众号编辑器可直接粘贴的全内联样式 HTML。 | README.md、SKILL.md、docs/gzh-guide.md、docs/gzh-spec-summary.md、docs/scripts.md、references/gzh-typography.md… |
-| gzh_cover.py | 微信公众号双封面工作站:一次设计,三张产物(主封面/次条/合并预览图)。 | README.md、SKILL.md、docs/gzh-guide.md、docs/scripts.md、references/formats/gzh-cover.md、references/gzh-cover-layouts.md… |
+| gzh_article.py | 公众号文章排版器:Markdown → 微信公众号编辑器可直接粘贴的全内联样式 HTML。 | README.md、SKILL.md、docs/gzh-cover-v2-plan.md、docs/gzh-guide.md、docs/gzh-spec-summary.md、docs/scripts.md… |
+| gzh_cover.py | 微信公众号双封面工作站:一次设计,三张产物(主封面/次条/合并预览图)。 | README.md、SKILL.md、docs/gzh-cover-v2-plan.md、docs/gzh-guide.md、docs/scripts.md、references/formats/gzh-cover.md… |
 | gzh_preview_copy.py | Build a self-contained WeChat article preview-and-copy page. | README.md、SKILL.md、docs/gzh-guide.md、docs/scripts.md、references/wechat-article.md |
 | imageops.py | 位图工序唯一入口(指导书 §1.3/附录 D.2):只做参数分发与结果汇总,不含算法。 | README.md、SKILL.md、docs/failures.md、docs/gzh-guide.md、docs/scripts.md、references/depth-3d.md… |
 | inspect_ref.py | artboard 复刻测量:参考图像素普查工具(证据链协议,见 references/replicate.md)。 | docs/glossary.md、docs/scripts.md、references/imaging.md、references/pipeline.md、references/replicate.md |
@@ -71,7 +71,7 @@
 |---|---|---|
 | _config.py | artboard 共享配置读取与写入:环境变量 > config.json > 默认值。 | SKILL.md、docs/scripts.md |
 | _download.py | artboard 共享下载器:带超时、带重试、带进度、临时文件必清理。 | docs/scripts.md |
-| _gzh_layouts.py | 微信公众号双封面 · 版式族库(gzh_cover.py 的渲染后端)。 | docs/scripts.md、references/formats/gzh-cover.md |
+| _gzh_layouts.py | 微信公众号双封面 · 版式族库(gzh_cover.py 的渲染后端)。 | docs/gzh-cover-v2-plan.md、docs/scripts.md、references/formats/gzh-cover.md |
 | _gzh_theme.py | 公众号统一主题真相源(图文 gzh_article + 双封面 gzh_cover 共用;11 迭代 D-11-2)。 | SKILL.md、docs/glossary.md、docs/gzh-guide.md、docs/gzh-spec-summary.md、docs/scripts.md、references/formats/gzh-cover.md… |
 | _img_compose.py | C 组(合成层)实现(指导书 §5.4,批次二核心项提前落地): | docs/failures.md、docs/scripts.md |
 | _img_core.py | imageops 公共契约(《artboard-位图脚本库扩充-迭代指导书》§4): | docs/failures.md、docs/scripts.md、references/imaging.md |
@@ -87,8 +87,8 @@
 | _px_filter.py | P0-B 滤镜类 12 项(对标 PS Filter;依赖分级:纯 Pillow 可跑,cv2 提速/增强)。 | docs/scripts.md |
 | _px_layer.py | P0-C 图层与合成:混合模式 25 种 / 图层栈 / 填充 / 描边 / 投影。 | docs/scripts.md |
 | _px_recipe.py | 配方引擎:recipe.json 解析 / 校验(未知 op·参数·乱序·缺依赖)/ 单图重放 / 目录批量。 | docs/scripts.md |
-| check_gzh_article_cover.py | Regression checks for article-to-cover layout and image forwarding. | docs/scripts.md |
-| check_gzh_layout_tokens.py | Regression checks for cover layout tokens and fail-closed title export. | docs/scripts.md |
+| check_gzh_article_cover.py | Regression checks for article-to-cover layout and image forwarding. | docs/gzh-cover-v2-plan.md、docs/scripts.md |
+| check_gzh_layout_tokens.py | Regression checks for cover layout tokens and fail-closed title export. | docs/gzh-cover-v2-plan.md、docs/scripts.md |
 | check_gzh_preview_copy.py | Offline regression test for the standalone public-account preview/copy page. | docs/scripts.md |
 | check_gzh_shader_vendor.py | Verify shader-enabled projects fail closed when local vendor assets cannot link. | docs/scripts.md |
 | check_webgpu_atomic.py | WebGPU 引擎/像素验收失败不得覆盖旧输出的本地回归检查。 | docs/scripts.md |

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="generator" content="artboard.gzh_cover">
+<title>gzh-main · 秋日新品发布</title>
+<style>
+/* ===== 画布 900×383 · 版式族 center-band · 底纹 none · 强调 none · 着色器 halftone ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { margin: 0; background: transparent; }
+.poster {
+  position: relative;
+  box-sizing: border-box;
+  width: 900px;
+  height: 383px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  isolation: isolate;
+  background-image: linear-gradient(135deg, #0f1b3d 0%, #1b2f66 100%);
+  --t-size: 96px;
+}
+/* 底纹层:纯 CSS,零外部资源 */
+.poster::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+.poster > * { position: absolute; z-index: 1; }
+/* 着色器底材(来源 shader-effects-inc/shaders,MIT):canvas 参与布局,尺寸稳定不引起滚动 */
+.poster > canvas.ab-shader { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+@font-face { font-family: 'SmileySans'; src: url('fonts/smiley-sans/SmileySans-Oblique.ttf') format('truetype'); font-weight: 100 900; font-display: block; }
+@font-face { font-family: 'SourceHanSans'; src: url('fonts/source-han-sans/NotoSansSC-VF.ttf') format('truetype'); font-weight: 100 900; font-display: block; }
+:root {
+  --c-ink: #f5f7ff;
+  --c-accent: #3b82f6;
+  --c-muted: rgba(245,247,255,.72);
+  --c-line: rgba(255,255,255,.18);
+  --c-bg: #0f1b3d;
+  --c-bg2: #1b2f66;
+  /* 由 bg 亮暗派生:浅底主题用深墨色作「反色卡」底色,深底主题用白 */
+  --c-contrast: #ffffff;
+  --c-plate: rgba(255,255,255,.07);
+  --c-vellum: rgba(255,255,255,.07);
+  --c-shadow: 0 18px 48px rgba(0,0,0,.38);
+  --font-display: 'SmileySans';
+  --font-sans: 'SourceHanSans';
+}
+/* 中央色带:主封基准 383×232, y=96;标题越界时色带随字宽生长(--band-w ≤ 720) */
+.band { left: 50%; top: 96px; transform: translateX(-50%);
+  width: 383px; height: 232px; background: var(--c-plate);
+  border: 1px solid var(--c-line); border-radius: 8px; }
+.safe { left: 50%; top: 30px; bottom: 30px; width: 383px; transform: translateX(-50%);
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+  text-align: center; gap: 15px; }
+.mark { width: 44px; height: 8px; background: var(--c-accent); }
+.kicker { font: 600 16px/1 var(--font-sans); color: var(--c-accent);
+  letter-spacing: .42em; text-indent: .42em; }
+.t { font: 700 var(--t-size)/1.25 var(--font-display);
+  color: var(--c-ink); letter-spacing: .02em; max-width: 383px; }
+.sub { font: 400 18px/1.4 var(--font-sans); color: var(--c-muted);
+  letter-spacing: .16em; text-indent: .16em; max-width: 340px; }
+.rule { width: 58px; height: 1px; background: var(--c-line); }
+.bar { left: 0; top: 0; bottom: 0; width: 10px; background: var(--c-accent); }
+.footer { left: 0; right: 0; bottom: 30px; text-align: center;
+  font: 500 14px/1 var(--font-sans); color: var(--c-muted); letter-spacing: .3em;
+  text-indent: .3em; }
+.num { right: 48px; top: 30px; font: 800 84px/1 var(--font-display);
+  color: var(--c-accent); opacity: .30; }
+.wm { left: 24px; top: 50%; transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center; white-space: nowrap;
+  font: 700 12px/1 var(--font-sans); letter-spacing: .25em;
+  color: var(--c-ink); opacity: .08; }
+
+/* 版式计量 */
+.poster { --band-w: 383px; }
+
+
+
+/* 外层背景层:内容之下、不接收指针事件、不放任何文字 */
+.poster > .ab-bg-layer {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  opacity: var(--bg-alpha, .5);
+}
+.poster > .ab-bg-layer::before,
+.poster > .ab-bg-layer::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+}
+.poster > .ab-bg-layer { --bg-alpha: .55; background-image: radial-gradient(circle at 50% 50%, rgba(245,247,255,0.12) 1.2px, transparent 1.4px); background-size: 12px 12px; }
+</style>
+</head>
+<body>
+<div class="poster" data-layout="center-band" data-kind="main" data-pattern="none" data-fx="halftone" data-sub-mode="same">
+<div class="ab-bg-layer" data-bg-recipe="dots-grid" aria-hidden="true"></div><canvas class="ab-shader" data-fx="halftone" data-freeze="true" data-webgpu-required="true" data-params='{"style":"cmyk","frequency":70,"angle":45,"misprint":0.001,"paperColor":"#0f1b3d","cyanColor":"#1b2f66","magentaColor":"#3b82f6","yellowColor":"rgba(245,247,255,.72)","blackColor":"#f5f7ff","backdropColorA":"#0f1b3d","backdropColorB":"#1b2f66"}' style="position:absolute;inset:0;width:100%;height:100%;z-index:0"></canvas><div class="band" data-role="decor"></div><div class="bar" data-role="decor"></div><div class="safe" data-band="safe"><div class="mark" data-role="decor"></div><h1 class="t" data-role="info">秋日新<br>品发布</h1><div class="rule" data-role="decor"></div></div>
+</div>
+<script src="vendor/shaders/upstream.js"></script><script src="vendor/shaders/runtime.js"></script>
+</body>
+</html>

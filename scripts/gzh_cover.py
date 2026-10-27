@@ -415,14 +415,16 @@ import _gzh_layouts as _GL
 # 各族标题行数上限(超过就是标题太长该换族,不是"再断一行就好")。
 # 数的是 `<br>` 断出来的显式行——CSS 自动折出来的行算不出来,所以新族必须走 break_lines。
 TITLE_ROW_CAP = {
-    "center-band": 3,
-    "band-editorial": 3,
-    "stack-cards": 4,
+    "center-band": 2,
+    "band-editorial": 2,
+    "stack-cards": 4,   # 次条卡片的 4 行是有意的均匀断法(主封走 fit_title 的 2 行)
     "giant-caps": 4,   # 巨字族靠"字即画布",4 行是设计
-    "kraft-note": 3,
-    "plate-page": 3,
+    "kraft-note": 2,
+    "plate-page": 2,
 }
 TITLE_MIN_PX = 22
+# 主标可见字符上限:与 _gzh_layouts.TITLE_HARD_CAP 同源,一处改两处同变
+TITLE_HARD_CAP = _GL.TITLE_HARD_CAP
 
 
 def _resolve_theme(name: str) -> tuple[str, dict | None]:
@@ -481,6 +483,10 @@ def load_project_manifest(proj: str) -> tuple[dict | None, str | None]:
     for key in ("fx", "main_fx", "sub_fx"):
         if key in meta and not _project_fx_value_valid(meta[key]):
             return None, f"project.json {key} 必须为空、none 或受支持的 shader slug"
+    recipe = meta.get("bg_recipe")
+    if recipe not in (None, "") and (not isinstance(recipe, str)
+                                     or recipe not in _GL.BG_RECIPE_SLUGS):
+        return None, "project.json bg_recipe 必须为空或受支持的背景配方"
     return meta, None
 
 
@@ -1365,6 +1371,35 @@ def build_layout_data(args) -> dict:
         image=getattr(args, "image_ref", None))
 
 
+_SUB_TITLE_SEP = re.compile(r"[·・|｜/／、,，:：;；—–\-\s]+")
+
+
+def distill_subtitle(title: str) -> tuple[str, bool]:
+    """从主标提炼次条标题;返回 (次条标题, 是否回落成主标)。
+
+    次条默认复制主标,是「两页看起来一样」的根源:次条走 383×383 方图,
+    标题必须更短、更提炼,不能照搬主标的排布。规则按序:
+    1) 主标 ≤4 字 → 原样(再缩就没信息了);
+    2) 有分隔符(·/|/空格/破折号)→ 取第一段,长度落在 [2, min(4, n-2)];
+    3) 否则取前 min(4, n-2) 个可见字符(中文标题语序最稳的短版)。
+    回落(没能提炼)时返回 True,由 check 的 sub-title-distilled 要求人工确认。
+    """
+    text = (title or "").strip()
+    visible = "".join(_GL.plain(text).split())
+    n = _GL.visible_len(visible)
+    if n <= 4:
+        return text, True
+    target = max(2, min(4, n - 2))
+    parts = [p.strip() for p in _SUB_TITLE_SEP.split(text) if p.strip()]
+    if len(parts) >= 2:
+        head = parts[0]
+        if 2 <= _GL.visible_len("".join(head.split())) <= target:
+            return head, False
+    chars = [c for c in _GL.grapheme_clusters(_GL.plain(text)) if not c.isspace()]
+    head = "".join(chars[:target])
+    return head, head == visible
+
+
 def cmd_new(args) -> int:
     if not args.slug or not args.title:
         return fail("MISSING_ARGS",
@@ -1392,9 +1427,11 @@ def cmd_new(args) -> int:
     for kind, value in titles:
         visible = "".join(_GL.plain(value).split())
         visible_count = _GL.visible_len(visible)
-        if visible_count > 20:
-            return fail("TITLE_TOO_LONG", f"{kind}标题最多 20 个可见字符,当前 {visible_count} 个",
-                        kind=kind, length=visible_count, max=20)
+        if visible_count > TITLE_HARD_CAP:
+            return fail("TITLE_TOO_LONG",
+                        f"{kind}标题最多 {TITLE_HARD_CAP} 个可见字符(中文建议 ≤9 字),"
+                        f"当前 {visible_count} 个;标题太长会挤掉字号,换族或压短文案",
+                        kind=kind, length=visible_count, max=TITLE_HARD_CAP)
     if layout == "plate-page":
         if not image_input:
             return fail("IMAGE_REQUIRED", "plate-page 必须用 --image 提供本地 PNG/JPEG/WebP 照片")
@@ -1407,8 +1444,13 @@ def cmd_new(args) -> int:
                 layout, args.bg_pattern, getattr(args, "fx", "auto"))
         except ValueError as exc:
             return fail("BACKGROUND_LAYER_CONFLICT", str(exc))
+        try:
+            bg_recipe = _GL.resolve_bg_recipe(getattr(args, "bg_recipe", ""))
+        except ValueError as exc:
+            return fail("BAD_BG_RECIPE", str(exc))
     else:
         visual_pattern, shader_fx = "none", ""
+        bg_recipe = ""
     fams = DEFAULT_FONTS if args.fonts == "auto" else \
         [s.strip() for s in args.fonts.split(",") if s.strip()]
     faces, font_vars = build_font_assets(fams)
@@ -1458,7 +1500,10 @@ def cmd_new(args) -> int:
                         image=image_input)
     args.image_ref = image_ref
 
-    sub_title = args.sub_title or args.title
+    sub_title = args.sub_title or distill_subtitle(args.title)[0]
+    if not args.sub_title:
+        # 次条标题默认由主标提炼,而不是复制主标(缩排根源)
+        print("· 次条标题缺省,已从主标提炼为:" + sub_title, file=sys.stderr)
     sub_sub = args.sub_sub or args.sub
     if layout:
         data_main = build_layout_data(args)
@@ -1466,10 +1511,12 @@ def cmd_new(args) -> int:
         files = {
             "index.html": _GL.render(layout, t, data_main, font_vars, sub=False,
                                      pattern=visual_pattern, tone=args.accent_tone,
-                                     fx=shader_fx, font_faces=faces),
+                                     fx=shader_fx, font_faces=faces,
+                                     bg_recipe=bg_recipe),
             "sub.html": _GL.render(layout, t, data_sub, font_vars, sub=True,
                                    pattern=visual_pattern, tone=args.accent_tone,
-                                   fx=shader_fx, font_faces=faces),
+                                   fx=shader_fx, font_faces=faces,
+                                   bg_recipe=bg_recipe),
         }
     else:
         files = {
@@ -1497,10 +1544,13 @@ def cmd_new(args) -> int:
                "kind": "gzh-cover",
                "main": [MAIN_W, MAIN_H], "sub": [SUB_W, SUB_H],
                "theme": theme_name, "fonts": args.fonts,
+               # 交付口径:merged = 只出合并图(默认);split = 三张单图都要
+               "deliver": getattr(args, "deliver", "merged") or "merged",
                "skill_dir": SKILL_DIR, "created_by": "artboard.gzh_cover"}
     if layout:
         project["layout"] = layout
         project["bg_pattern"] = visual_pattern
+        project["bg_recipe"] = bg_recipe
         project["accent_tone"] = _GL.resolve_tone(layout, args.accent_tone)
         project["sub_mode"] = args.sub_mode
         # 旧版 fx 保留兼容;new 版同时记录每页真实底材,flat 次条不会误报 shader。
@@ -1521,6 +1571,8 @@ def cmd_new(args) -> int:
         out["layout"] = {"slug": layout, "name": spec.get("name", ""),
                          "tone": spec.get("tone", ""), "layers": spec.get("layers", "")}
         out["bg_pattern"] = project["bg_pattern"]
+        if project.get("bg_recipe"):
+            out["bg_recipe"] = project["bg_recipe"]
         out["accent_tone"] = project["accent_tone"]
     emit(out)
     return 0
@@ -1645,49 +1697,79 @@ def cmd_export(args) -> int:
     outdir = args.outdir or os.path.join(proj, "export")
     os.makedirs(outdir, exist_ok=True)
     slug = os.path.basename(proj.rstrip("\\/"))
-    main_png = os.path.join(outdir, f"cover-main-{slug}.png")
-    sub_png = os.path.join(outdir, f"cover-sub-{slug}.png")
+    split = bool(getattr(args, "split", False))
+    # 交付口径:默认只出一张合并图(公众号后台一次上传一张),--split 才出三张单图。
+    # 单图模式下单张只是中间产物,渲染到 .parts/ 临时目录,拼完即删,不让用户看到半成品。
+    single = args.only == "" and not split
+    merged_name = f"cover-{slug}.png"
+    parts_dir = ""
+    if single:
+        parts_dir = os.path.join(outdir, ".parts")
+        shutil.rmtree(parts_dir, ignore_errors=True)
+        os.makedirs(parts_dir, exist_ok=True)
+        main_png = os.path.join(parts_dir, f"cover-main-{slug}.png")
+        sub_png = os.path.join(parts_dir, f"cover-sub-{slug}.png")
+    else:
+        main_png = os.path.join(outdir, f"cover-main-{slug}.png")
+        sub_png = os.path.join(outdir, f"cover-sub-{slug}.png")
+
+    def bake(kind, page, png, width) -> tuple[dict, bool]:
+        r = run_export(page, png, width, MAIN_H if width == MAIN_W else SUB_H,
+                       args.scale, webgpu=html_requires_webgpu(page))
+        ok = bool(r.get("ok"))
+        row = {"kind": kind, "output": png,
+               **({"size": f"{r.get('width')}x{r.get('height')}"} if ok
+                  else {"error": r.get("error")})}
+        if not ok:
+            failed.append({"kind": kind, **r})
+        return row, ok
 
     exports, failed = [], []
-    if args.only in ("", "main"):
-        r = run_export(main_html_p, main_png, MAIN_W, MAIN_H, args.scale,
-                       webgpu=html_requires_webgpu(main_html_p))
-        exports.append({"kind": "main", "output": main_png, **(
-            {"size": f"{r.get('width')}x{r.get('height')}"} if r.get("ok")
-            else {"error": r.get("error")})})
-        if not r.get("ok"):
-            failed.append({"kind": "main", **r})
-    if args.only in ("", "sub"):
-        r = run_export(sub_html_p, sub_png, SUB_W, SUB_H, args.scale,
-                       webgpu=html_requires_webgpu(sub_html_p))
-        exports.append({"kind": "sub", "output": sub_png, **(
-            {"size": f"{r.get('width')}x{r.get('height')}"} if r.get("ok")
-            else {"error": r.get("error")})})
-        if not r.get("ok"):
-            failed.append({"kind": "sub", **r})
-
     merged = {}
-    if args.only in ("", "merged"):
-        if args.only == "merged":
-            missing = [p for p in (main_png, sub_png) if not os.path.isfile(p)]
-            if missing:
-                return fail("MISSING_EXPORTS", "--only merged 需要单张封面已导出;先跑 export --only main|sub", missing=missing)
-        if not failed:
-            merged_png = os.path.join(outdir, f"cover-merged-{slug}.png")
-            merged = stitch_merged(main_png, sub_png, merged_png,
+    if args.only == "merged":
+        existing = [p for p in (os.path.join(outdir, merged_name),
+                                os.path.join(outdir, f"cover-merged-{slug}.png"))
+                    if os.path.isfile(p)]
+        if not existing:
+            return fail("MISSING_EXPORTS",
+                        "export 默认已直接产出单张封面(cover-<slug>.png),无需 --only merged;"
+                        "若是旧产物请先跑 export",
+                        missing=[os.path.join(outdir, merged_name)])
+        merged = {"ok": True, "path": existing[0]}
+        exports.append({"kind": "merged", "output": existing[0]})
+    else:
+        if args.only in ("", "main"):
+            row, ok = bake("main", main_html_p, main_png, MAIN_W)
+            if not single:
+                exports.append(row)
+        if args.only in ("", "sub"):
+            row, ok = bake("sub", sub_html_p, sub_png, SUB_W)
+            if not single:
+                exports.append(row)
+        if args.only == "" and not failed:
+            target = os.path.join(outdir, merged_name if single
+                                  else f"cover-merged-{slug}.png")
+            merged = stitch_merged(main_png, sub_png, target,
                                    gap=MERGE_GAP * args.scale, bg=args.bg)
-            exports.append({"kind": "merged", "output": merged.get("path", merged_png), **(
-                {"size": f"{merged.get('width')}x{merged.get('height')}"} if merged.get("ok")
-                else {"error": merged.get("error")})})
+            exports.append({"kind": "cover" if single else "merged",
+                            "output": merged.get("path", target), **(
+                                {"size": f"{merged.get('width')}x{merged.get('height')}"}
+                                if merged.get("ok") else {"error": merged.get("error")})})
             if not merged.get("ok"):
                 failed.append({"kind": "merged", **merged})
 
-    payload = {"ok": not failed, "project": proj, "exports": exports}
+    if single:
+        shutil.rmtree(parts_dir, ignore_errors=True)
+
+    payload = {"ok": not failed, "project": proj, "exports": exports,
+               "deliver": "single" if single else "split"}
     if merged.get("ok"):
         payload["merged"] = merged["path"]
     if failed:
         payload["failed"] = failed
         payload["hint"] = "单张失败不影响其他产物;按 error 处理后重跑(幂等覆盖)"
+    elif single:
+        payload["hint"] = "默认只交付一张合并图(长封面在左+方形在右);要单张分别用加 --split"
     emit(payload)
     return 0 if not failed else 1
 
@@ -1819,6 +1901,15 @@ def _poster_pseudo_overlay_policy(css: str) -> tuple[bool, str]:
     rejected = []
     for match in re.finditer(r"([^{}]+)\{([^{}]*)\}", css, flags=re.S):
         selector, body = match.group(1).strip(), match.group(2)
+        if re.search(r"(?<![-\w])\.ab-bg-layer(?![-\w])", selector, flags=re.I):
+            # 背景层伪元素由 bg-* 专项机检把关;这里只禁止把文字塞进背景层
+            for raw in _split_css_declarations(body):
+                name, sep, value = raw.partition(":")
+                if sep and name.strip().lower() == "content":
+                    val = _css_value_base(value)
+                    if val not in ('""', "none", "normal"):
+                        return False, f"背景层伪元素含可见文字: {selector}"
+            continue
         if not re.search(r"(?<![-\w])\.poster(?![-\w])", selector, flags=re.I):
             continue
         pseudo = re.search(r":{1,2}(before|after)\b", selector, flags=re.I)
@@ -2546,10 +2637,13 @@ def check_one(html_path: str, canvas_w: int, layout: str,
         band = css_rule("band")
         band_size = (numeric_rule("band", "width"), numeric_rule("band", "height"))
         if canvas_w == MAIN_W:
-            geometry_ok = (band_size == (383, 232) and numeric_rule("band", "top") == 96
+            # 色带随主标字宽生长:v1.26 允许 383→720(标题越界授权),高度与位置不变
+            band_w_val = band_size[0] or 0
+            geometry_ok = (383 <= band_w_val <= 720 and band_size[1] == 232
+                           and numeric_rule("band", "top") == 96
                            and _css_prop(band, "left") == "50%"
                            and "translateX(-50%)" in re.sub(r"\s+", "", _css_prop(band, "transform")))
-            expected_band = "居中 383×232px,y=96"
+            expected_band = "居中 383–720×232px,y=96(色带随字宽生长)"
         else:
             geometry_ok = (band_size == (349, 349) and _css_prop(band, "top") == "50%"
                            and "translate(-50%,-50%)" in re.sub(r"\s+", "", _css_prop(band, "transform")))
@@ -2601,8 +2695,15 @@ def check_one(html_path: str, canvas_w: int, layout: str,
         skip("info-inside-safe", "legacy 模板没有 data-role=info,本项未测量")
     else:
         if canvas_w == MAIN_W:
-            add("safe-zone-inside", 258 <= x0 and x1 <= 642,
-                f"安全区 x∈[{x0:g},{x1:g}] 依据 {how}")
+            # v1.26 起主标授权越过中央语义区(258–642):参考样本 18/18 的大字主标
+            # 都横跨色带。授权上限 90–810(两侧各留 90px 呼吸),但越过语义区必须由
+            # title-overreach 证明「核心字仍在语义区内可读」,不是无条件放开。
+            in_band = 258 <= x0 and x1 <= 642
+            authorized = x0 >= 90 and x1 <= 810
+            add("safe-zone-inside", authorized,
+                f"语义区 x∈[{x0:g},{x1:g}] 依据 {how}"
+                + ("(在 258–642 内)" if in_band
+                   else "(越过语义区,授权区间 90–810,由 title-overreach 校验可读性)"))
         else:
             margin = canvas_w * 0.08
             add("safe-margin-small", margin <= x0 and x1 <= canvas_w - margin,
@@ -2649,9 +2750,52 @@ def check_one(html_path: str, canvas_w: int, layout: str,
         "CSS 全部内联且无 @import" if not unreviewed_css else
         "拒绝未审计的 <link rel=stylesheet> 或 CSS @import")
 
-    # 8 字体 ≤3 款
+    # 8 字体 ≤2 款(v1.26:超过 2 款在 383 高的画布上就是噪音)
     fams = set(re.findall(r"--font-(?:display|sans):\s*'([^']+)'", html))
-    add("font-count", len(fams) <= 3, f"字体族 {sorted(fams)}")
+    add("font-count", len(fams) <= 2, f"字体族 {sorted(fams)}(≤2 款)")
+
+    # 8b 文案预算:全图中文可见字符 ≤28(手机一屏能读进来的上限);
+    #    附属信息层(眉题/副题/落款等 data-role=info)≤3 层,取代旧的"元素 5–8 件"。
+    body_text = re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", html, flags=re.S | re.I)
+    body_text = re.sub(r"<[^>]+>", " ", body_text)
+    body_text = html_lib.unescape(body_text)
+    cjk = len(re.findall(r"[\u3400-\u4dbf\u4e00-\u9fff]", body_text))
+    add("title-budget", cjk <= 28, f"全图中文 {cjk} 字(≤28)")
+    layers = max(0, len(re.findall(r'data-role="info"', html)) - 1)
+    add("info-layers", layers <= 3, f"附属信息层 {layers} 层(≤3)")
+
+    # 8d 外层背景层(v1.26 W6):一个可选 div,必须离线、无字、不抢信息层。
+    bg_tags = re.findall(r'<div[^>]*class="ab-bg-layer"[^>]*>', html)
+    bg_recipe = ""
+    if bg_tags:
+        bg_recipe_match = re.search(r'data-bg-recipe="([^"]*)"', bg_tags[0])
+        bg_recipe = bg_recipe_match.group(1) if bg_recipe_match else ""
+    add("bg-recipe-known", not bg_tags or bg_recipe in _GL.BG_RECIPE_SLUGS,
+        f"背景配方={bg_recipe!r}(白名单 {len(_GL.BG_RECIPE_SLUGS)} 个)" if bg_tags
+        else "未使用外层背景层")
+    bg_bodies = []
+    for bg_match in re.finditer(r"([^{}]+)\{([^{}]*)\}", css_text, flags=re.S):
+        if re.search(r"(?<![-\w])\.ab-bg-layer(?![-\w])", bg_match.group(1), flags=re.I):
+            bg_bodies.append(bg_match.group(2))
+    bg_segment = "\n".join(bg_bodies)
+    bg_image_decls = len(re.findall(r"(?:^|;)\s*background-image\s*:", bg_segment))
+    add("bg-layer-budget", len(bg_tags) <= 1 and bg_image_decls <= 2,
+        f"背景层 {len(bg_tags)} 个(≤1),background-image 声明 {bg_image_decls} 条(≤2)")
+    bg_inner = ""
+    if bg_tags:
+        inner_match = re.search(r'<div[^>]*class="ab-bg-layer"[^>]*>(.*?)</div>', html, re.S)
+        bg_inner = inner_match.group(1) if inner_match else ""
+    bg_plain = html_lib.unescape(re.sub(r"<[^>]+>", " ", bg_inner)).strip()
+    info_pos = html.find('data-role="info"')
+    bg_pos = html.find('class="ab-bg-layer"')
+    add("bg-text-safe", not bg_plain and (not bg_tags or info_pos < 0 or bg_pos < info_pos),
+        "背景层无文字且在信息层之前" if bg_tags
+        else "未使用外层背景层")
+    bg_offline = not re.search(r"url\(|https?://|@import", bg_segment, flags=re.I)
+    add("bg-offline", bg_offline,
+        "背景规则全部离线(CSS 渐变/遮罩)" if bg_offline
+        else "背景规则含外链或 @import")
+
 
     # 左文带必须有主封副题,否则左边只有标题而右侧信息栏落空。
     if layout == "legacy":
@@ -2670,8 +2814,8 @@ def check_one(html_path: str, canvas_w: int, layout: str,
     if h1:
         visible_title = "".join(_GL.markup_plain(h1.group(1)).split())
         visible_count = _GL.visible_len(visible_title)
-        add("title-char-cap", visible_count <= 20,
-            f"标题 {visible_count} 个可见字符(上限 20)")
+        add("title-char-cap", visible_count <= TITLE_HARD_CAP,
+            f"标题 {visible_count} 个可见字符(上限 {TITLE_HARD_CAP},中文建议 ≤9)")
     if layout == "legacy":
         skip("title-row-cap", "legacy 模板未使用 .t 标题锚点,本项未测量")
         if not h1:
@@ -2714,6 +2858,27 @@ def check_one(html_path: str, canvas_w: int, layout: str,
             "超宽不能依赖浏览器自动折行)")
         add("title-min-px", px >= TITLE_MIN_PX,
             f"{'次条' if canvas_w == SUB_W else '主封'}标题 {px or '?'}px(下限 {TITLE_MIN_PX}px)")
+
+        # 越界授权不是免检:标题盒越过 258–642 时,要求「承载核心信息的那几个字」
+        # 仍能整行落在语义区内。按 px 反推一行最多能放几个字,需 ≥ 最长行的 60%。
+        band_overreach = max(0.0, 258 - x0, x1 - 642)
+        longest_chars = max([_GL.visible_len(line) for line in
+                             re.split(r"<br\s*/?>", h1.group(1), flags=re.I)] or [0])
+        capacity = int(383 // px) if px > 0 else 0
+        need_chars = max(2, -(-longest_chars * 3 // 5))
+        add("title-overreach",
+            canvas_w == SUB_W or band_overreach <= 0 or capacity >= need_chars,
+            f"越出语义区 {band_overreach:g}px;一行可容 {capacity} 字,需 ≥{need_chars} 字"
+            + ("" if band_overreach <= 0 else "(越界后核心字仍须整行落在 258–642)"))
+
+        # 字高占比:主封要在信息流里一眼可读,占满画布才立得住;太小说明标题长度撑不起
+        # 这个族。次条是方形小图(383×383),排版介质不同,字高下限交给 title-min-px 守。
+        share = (px / canvas_h) if px > 0 else 0.0
+        if canvas_w == MAIN_W:
+            add("title-share", 0.15 <= share <= 0.35,
+                f"字高占画布 {share:.0%}(须 15%–35%);低于 15% 请压短标题或换族")
+        else:
+            add("title-share", True, f"次条字高占画布 {share:.0%}(次条由 title-min-px 守下限)")
     else:
         add("title-present", False, "未找到 h1.t 标题锚点")
 
@@ -2753,6 +2918,41 @@ def cmd_check(args) -> int:
                         "checks": rows})
         if bad:
             failed.extend([{"kind": kind, **r} for r in bad])
+    # 跨页规则:次条必须是提炼版而不是主标的复制(缩排式"两页一样"是旧缺陷)
+    def _h1_text(path: str) -> str:
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                markup = f.read()
+        except OSError:
+            return ""
+        m = re.search(r'<h1 class="t"[^>]*>(.*?)</h1>', markup, re.S)
+        return "".join(_GL.markup_plain(m.group(1)).split()) if m else ""
+
+    main_t = _h1_text(targets[0][1]) if os.path.isfile(targets[0][1]) else ""
+    sub_t = _h1_text(targets[1][1]) if os.path.isfile(targets[1][1]) else ""
+    cross = []
+    if layout == "legacy":
+        cross.append({"id": "sub-title-distilled", "ok": True,
+                      "detail": "legacy 模板未使用 .t 标题锚点,本项未测量"})
+    elif main_t and sub_t:
+        n_main = _GL.visible_len(main_t)
+        n_sub = _GL.visible_len(sub_t)
+        distilled = n_main <= 4 or (sub_t != main_t and abs(n_sub - n_main) >= 2)
+        cross.append({"id": "sub-title-distilled", "ok": distilled,
+                      "detail": f"主标「{main_t}」{n_main} 字 / 次条「{sub_t}」{n_sub} 字"
+                                + ("(主标 ≤4 字,允许原样)" if n_main <= 4 else
+                                   ";次条须独立提炼:与主标不同且字数差 ≥2")})
+    deliver_val = meta.get("deliver")
+    cross.append({"id": "single-deliverable",
+                  "ok": deliver_val is None or deliver_val in ("merged", "split"),
+                  "detail": ("project.json 未声明 deliver(旧项目,按默认单图交付)"
+                             if deliver_val is None else
+                             f"deliver={deliver_val}(merged=只交付合并图 / split=三张单图)")})
+    if cross:
+        reports.append({"kind": "project", "file": proj,
+                        "pass": all(r["ok"] for r in cross), "checks": cross})
+        failed.extend([{"kind": "project", **r} for r in cross if not r["ok"]])
+
     coverage = "partial" if layout == "legacy" or missing else "complete"
     payload = {"ok": not failed, "project": proj, "layout": layout,
                "coverage": coverage, "reports": reports}
@@ -2783,8 +2983,11 @@ def main() -> int:
 
     pn = sub.add_parser("new", help="生成双封面项目")
     pn.add_argument("slug", nargs="?", default="", help="项目名(--list-layouts 时可省略)")
-    pn.add_argument("--title", default="", help="头条主标题(≤12 字一行;\\n 强制断行)")
-    pn.add_argument("--sub-title", default="", help="次条标题(默认同主标题)")
+    pn.add_argument("--title", default="",
+                    help=f"头条主标题(≤{TITLE_HARD_CAP} 个可见字符,中文建议 ≤9 字;\\n 强制断行;"
+                         "标题越长字号越小,超 12 字直接拒绝)")
+    pn.add_argument("--sub-title", default="",
+                    help="次条标题(缺省自动从主标提炼 2–4 字,不再复制主标题)")
     pn.add_argument("--kicker", default="", help="眉题/栏目名(可空)")
     pn.add_argument("--sub", default="", help="主封面副题(可空)")
     pn.add_argument("--sub-sub", default="", help="次条副题(默认同副题)")
@@ -2817,13 +3020,19 @@ def main() -> int:
                     help="plate-page 必填的本地 PNG/JPEG/WebP 照片;不会联网或覆盖已有素材")
     pn.add_argument("--list-layouts", action="store_true",
                     help="列出 6 套版式族及适用文案形态(可省略 slug/--title)")
+    pn.add_argument("--bg-recipe", dest="bg_recipe", default="", metavar="配方",
+                    help="外层背景配方(" + "/".join(_GL.BG_RECIPE_SLUGS) + ");默认不加")
+    pn.add_argument("--deliver", default="merged", choices=["merged", "split"],
+                    help="交付口径:merged=只交付一张合并图(默认)/ split=三张单图都要")
     pn.add_argument("--force", action="store_true")
     pn.set_defaults(func=cmd_new)
 
-    pe = sub.add_parser("export", help="导出:默认三图齐出;--only 只出指定产物")
+    pe = sub.add_parser("export", help="导出:默认只出一张合并图(长封面在左+方形在右);--split 出三张单图")
     pe.add_argument("project", help="项目目录或 slug")
     pe.add_argument("--only", default="", choices=["", "main", "sub", "merged"],
-                    help="merged=只重拼合并图(单张须已导出)")
+                    help="main/sub=只出该单张;merged=只重拼/复用已产出的单图封面")
+    pe.add_argument("--split", action="store_true",
+                    help="同时产出 cover-main-/cover-sub-/cover-merged- 三张单图(旧行为)")
     pe.add_argument("--scale", type=int, default=2, choices=[1, 2])
     pe.add_argument("--outdir", default="")
     pe.add_argument("--bg", default="#f6f7f9", help="合并图底色")

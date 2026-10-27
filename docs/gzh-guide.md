@@ -10,10 +10,10 @@
 | 能力 | 命令入口 | 产物 |
 |---|---|---|
 | 双封面项目生成 | `gzh_cover.py new` | src/index.html(主 900×383)+ src/sub.html(次 383×383) |
-| 三种导出 | `gzh_cover.py export` | 主封面 PNG / 次条 PNG / 合并对比图 PNG(默认三图齐出) |
-| 单独导出 | `export --only main` / `--only sub` / `--only merged` | 任意单张重出 |
+| 单图交付(v1.26) | `gzh_cover.py export` | 一整张合一图 PNG(长封面在左 + 方形在右),即后台上传件 |
+| 分件导出 | `export --split` / `--only main` / `--only sub` | 显式要单张/分三张时才出;默认不出 |
 | 仅重拼合并图 | `gzh_cover.py merge` | 合并图(`kiln-cli img stitch` 纯像素拼接,不重渲染 HTML;仍需 Kiln CLI 在位,缺则报 `KILN_NOT_FOUND`) |
-| 正文排版 | `gzh_article.py convert` | 全内联样式正文 HTML + 按封面文案自动选族的双封面三图 |
+| 正文排版 | `gzh_article.py convert` | 全内联样式正文 HTML + 按封面文案自动选族的双封面单图 |
 | 正文与预览复制 | `gzh_article.py convert --preview` | 通用全内联正文 HTML + `*.preview-copy.html`；封面可用 `--cover-layout auto`/六族/`legacy`，`plate-page` 另需 `--cover-image` 本地照片，`--cover-fx` 控制 MIT shader |
 | 预览复制页 | `gzh_preview_copy.py` | 单文件预览、版本选择、HTML/纯文本复制、打开官方 135 |
 | 排版示例 | `gzh_article.py demo` | 示例 .md + 转换结果 + 自检报告 |
@@ -27,14 +27,16 @@ S="<skill 目录>/scripts"
 # 1. 生成项目(内置 6 套统一主题:ink/night/warm/grass/red/mono;色源 scripts/_gzh_theme.py)
 python $S/gzh_cover.py new my-post --title "双封面工作法" \
     --sub-title "双封面法" --kicker "ARTBOARD · 02" \
-    --sub "一次设计 · 三张产物" --footer "WECHAT OFFICIAL ACCOUNT" \
+    --sub "一次设计 · 一体出片" --footer "WECHAT OFFICIAL ACCOUNT" \
     --num "02" --theme ink --layout band-editorial
 
-# 2. 导出(默认三图齐出 = 合一导出)
+# 2. 导出(默认只出一张合一图 = 后台上传件)
 python $S/gzh_cover.py export my-post
-#   → export/cover-main-my-post.png    1800×766  (900×383 @2x)
-#   → export/cover-sub-my-post.png      766×766  (383×383 @2x)
-#   → export/cover-merged-my-post.png  2680×766  (合并对比图)
+#   → export/cover-my-post.png         2680×766  (左 1800×766 + 右 766×766,一体出片)
+#
+# 需要单张或三张分件时(非默认):
+#   python $S/gzh_cover.py export my-post --split
+#   → cover-main-… 1800×766 / cover-sub-… 766×766 / cover-merged-… 2680×766
 
 # 3. 静态几何/离线检查
 python $S/gzh_cover.py check my-post
@@ -54,9 +56,9 @@ python $S/gzh_cover.py export my-post --only main
   ```bash
   python $S/check_overflow.py <项目>/src --width 900 --height 383
   ```
-- **合并图**:主封面(左)+ 57px 间隔 + 次条(右)等高拼接,`kiln-cli img stitch` 纯像素搬运
+- **合一图(默认交付)**:主封面(左)+ 间隔 + 次条(右)等高拼接,`kiln-cli img stitch` 纯像素搬运
   (v1.9 起,不再用 Pillow),单张原始比例不变。间隔/底色可调:`merge my-post --gap 80 --bg "#0f1b3d"`。
-  合并图用于对比展示/汇报存档,**公众号后台上传仍用单张文件**。
+  这张合一图**就是**公众号后台上传件;分件只在被明确要求时用 `--split` 出。
 
 ## 三、正文排版:从 Markdown 到公众号
 
@@ -109,7 +111,7 @@ python $S/gzh_preview_copy.py --doc "品牌A=output/a.html" --doc "品牌B=outpu
 |---|---|---|
 | 渲染引擎缺失 | `KILN_NOT_FOUND` | `python $S/setup_kiln.py` 或设 `ARTBOARD_KILN_CLI` |
 | 字体目录写错 | `NO_FONTS` | 用 `fonts/` 下真实目录名;`auto` 恒可用 |
-| 单张未导出就合并 | `MISSING_EXPORTS` | 先 `export --only main` / `--only sub` |
+| 找不到已导出件 | `MISSING_EXPORTS` | 默认 `export` 已直接出合一图;仅 `--only` 指定分件时才需要先 `--split` |
 | 合并图拼接失败 | `STITCH_FAILED` / `KILN_NOT_FOUND` | 合并图由 `kiln-cli img stitch` 拼接:确认两张单图存在且未损坏、引擎已部署 |
 | 项目已存在 | `EXISTS` | 换 slug 或 `--force` 覆盖 |
 | Markdown 为空 | `EMPTY_INPUT` | 检查输入文件 |
@@ -130,8 +132,9 @@ python $S/gzh_preview_copy.py --doc "品牌A=output/a.html" --doc "品牌B=outpu
 
 ## 七、样例
 
-双封面产物是三张图,落在项目的 `export/` 里,可整包上传公众号后台:
-`cover-main-<slug>.png`(主)、`cover-sub-<slug>.png`(次)、`cover-merged-<slug>.png`(合并)。
+双封面默认产物是**一张图**,落在项目的 `export/` 里:
+`cover-<slug>.png`(合一图,后台上传件)。
+只有显式 `--split` 时才额外出 `cover-main-<slug>.png`、`cover-sub-<slug>.png`、`cover-merged-<slug>.png`。
 正文排版产物是单文件 HTML(`--out` 指定路径),`--preview` 会另出一份手机宽度的预览页;
 `demo` 子命令一键生成全组件示例,顺手跑一遍兼容性自检。
 
@@ -139,7 +142,7 @@ python $S/gzh_preview_copy.py --doc "品牌A=output/a.html" --doc "品牌B=outpu
 
 ## 图文与封面绑定(11 迭代,2026-09-26)
 
-- **单向绑定**:出图文(`gzh_article.py convert`)默认同时出同主题双封面三图;
+- **单向绑定**:出图文(`gzh_article.py convert`)默认同时出同主题双封面单图(`--cover-split` 才分三张);
   只出封面(`gzh_cover.py`)不产图文。`--no-cover` 是逃生口,用了要在交付汇报里说明。
 - **标题来源**:封面主标题取 `--cover-title > --title > 文章 H1`；无须另行复制标题，但断点质量门若拒绝，需按 `cover_hint` 改写/加自然停顿，不能把失败输出当成可用封面。
 - **主题唯一真相源**:`scripts/_gzh_theme.py`,6 套:ink(蓝黑)/ night(深色金)/

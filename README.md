@@ -189,7 +189,7 @@ python tools/review-station/review_station.py --root <项目>    # 算好 URL �
 | 三折页(双面) | `trifold` | 1754×1240 | 2x = 300dpi + 合 PDF |
 | 易拉宝 80×200cm | `rollup` | 2362×5906 | 2x = 150dpi |
 | PPT 页 16:9 | `slide` | 1280×720 | 2x = 2560×1440 |
-| 公众号双封面 | `gzh_cover.py` | Artboard 内部默认 900×383 + 383×383,非官方规格 | 2x(另出合并图) |
+| 公众号双封面 | `gzh_cover.py` | Artboard 内部默认 900×383 + 383×383,非官方规格 | 2x(默认出一张合一图) |
 
 > 完整 40+ 物料尺寸(社媒/电商/印刷/办公/广告)见
 > [material-catalog.md](references/material-catalog.md)；视觉风格有 123 风格方向速查
@@ -280,8 +280,9 @@ python scripts/imageops.py montage a.png b.png c.png d.png \
 **公众号双封面与正文排版**
 
 ```bash
-python scripts/gzh_cover.py new <slug> --title "标题" --theme ink --layout band-editorial
-python scripts/gzh_cover.py export <slug>                      # 主/次/合并三图
+python scripts/gzh_cover.py new <slug> --title "标题" --theme ink --layout band-editorial --bg-recipe dots-grid
+python scripts/gzh_cover.py export <slug>                      # 默认只出一张合一图(长封面在左 + 方形在右)
+python scripts/gzh_cover.py export <slug> --split              # 需要单张素材时才分三张
 python scripts/gzh_article.py convert 文章.md --out a.html --preview --cover-layout auto --cover-fx auto --cover-kicker "栏目" --cover-sub "主封面副题" --cover-sub-title "次条标题" # 正文 + 分层双封面 + 预览复制页
 python scripts/gzh_article.py check a.html                        # 公众号兼容性自检
 python scripts/gzh_preview_copy.py a.html                          # 已有 HTML 的复制页

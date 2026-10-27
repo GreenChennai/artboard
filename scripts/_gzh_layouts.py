@@ -231,6 +231,121 @@ def resolve_visual_layers(layout: str, pattern: str, fx: str) -> tuple[str, str]
     return resolved_pattern, resolved_fx
 
 
+# ---------------------------------------------------------------- 背景配方(外层背景层)
+# 与 pattern_css 的区别:pattern 画在 .poster::after(版式底纹,受 pattern 互斥规则约束);
+# 背景配方是独立的「外层背景层」.ab-bg-layer,贴在画布边缘、永远在内容(z-index 1)之下,
+# 用于撕纸/票券/浏览器窗这类结构背景。全部 CSS-only、无外部资源、无文字。
+# 规则与取舍见 references/gzh-cover-backgrounds.md;机检见 gzh_cover.py check 的 bg-* 项。
+
+BG_RECIPE_SLUGS = [
+    "kraft-paper", "gingham", "dots-grid", "tear", "ticket", "window", "rays", "curtain",
+]
+
+BG_LAYER_BASE_CSS = """
+/* 外层背景层:内容之下、不接收指针事件、不放任何文字 */
+.poster > .ab-bg-layer {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  opacity: var(--bg-alpha, .5);
+}
+.poster > .ab-bg-layer::before,
+.poster > .ab-bg-layer::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+}
+"""
+
+
+def bg_recipe_css(name: str, t: dict) -> str:
+    """返回一个背景配方的 CSS 片段;未知配方返回空串(调用方负责报错)。"""
+    if name not in BG_RECIPE_SLUGS:
+        return ""
+    dark = is_dark(t)
+    ink = t["ink"]
+    soft = _rgb_alpha(ink, .12 if dark else .08)
+    faint = _rgb_alpha(ink, .07 if dark else .045)
+    paper = "rgba(255,255,255,.80)" if not dark else "rgba(12,12,12,.34)"
+    if name == "kraft-paper":
+        # 牛皮纸:斜向纤维 + 细点孔,靠颜色不靠贴图
+        return (".poster > .ab-bg-layer { --bg-alpha: .92;"
+                f" background-color: {'#d9c7a1' if not dark else '#26221c'};"
+                " background-image:"
+                f" repeating-linear-gradient(112deg, {faint} 0 1px, transparent 1px 5px),"
+                f" repeating-linear-gradient(64deg, {faint} 0 1px, transparent 1px 7px),"
+                f" radial-gradient(circle at 50% 50%, {soft} .7px, transparent 1px);"
+                " background-size: auto, auto, 7px 7px; }")
+    if name == "gingham":
+        # 两轴条纹 multiply:交叠处自然加深,不需要两套颜色
+        return (".poster > .ab-bg-layer { --bg-alpha: .85; background-blend-mode: multiply;"
+                " background-image:"
+                f" repeating-linear-gradient(0deg, {soft} 0 6px, transparent 6px 26px),"
+                f" repeating-linear-gradient(90deg, {soft} 0 6px, transparent 6px 26px); }}")
+    if name == "dots-grid":
+        return (".poster > .ab-bg-layer { --bg-alpha: .55;"
+                " background-image:"
+                f" radial-gradient(circle at 50% 50%, {soft} 1.2px, transparent 1.4px);"
+                " background-size: 12px 12px; }")
+    if name == "tear":
+        # 撕纸:纸卡 + 底边锯齿,drop-shadow 让白描边露出来
+        return (".poster > .ab-bg-layer { --bg-alpha: .95; }"
+                ".poster > .ab-bg-layer::before { inset: 12px 14px 0 14px;"
+                f" background: {paper};"
+                " clip-path: polygon(0 0, 100% 0, 100% 92%, 96% 96%, 92% 91%, 88% 97%,"
+                " 82% 92%, 76% 98%, 70% 92%, 64% 97%, 58% 91%, 52% 97%, 46% 92%, 40% 98%,"
+                " 34% 92%, 28% 97%, 22% 91%, 16% 97%, 10% 92%, 4% 96%, 0 91%);"
+                " filter: drop-shadow(0 2px 0 rgba(255,255,255,.55)); }")
+    if name == "ticket":
+        # 票券:两侧半圆缺口用 mask 抠掉,不叠白色圆点
+        return (".poster > .ab-bg-layer { --bg-alpha: .9; }"
+                ".poster > .ab-bg-layer::before { inset: 16px 30px;"
+                f" background: {paper}; border-radius: 4px;"
+                " -webkit-mask-image:"
+                " radial-gradient(circle 11px at 0 50%, transparent 98%, #000 100%),"
+                " radial-gradient(circle 11px at 100% 50%, transparent 98%, #000 100%),"
+                " linear-gradient(#000, #000);"
+                " -webkit-mask-composite: source-in;"
+                " mask-image:"
+                " radial-gradient(circle 11px at 0 50%, transparent 98%, #000 100%),"
+                " radial-gradient(circle 11px at 100% 50%, transparent 98%, #000 100%),"
+                " linear-gradient(#000, #000);"
+                " mask-composite: intersect; }")
+    if name == "window":
+        # 浏览器窗:一张卡 + 顶栏 + 三个圆点(纯 radial-gradient,无 emoji)
+        return (".poster > .ab-bg-layer { --bg-alpha: .88; }"
+                ".poster > .ab-bg-layer::before { inset: 30px 62px 42px 62px;"
+                f" background: {paper}; border-radius: 10px 10px 0 0;"
+                " box-shadow: inset 0 0 0 1px rgba(0,0,0,.10); }"
+                ".poster > .ab-bg-layer::after { top: 30px; left: 62px; right: 62px; height: 26px;"
+                " border-radius: 10px 10px 0 0;"
+                f" background-image: {faint},"
+                " radial-gradient(circle at 18px 50%, #d9705f 4px, transparent 4.6px),"
+                " radial-gradient(circle at 36px 50%, #d9b25f 4px, transparent 4.6px),"
+                " radial-gradient(circle at 54px 50%, #7fa87a 4px, transparent 4.6px);"
+                " border-bottom: 1px solid rgba(0,0,0,.08); }")
+    if name == "rays":
+        # 主标区放射光:只在上半区,渐隐到 62% 高度,不压标题
+        return (".poster > .ab-bg-layer { --bg-alpha: .45;"
+                " background-image:"
+                " repeating-conic-gradient(from -34deg at 50% -8%,"
+                f" transparent 0 9deg, {soft} 9deg 10.5deg);"
+                " -webkit-mask-image: linear-gradient(180deg, #000 0%, transparent 62%);"
+                " mask-image: linear-gradient(180deg, #000 0%, transparent 62%); }")
+    if name == "curtain":
+        # 幕布:单一色相的多明度竖条,靠叠层做褶皱
+        return (".poster > .ab-bg-layer { --bg-alpha: .5;"
+                " background-image:"
+                f" repeating-linear-gradient(90deg, {soft} 0 22px, transparent 22px 46px),"
+                f" repeating-linear-gradient(90deg, {faint} 0 53px, transparent 53px 71px); }}")
+    return ""
+
+
+def resolve_bg_recipe(want: str) -> str:
+    """校验/归一背景配方:'', 'none', 'auto' → 空;非法值抛 ValueError 交给调用方报错。"""
+    if want in (None, "", "auto", "none"):
+        return ""
+    if want in BG_RECIPE_SLUGS:
+        return want
+    raise ValueError(f"未知背景配方: {want};可选: {', '.join(BG_RECIPE_SLUGS)}")
+
+
 def fx_params(fx: str, t: dict) -> str:
     """按官方组件 schema 将主题色映射到 upstream 参数;静态底材固定 speed/seed。"""
     if not fx:
@@ -365,7 +480,10 @@ def root_vars(t: dict, font_vars: str, font_faces: str = "") -> str:
 
 def canvas(w: int, h: int, t: dict, layout: str, pattern: str, tone: str,
            size: int, body: str, css: str, title: str, kind: str, fx: str = "",
-           sub_mode: str = "same") -> str:
+           sub_mode: str = "same", bg_recipe: str = "") -> str:
+    bg_css = (BG_LAYER_BASE_CSS + bg_recipe_css(bg_recipe, t)) if bg_recipe else ""
+    bg_tag = (f'<div class="ab-bg-layer" data-bg-recipe="{bg_recipe}"'
+              ' aria-hidden="true"></div>' if bg_recipe else "")
     pat = pattern_css(pattern, t) if pattern not in ("", "none") else ""
     pat_block = f"\n  {pat}" if pat else ""
     tone_cls = f" tone-{tone}" if tone != "none" else ""
@@ -382,6 +500,7 @@ def canvas(w: int, h: int, t: dict, layout: str, pattern: str, tone: str,
 }}
 .poster[data-kind=\"sub\"][data-sub-mode=\"flat\"]::after {{ background-image: none !important; }}
 .poster[data-kind=\"sub\"][data-sub-mode=\"flat\"] [data-role=\"decor\"] {{ display: none !important; }}
+.poster[data-kind=\"sub\"][data-sub-mode=\"flat\"] > .ab-bg-layer {{ display: none !important; }}
 /* plate-page 的用户照片是内容素材,flat 只去除装饰,不移除照片 */
 .poster[data-kind=\"sub\"][data-sub-mode=\"flat\"] .plate,
 .poster[data-kind=\"sub\"][data-sub-mode=\"flat\"] .plate-image {{ display: block !important; }}
@@ -427,11 +546,12 @@ html, body {{ margin: 0; background: transparent; }}
 .poster > canvas.ab-shader {{ position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }}
 {css}
 {flat_css}
+{bg_css}
 </style>
 </head>
 <body>
 <div class="poster{tone_cls}" data-layout="{layout}" data-kind="{kind}" data-pattern="{pattern}" data-fx="{fx}" data-sub-mode="{sub_mode if kind == 'sub' else 'same'}">
-{body}
+{bg_tag}{body}
 </div>{fx_tag}
 </body>
 </html>"""
@@ -455,18 +575,18 @@ def _tone_css(tone: str) -> str:
 # ================================================================ 族一:center-band
 
 CB_CSS = """
-/* 中央色带:主封 383×232, y=96;信息仍在中央 383 安全区 */
+/* 中央色带:主封基准 383×232, y=96;标题越界时色带随字宽生长(--band-w ≤ 720) */
 .band { left: 50%; top: 96px; transform: translateX(-50%);
-  width: 383px; height: 232px; background: var(--c-plate);
+  width: var(--band-w, 383px); height: 232px; background: var(--c-plate);
   border: 1px solid var(--c-line); border-radius: 8px; }
-.safe { left: 50%; top: 30px; bottom: 30px; width: 383px; transform: translateX(-50%);
+.safe { left: 50%; top: 30px; bottom: 30px; width: var(--band-w, 383px); transform: translateX(-50%);
   display: flex; flex-direction: column; justify-content: center; align-items: center;
   text-align: center; gap: 15px; }
 .mark { width: 44px; height: 8px; background: var(--c-accent); }
 .kicker { font: 600 16px/1 var(--font-sans); color: var(--c-accent);
   letter-spacing: .42em; text-indent: .42em; }
 .t { font: 700 var(--t-size)/1.25 var(--font-display);
-  color: var(--c-ink); letter-spacing: .02em; max-width: 360px; }
+  color: var(--c-ink); letter-spacing: .02em; max-width: var(--band-w, 383px); }
 .sub { font: 400 18px/1.4 var(--font-sans); color: var(--c-muted);
   letter-spacing: .16em; text-indent: .16em; max-width: 340px; }
 .rule { width: 58px; height: 1px; background: var(--c-line); }
@@ -504,17 +624,36 @@ CB_CSS_SUB = """
 """
 
 
-SUB_SCALE = 0.62   # 版面参考比例;次条仍须满足各族实际栏宽与 22px 可读下限。
-SUB_TITLE_MIN_PX = 22
+# ---------------------------------------------------------------- 字号体系(v2)
+# 参考 18 张双封面的量化结论:主标字高占画布高 15–33%(中位 20%),中文 3–9 字,
+# 单侧 ≤2 行。字号不能按"平面物料"线性给,而要按「字数档 × 画布占比」给上限,
+# 再由实际字宽反推 —— 否则短标题会被 base 锁死,长标题会被安全区压成小字。
+CANVAS_H = 383                 # 主封面画布高(900×383)
+TITLE_SHARE_CAP = 0.33         # 主标字高占画布高的硬上限(参考 #9 的 33%)
+TITLE_HARD_CAP = 12            # 文案预算:主标可见字符上限(与 check 的 title-char-cap 同源)
+TITLE_COL_MAX = 720            # 主标授权行宽上限:x≈90–810(语义守 383,字形可越)
+CENTER_BAND = (258, 642)       # 中央语义安全区:x 区间
+TITLE_CEILING = {1: 127, 2: 127, 3: 127, 4: 120, 5: 108, 6: 96,
+                 7: 84, 8: 84, 9: 72, 10: 72, 11: 64, 12: 64}
+SUB_TITLE_STEPS = {1: 170, 2: 160, 3: 137, 4: 112, 5: 96, 6: 96}
+SUB_TITLE_MIN_PX = 22          # 次条可读下限(与 check 的 title-min-px 同源)
 
 
-def sub_size(main_px):
-    """次条字号参考上限:主封对应字号×0.62,并守住 22px 可读底线。
+def title_ceiling(n: int) -> int:
+    """按"最长行字数"取主标字号上限(px,900×383 画布)。"""
+    n = max(1, min(int(n), TITLE_HARD_CAP))
+    return TITLE_CEILING[n]
 
-    渲染时还会与次条自身的 safe width 推导字号取较小值;因此窄栏/长标题优先
-    满足实际宽度,而不是为了凑比例挤字。若最终宽度仍不合格,check 会 fail closed。
-    """
-    return max(SUB_TITLE_MIN_PX, int(round(main_px * SUB_SCALE)))
+
+def sub_title_step(n: int) -> int:
+    """次条独立字阶:按次条标题字数取上限,不再用主标 ×0.62 缩排。"""
+    n = max(1, min(int(n), 6))
+    return SUB_TITLE_STEPS[n]
+
+
+def longest_line_chars(text: str) -> int:
+    lines = text.split("<br>") if "<br>" in text else [text]
+    return max(1, max(visible_len(plain(x)) for x in lines))
 
 
 # ---------------------------------------------------------------- 断行(孤字治理)
@@ -862,43 +1001,81 @@ def _em(text: str, tracking: float = 0.0) -> float:
     return max(widths or [0.0]) * (1 + tracking)
 
 
-def title_px(text: str, base: int, floor: int, relax: int = 1, col: int = 383) -> int:
-    """单行标题的字号。按「实际字宽装得下」反推字号,而不是只按字数分档。
+def title_px(text: str, base: int, floor: int, relax: int = 1, col: int = 383,
+             cap: int | None = None) -> int:
+    """主标字号:先取「字数档上限」,再按实际字宽反推,最后守可读下限。
 
-    只按字数分档会在 8 字时给出 54px → 8×54=432 > 安全区 383,必然回退断行,
-    于是又绕回孤字问题。中文字宽≈1em、还要叠加字距,这里一起算。
+    只按字数分档会在 8 字时给出 54px → 8×54=432 > 安全区 383,必然回退断行;
+    只看字宽不看字数又会把 12 字压到 56px 以下不可读。两层一起算:
+    1) cap = 字数档上限(title_ceiling),且不超过画布高的 33%;
+    2) fit = 栏宽能装下的字号(col 已授权放宽到 720,越界由 check 记录)。
 
-    col: 该族实际文字栏宽(不是画布宽)。骨架版式常把栏宽压到 283/295/348,
-         用画布宽算出来的字号会溢出栏 —— 字号必须跟栏宽走。
+    col: 该族实际文字栏宽。骨架族常压到 283–352;全宽族可用到 720。
     """
+    if cap is None:
+        cap = title_ceiling(longest_line_chars(text))
+    base = min(base, cap, int(CANVAS_H * TITLE_SHARE_CAP))
     w = _em(text, 0.02) or 1.0
-    fit = int(min(col * 0.96, 383 * 0.96) / w)
+    fit = int(min(col * 0.96, TITLE_COL_MAX * 0.96) / w)
     return min(base, fit) if fit >= floor else floor
 
 
-def sub_px(text: str, base: int, floor: int, col: int = 315) -> int:
+def sub_px(text: str, base: int, floor: int, col: int = 315,
+           cap: int | None = None) -> int:
     """次条单行标题字号。col 同上:次条各族栏宽 213–307,默认 315 是 center-band 口径。"""
+    if cap is None:
+        cap = sub_title_step(longest_line_chars(text))
+    base = min(base, cap)
     w = _em(text, 0.02) or 1.0
     return max(floor, min(base, int(col * 0.97 / w)))
 
 
+def fit_title(text: str, col: int, floor: int, max_lines: int = 2,
+              cap: int | None = None) -> tuple[str, int]:
+    """在 max_lines 行内选「字号最大」的断法;字号差 1px 内优先少行。
+
+    为什么不能先断行再定字号:6 字排一行是 54px,8 字断两行反而 81px ——
+    字号随字数上升,版面就崩了。这里对每种行数各算一次字号,取更大者;
+    平手时选行数少的(少行更稳,更不容易压边)。
+    """
+    n = visible_len(plain(text))
+    cap = cap if cap is not None else title_ceiling(n)
+    best: tuple[str, int] | None = None
+    for lines in range(1, max(1, max_lines) + 1):
+        chars = -(-n // lines)              # 向上取整,保证不超行
+        ttl = break_lines(text, lines, chars)
+        size = title_px(ttl, cap, floor, col=col, cap=cap)
+        # 同字号时取行数更多的断法:行内字更少 → 更不容易压边/越过语义区
+        if best is None or size >= best[1]:
+            best = (ttl, size)
+    return best if best else (text, floor)
+
+
+def fit_sub_title(text: str, col: int, floor: int, max_lines: int = 2,
+                  cap: int | None = None) -> tuple[str, int]:
+    """次条版 fit_title:字阶用 sub_title_step,不继承主标比例。"""
+    n = visible_len(plain(text))
+    cap = cap if cap is not None else sub_title_step(n)
+    best: tuple[str, int] | None = None
+    for lines in range(1, max(1, max_lines) + 1):
+        chars = -(-n // lines)
+        ttl = break_lines(text, lines, chars)
+        size = sub_px(ttl, cap, floor, col=col, cap=cap)
+        if best is None or size >= best[1]:
+            best = (ttl, size)
+    return best if best else (text, floor)
+
+
 def _center_band(t, d, sub=False):
-    # 主封面单行(安全区 383 宽):字数决定字号,再套一层断行兜底;次条窄,必须断
-    ch = 6 if sub else 8
-    ttl = break_lines(d["title"], 2, ch)
-    base, floor, col = (44, 24, 315) if sub else (54, 26, 360)
-    size = sub_px(ttl, base, floor, col=col) if sub else title_px(ttl, base, floor, col=col)
-    width_limit = col * (0.97 if sub else 0.96)
-    if _em(ttl, 0.02) * size > width_limit + 0.5:
-        # Some glyphs (notably fallback emoji) have wider advance than their visible
-        # bitmap. Use the allowed third row before accepting a floor-size overflow.
-        longer = break_lines(d["title"], 3, ch)
-        if longer:
-            longer_size = (sub_px(longer, base, floor, col=col) if sub
-                           else title_px(longer, base, floor, col=col))
-            if _em(longer, 0.02) * longer_size <= width_limit + 0.5:
-                ttl, size = longer, longer_size
+    # 主封面:字数档定上限,栏宽授权到 720(允许越过 383 语义区);次条窄,必须断
+    floor, col = 28, (315 if sub else TITLE_COL_MAX)
+    ttl, size = (fit_sub_title(d["title"], col, floor, 2) if sub
+                 else fit_title(d["title"], col, floor, 2))
     main_px = size
+    # 色带跟随字宽生长:标题越过 383 时带子一起放宽,不让字形溢出带外压边(上限 720)
+    band_w = 383
+    if not sub:
+        band_w = max(383, min(TITLE_COL_MAX, int(_em(ttl, 0.02) * size + 56)))
     parts = ['<div class="mark" data-role="decor"></div>']
     if d["kicker"]:
         parts.append(f'<div class="kicker" data-role="info">{esc(d["kicker"])}</div>')
@@ -921,7 +1098,10 @@ def _center_band(t, d, sub=False):
         decor.append(f'<div class="wm" data-role="decor">{esc(d["title_en"])}</div>')
     if not sub and d["footer"]:
         decor.append(f'<div class="footer" data-role="decor">{esc(d["footer"])}</div>')
-    return "".join(decor) + safe, main_px, CB_CSS_SUB if sub else CB_CSS
+    # 色带宽度写死进 CSS(而不是只留在 var()):静态检查要能解析出真实像素,
+    # 否则安全区会被当作 full-bleed 而无法验证"标题是否还在画布内"。
+    css = CB_CSS_SUB if sub else CB_CSS.replace("var(--band-w, 383px)", f"{band_w}px")
+    return ("".join(decor) + safe, main_px, css, {"band_w": f"{band_w}px"})
 
 
 # ================================================================ 族二:band-editorial
@@ -978,12 +1158,9 @@ BE_CSS_SUB = """
 
 
 def _band_editorial(t, d, sub=False):
-    # 文字栏 348 宽 → 主封面上限 6 字/行,次条 315 宽 → 5 字/行;断行由 plan_lines 定死
-    ttl = break_lines(d["title"], 2, 5 if sub else 6)
-    if sub:
-        main_px = sub_px(ttl, 33, 24, col=295)
-    else:
-        main_px = title_px(ttl, 60, 26, col=348)
+    # 文字栏 348 / 次条 295:行数与字号一起由 fit_*_title 选(挑字号最大的断法)
+    ttl, main_px = (fit_sub_title(d["title"], 295, 28, 2) if sub
+                    else fit_title(d["title"], 348, 28, 2))
     parts = []
     if d["kicker"]:
         parts.append(f'<div class="kicker" data-role="info">{esc(d["kicker"])}</div>')
@@ -1069,10 +1246,9 @@ SC_CSS_SUB = """
 
 
 def _stack_cards(t, d, sub=False):
-    # 次条卡片内栏 283px → 最多 4 字/行;长标题可到 4 行,保留完整文案和均匀行宽。
-    ttl = break_lines(d["title"], 4 if sub else 2, 4 if sub else 5)
-    main_px = (sub_px(ttl, 30, 22, col=283) if sub
-               else title_px(ttl, 46, 22, col=331))
+    # 次条卡片内栏 283px → 长标题可到 4 行;主封 331px 守 2 行
+    ttl, main_px = (fit_sub_title(d["title"], 283, 28, 4) if sub
+                    else fit_title(d["title"], 331, 28, 2))
     parts = []
     if d["kicker"]:
         parts.append(f'<div class="kicker" data-role="info">{esc(d["kicker"])}</div>')
@@ -1105,7 +1281,8 @@ GC_CSS = """
   color: transparent; -webkit-text-stroke: 1.5px var(--c-ink); opacity: .16;
   white-space: nowrap; }
 .safe { left: 50%; top: 30px; bottom: 30px; transform: translateX(-50%);
-  width: 383px; display: flex; flex-direction: column; justify-content: center; align-items: center;
+  width: var(--block-w, 383px); max-width: 720px;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
   text-align: center; gap: 10px; }
 .t { font: 800 var(--t-size)/0.92 var(--font-display); color: var(--c-ink);
   letter-spacing: -.02em; white-space: nowrap; }
@@ -1148,16 +1325,17 @@ def _giant_caps(t, d, sub=False):
         ttl = break_lines(d["title"], 4, 4, even=100)
         longest = max(1, max(len(x) for x in ttl.split("<br>")))
         rows = ttl.count("<br>") + 1
-        main_px = max(24, min(int(307 / longest), int(300 / rows)))
+        main_px = max(28, min(int(307 / longest), int(300 / rows)))
     else:
         ttl = break_lines(d["title"], 4, 5, even=100) if n > 5 else break_lines(d["title"], 1)
-        main_px = 150 if n <= 2 else 124 if n <= 3 else 106 if n <= 4 else 92
-        # 字号必须同时满足「最长行装得下」和「总高度不超框」
+        # 四档上限取「字数档 × 画布占比」:2 字 127 / 3 字 118 / 4 字 108 / 5 字 96
+        main_px = 127 if n <= 2 else 118 if n <= 3 else 108 if n <= 4 else 96
+        # 字号必须同时满足「最长行装得下」和「总高度不超框」;行宽上限放宽到 720
         longest = max(1, max(len(x) for x in ttl.split("<br>")))
         rows = ttl.count("<br>") + 1
-        main_px = min(main_px, int(300 / longest), int(340 / rows))
-    # 色块宽度按"最长行"定,不按 383 容器定 —— 否则断行后各行宽窄不一,色块撑歪成台阶
-    block_w = min(383 if not sub else 307, int(longest * main_px * 1.06))
+        main_px = min(main_px, int(TITLE_COL_MAX * 0.96 / longest), int(340 / rows))
+    # 色块宽度按"最长行"定,不按容器宽定 —— 否则断行后各行宽窄不一,色块撑歪成台阶
+    block_w = min(TITLE_COL_MAX if not sub else 307, int(longest * main_px * 1.06))
     parts = []
     if d["kicker"]:
         parts.append(f'<div class="kicker" data-role="info">{esc(d["kicker"])}</div>')
@@ -1179,7 +1357,8 @@ def _giant_caps(t, d, sub=False):
             decor.append(f'<div class="footer" data-role="decor">{esc(d["footer"])}</div>')
         if d["side_label"]:
             decor.append(f'<div class="side" data-role="decor">{esc(d["side_label"])}</div>')
-    return "".join(decor), main_px, GC_CSS_SUB if sub else GC_CSS, {"block_w": block_w}
+    css = GC_CSS_SUB if sub else GC_CSS.replace("var(--block-w, 383px)", f"{block_w}px")
+    return "".join(decor), main_px, css, {"block_w": block_w}
 
 
 # ================================================================ 族五:kraft-note
@@ -1238,11 +1417,10 @@ KN_CSS_SUB = """
 def _kraft_note(t, d, sub=False):
     # 主封面文字栏 348 → 6 字/行;次条 307 → 5 字/行。
     # 标题带 -1.2° 手写倾斜,外接盒更宽:字号要按 0.92 栏宽再留 1.06 系数算,否则末字会被裁。
-    ttl = break_lines(d["title"], 2, 5 if sub else 6)
-    col = 315 if sub else 348
-    n = max(1, max(len(x) for x in ttl.split("<br>")))
-    fit = int(col * 0.92 / (n * 1.01 * 1.06))
-    main_px = max(22, min(38 if sub else 62, fit))
+    # 栏宽 ×0.92 抵扣 -1.2° 旋转后的外接盒增量(倾斜标题的末字比直排更容易被裁)
+    col = int((315 if sub else 348) * 0.92)
+    ttl, main_px = (fit_sub_title(d["title"], col, 28, 2) if sub
+                    else fit_title(d["title"], col, 28, 2))
     parts = []
     if d["kicker"]:
         parts.append(f'<div class="kicker" data-role="info">{esc(d["kicker"])}</div>')
@@ -1330,9 +1508,8 @@ def _plate_page(t, d, sub=False):
     if not d.get("image"):
         raise ValueError("plate-page requires a local raster image")
     # 主封安全栏 352px;次条 206px,照片只在右侧出血窗,不侵入文字栏。
-    ttl = break_lines(d["title"], 2, 4 if sub else 5)
-    main_px = (sub_px(ttl, 30, 22, col=206) if sub
-               else title_px(ttl, 50, 24, col=352))
+    ttl, main_px = (fit_sub_title(d["title"], 206, 28, 2) if sub
+                    else fit_title(d["title"], 352, 28, 2))
     parts = []
     if d["kicker"]:
         parts.append(f'<div class="kicker" data-role="info">{esc(d["kicker"])}</div>')
@@ -1389,7 +1566,7 @@ def make_data(title, kicker="", sub="", footer="", num="", title_en="",
 
 def render(layout: str, t: dict, d: dict, font_vars: str,
            sub: bool = False, pattern: str = "auto", tone: str = "auto",
-           fx: str = "", font_faces: str = "") -> str:
+           fx: str = "", font_faces: str = "", bg_recipe: str = "") -> str:
     """渲染一张封面 HTML。调用方保证 layout 已校验。
 
     fx: 着色器底材名(见 SHADER_FX);空/auto 时取族默认;'none' 关掉。
@@ -1399,10 +1576,8 @@ def render(layout: str, t: dict, d: dict, font_vars: str,
     body, size, css = res[0], res[1], res[2]
     extra = res[3] if len(res) > 3 else {}
     if sub:
-        # 同一标题在主封面该族的测量字号×0.62 是次条字号上限;具体仍由
-        # sub renderer 的栏宽计算先行约束,因此 0.62 不会挤破小图 safe width。
-        main_reference = fn(t, d, False)[1]
-        size = min(size, sub_size(main_reference))
+        # 次条独立字阶:按次条自身字数取上限(不再用主标 ×0.62 缩排)
+        size = min(size, sub_title_step(visible_len(plain(d["title"]))))
     pat, fx = resolve_visual_layers(layout, pattern, fx)
     flat_sub = sub and d.get("sub_mode") == "flat"
     if flat_sub:
@@ -1420,10 +1595,12 @@ def render(layout: str, t: dict, d: dict, font_vars: str,
     title = re.sub(r"<br\s*/?>", " ", plain(d["title"]) or "", flags=re.I)
     if fx:
         body = fx_canvas(fx, t) + body
+    if flat_sub:
+        bg_recipe = ""  # flat 次条是纯色底,不叠外层背景
     return canvas(w, h, t, layout, pat, ton, size, body,
                   root_vars(t, font_vars, font_faces) + full_css,
                   title, "sub" if sub else "main", fx=fx,
-                  sub_mode=d.get("sub_mode", "same"))
+                  sub_mode=d.get("sub_mode", "same"), bg_recipe=bg_recipe)
 
 
 def layout_list_text() -> str:

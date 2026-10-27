@@ -27,6 +27,7 @@
       "internal": true,
       "purpose": "微信公众号双封面 · 版式族库(gzh_cover.py 的渲染后端)。",
       "used_by": [
+        "docs/gzh-cover-v2-plan.md",
         "docs/scripts.md",
         "references/formats/gzh-cover.md"
       ]
@@ -290,6 +291,7 @@
       "purpose": "组件注册体系机检:三层索引一致性 + token 契约 + 来源红线。",
       "used_by": [
         "components/registry/PIPELINE.md",
+        "docs/gzh-cover-v2-plan.md",
         "docs/scripts.md"
       ]
     },
@@ -312,6 +314,7 @@
       "internal": true,
       "purpose": "Regression checks for article-to-cover layout and image forwarding.",
       "used_by": [
+        "docs/gzh-cover-v2-plan.md",
         "docs/scripts.md"
       ]
     },
@@ -321,6 +324,7 @@
       "internal": true,
       "purpose": "Regression checks for cover layout tokens and fail-closed title export.",
       "used_by": [
+        "docs/gzh-cover-v2-plan.md",
         "docs/scripts.md"
       ]
     },
@@ -440,9 +444,11 @@
         "README.md",
         "SKILL.md",
         "components/registry/PIPELINE.md",
+        "docs/gzh-cover-v2-plan.md",
         "docs/scripts.md",
         "references/cjk-typography-css.md",
         "references/guardrails.md",
+        "references/gzh-cover-backgrounds.md",
         "references/pipeline.md",
         "references/revision-protocol.md"
       ]
@@ -674,9 +680,11 @@
       "used_by": [
         "README.md",
         "SKILL.md",
+        "docs/gzh-cover-v2-plan.md",
         "docs/gzh-guide.md",
         "docs/gzh-spec-summary.md",
         "docs/scripts.md",
+        "references/gzh-cover-backgrounds.md",
         "references/gzh-typography.md",
         "references/shader-fx.md",
         "references/wechat-article.md"
@@ -690,9 +698,11 @@
       "used_by": [
         "README.md",
         "SKILL.md",
+        "docs/gzh-cover-v2-plan.md",
         "docs/gzh-guide.md",
         "docs/scripts.md",
         "references/formats/gzh-cover.md",
+        "references/gzh-cover-backgrounds.md",
         "references/gzh-cover-layouts.md",
         "references/imaging.md",
         "references/shader-fx.md",

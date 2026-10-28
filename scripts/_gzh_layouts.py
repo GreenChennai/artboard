@@ -1131,7 +1131,8 @@ def fit_title(text: str, col: int, floor: int, max_lines: int = 2,
 
 
 def fit_sub_title(text: str, col: int, floor: int, max_lines: int = 2,
-                  cap: int | None = None) -> tuple[str, int]:
+                  cap: int | None = None, block_h: int | None = None,
+                  line_h: float | None = None) -> tuple[str, int]:
     """次条(方图)标题:手机缩到指甲盖大,所以要「字大、占满、以换行为主」。
 
     方图 383×383 里 4 字不再直排,而是 2+2、块高占画布 80%;字数 1–2 才单行。
@@ -1150,7 +1151,12 @@ def fit_sub_title(text: str, col: int, floor: int, max_lines: int = 2,
     line_count = max(1, ttl.count("<br>") + 1)
     # 块高必须用 CSS 的真实行高算:此前按 1.12 估、CSS 写 1.3,4 字方图 136px
     # 实际 354px > 画布,眉题被挤出画布顶边、标题也不居中。
-    by_h = int(SUB_CANVAS * SUB_BLOCK_H_RATIO / (line_count * SUB_LINE_HEIGHT))
+    # 每个族次条的 safe 盒高、行高都不一样(卡片里有眉题/色条/页脚要占位),
+    # 以前所有族共用 0.72×383 与 1.12 行高,导致 stack-cards 的 4 字标题
+    # 比容器高 40px,直接压穿白卡。block_h / line_h 由各族按自己的 CSS 传进来。
+    budget = block_h if block_h else SUB_CANVAS * SUB_BLOCK_H_RATIO
+    lh = line_h if line_h else SUB_LINE_HEIGHT
+    by_h = int(budget / (line_count * lh))
     # 栏宽也是硬约束:plate-page 次条只有 206px 文字列,方图大字要让位给它
     col_w = min(SUB_CANVAS * SUB_BLOCK_W_RATIO, col * 0.97)
     by_w = int(col_w / (per_line * 1.02))
@@ -1161,7 +1167,8 @@ def fit_sub_title(text: str, col: int, floor: int, max_lines: int = 2,
 def _center_band(t, d, sub=False):
     # 主封面:字数档定上限,栏宽授权到 720(允许越过 383 语义区);次条窄,必须断
     floor, col = 28, (315 if sub else TITLE_COL_MAX)
-    ttl, size = (fit_sub_title(d["title"], col, floor, 2) if sub
+    ttl, size = (fit_sub_title(d["title"], col, floor, 2,
+                               block_h=278, line_h=1.12) if sub
                  else fit_title(d["title"], col, floor, 2))
     main_px = size
     # 色带跟随字宽生长:标题越过 383 时带子一起放宽,不让字形溢出带外压边(上限 720)
@@ -1251,7 +1258,8 @@ BE_CSS_SUB = """
 
 def _band_editorial(t, d, sub=False):
     # 主封文字栏 560(8–10 字直排)/ 次条 295(方图大字 2 字一行)
-    ttl, main_px = (fit_sub_title(d["title"], 295, 28, 2) if sub
+    ttl, main_px = (fit_sub_title(d["title"], 295, 28, 2,
+                                  block_h=282, line_h=1.12) if sub
                     else fit_title(d["title"], 636, 28, 2))
     parts = []
     if d["kicker"]:
@@ -1280,6 +1288,9 @@ def _band_editorial(t, d, sub=False):
 SC_CSS = """
 .card { left: 258px; top: 48px; width: 384px; height: 287px;
   background: var(--c-contrast); border-radius: 16px; box-shadow: var(--c-shadow); }
+/* 主封色条与次条卡片都是白底(--c-contrast / --c-plate 叠白卡),SUB_CENTER_CSS 给眉题
+   按深色主题准备的亮色在这会消失,用更高特异性压回墨色。 */
+.poster .safe > .kicker { color: var(--c-bg); height: auto; }
 /* 卡内色条:相对卡片四周退让 24px,不再充当贴边页脚线 */
 .band { left: 50%; top: 80px; transform: translateX(-50%); width: 336px; height: 64px;
   background: var(--c-plate); border: 1px solid var(--c-accent);
@@ -1311,6 +1322,9 @@ SC_CSS = """
 """
 
 SC_CSS_SUB = """
+/* 次条卡片是白底(--c-contrast),SUB_CENTER_CSS 给眉题的深底亮色在这会消失,
+   用更高特异性把它压回墨色(该文件里中心样式永远追加在族样式之后)。 */
+.poster .safe > .kicker { color: var(--c-bg); height: auto; }
 .card { left: 28px; top: 28px; width: 327px; height: 327px;
   background: var(--c-contrast); border-radius: 16px; box-shadow: var(--c-shadow); }
 .band { left: 50%; top: 45px; transform: translateX(-50%); width: 283px; height: 56px;
@@ -1318,7 +1332,9 @@ SC_CSS_SUB = """
   border-left-width: 5px; border-radius: 7px; }
 .safe { left: 50%; top: 45px; transform: translateX(-50%);
   width: 283px; bottom: 45px;
-  display: flex; flex-direction: column; justify-content: flex-start; align-items: center;
+  /* 次条铁律:标题垂直居中(SUB_CENTER_CSS 把眉题/副题绝对定位到上下带,
+     这里若用 flex-start,标题会贴顶压住色带、下方留一大块空白) */
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
   text-align: center; gap: 0; }
 .kicker { width: 100%; height: 56px; flex: 0 0 56px;
   display: flex; justify-content: center; align-items: center;
@@ -1339,7 +1355,8 @@ SC_CSS_SUB = """
 
 def _stack_cards(t, d, sub=False):
     # 次条卡片内栏 283px → 长标题可到 4 行;主封 331px 守 2 行
-    ttl, main_px = (fit_sub_title(d["title"], 283, 28, 4) if sub
+    ttl, main_px = (fit_sub_title(d["title"], 283, 28, 4,
+                                  block_h=236, line_h=1.12) if sub
                     else fit_title(d["title"], 331, 28, 2))
     parts = []
     if d["kicker"]:
@@ -1352,8 +1369,11 @@ def _stack_cards(t, d, sub=False):
     if d["sub"]:
         parts.append(f'<div class="sub" data-role="info">{esc(d["sub"])}</div>')
     safe = ('<div class="safe" data-band="safe">' + "".join(parts) + '</div>')
-    decor = ['<div class="card" data-role="decor"></div>',
-             '<div class="band" data-role="decor"></div>']
+    # 内色条只在主封渲染:次条里眉题绝对定位在卡片顶 6px,色条 45–101 会和居中大标题
+    # (顶边 74)抢同一块地。CSS 规则仍保留 —— check 要求结构选择器各只有一条规则。
+    decor = ['<div class="card" data-role="decor"></div>']
+    if not sub:
+        decor.append('<div class="band" data-role="decor"></div>')
     if d["badge"]:
         decor.append(f'<div class="sticker sticker-r" data-role="decor">'
                      f'{esc(d["badge"])}</div>')
@@ -1415,7 +1435,8 @@ def _giant_caps(t, d, sub=False):
     # 行数上限 4:13 字以内,主封按 4 行才有 4/4/3/2 这类齐整断法。
     if sub:
         # 次条方图:字要大、块要占满。复用统一的大字方图算法(4 字 → 2+2、块高 80%)
-        ttl, main_px = fit_sub_title(d["title"], 307, 28, 2)
+        ttl, main_px = fit_sub_title(d["title"], 307, 28, 2,
+                                     block_h=250, line_h=1.12)
         longest = max(1, max(len(x) for x in ttl.split("<br>")))
     else:
         ttl = break_lines(d["title"], 4, 5, even=100) if n > 5 else break_lines(d["title"], 1)
@@ -1513,7 +1534,8 @@ def _kraft_note(t, d, sub=False):
     # 标题带 -1.2° 手写倾斜,外接盒更宽:字号要按 0.92 栏宽再留 1.06 系数算,否则末字会被裁。
     # 栏宽 ×0.92 抵扣 -1.2° 旋转后的外接盒增量(倾斜标题的末字比直排更容易被裁)
     col = int((315 if sub else 348) * 0.92)
-    ttl, main_px = (fit_sub_title(d["title"], col, 28, 2) if sub
+    ttl, main_px = (fit_sub_title(d["title"], col, 28, 2,
+                                  block_h=274, line_h=1.12) if sub
                     else fit_title(d["title"], col, 28, 2))
     parts = []
     if d["kicker"]:
@@ -1602,7 +1624,8 @@ def _plate_page(t, d, sub=False):
     if not d.get("image"):
         raise ValueError("plate-page requires a local raster image")
     # 主封安全栏 352px;次条 206px,照片只在右侧出血窗,不侵入文字栏。
-    ttl, main_px = (fit_sub_title(d["title"], 206, 28, 2) if sub
+    ttl, main_px = (fit_sub_title(d["title"], 206, 28, 2,
+                                  block_h=274, line_h=1.12) if sub
                     else fit_title(d["title"], 352, 28, 2))
     parts = []
     if d["kicker"]:

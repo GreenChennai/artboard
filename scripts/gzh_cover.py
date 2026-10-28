@@ -16,6 +16,10 @@
   python gzh_cover.py export <项目目录|slug> [--only main|sub|merged] [--scale 2] [--outdir 目录]
   python gzh_cover.py merge <项目目录|slug> [--gap 57] [--bg "#f6f7f9"]   # 仅重拼合并图(不重导)
   python gzh_cover.py check <项目目录|slug>           # 静态几何断言(安全区/层级/底纹),无需浏览器
+  python gzh_cover.py asset-prompt <项目> [--subject 物件] [--style 画风]  # 出可自动抠图的素材提示词
+  python gzh_cover.py asset-attach <项目> --image 图 [--mode cutout|rect|pattern]
+                  [--slot whole|top|bottom|left|right|plate|corner] [--scale 1.0] [--opacity 0.16] [--tile 320]
+                                     # AI 生图素材→自动抠图→按版式落位→内联(见 references/gzh-cover-assets.md)
 
 版式族(详见 references/gzh-cover-layouts.md):
   center-band 居中色带 / band-editorial 左文带 / stack-cards 分层堆叠 /
@@ -412,6 +416,9 @@ THEMES, _THEME_ALIAS = _GZT.cover_themes()
 
 # 版式族库:6 套内容结构(见 references/gzh-cover-layouts.md)
 import _gzh_layouts as _GL
+
+# 素材层(插画/图案):自动抠图 + 按版式落位(v1.27;规格见 references/gzh-cover-assets.md)
+import _gzh_assets as _GA
 
 # 各族标题行数上限(超过就是标题太长该换族,不是"再断一行就好")。
 # 数的是 `<br>` 断出来的显式行——CSS 自动折出来的行算不出来,所以新族必须走 break_lines。
@@ -1842,6 +1849,207 @@ def cmd_bg_attach(args) -> int:
     return 0
 
 
+def _poster_inner_insert(html: str, fragment: str) -> str:
+    """把素材层插到 .poster 直接子节点末尾:在背景层之后、文字层之前。"""
+    match = re.search(r'<div class="poster[^"]*"[^>]*>', html)
+    if not match:
+        raise ValueError("找不到 .poster 根节点")
+    depth = 1
+    for token in re.finditer(r"<div\b[^>]*>|</div>", html[match.end():]):
+        text = token.group(0)
+        if text.startswith("</"):
+            depth -= 1
+            if depth == 0:
+                cut = match.end() + token.start()
+                return html[:cut] + fragment + html[cut:]
+        else:
+            depth += 1
+    raise ValueError(".poster 根节点未闭合")
+
+
+def _ga_layout_pages(layout: str):
+    """某版式的 (页, 槽位定义) 列表,用于报错时给出每页可用槽位。"""
+    spec = _GA.SLOTS.get(layout) or _GA.SLOTS["center-band"]
+    return [(key, spec[key]) for key in ("main", "sub") if key in spec]
+
+
+def _asset_count(html: str) -> int:
+    """数已有的素材层标签(CSS 里也有 data-asset=\"N\" 选择器,不能按字符串数)。"""
+    tags = re.findall(r'<(?:img|div)[^>]*class="ab-asset[^"]*"[^>]*data-asset="(\d+)"', html)
+    return len(set(tags))
+
+
+def cmd_asset_attach(args) -> int:
+    """AI 生图素材(插画/图案)→ 自动抠图 → 按版式落位 → 内联进双封面。
+
+    与 bg-attach 的分工:bg 是"氛围底",asset 是"实体物"(插画/图案);
+    两者可叠加,但都在文字层之下,不让素材压字。
+    """
+    proj = resolve_project(args.project)
+    if not proj:
+        return fail("PROJECT_NOT_FOUND", "传项目目录或 slug", project=args.project)
+    meta, meta_error = load_project_manifest(proj)
+    if meta_error:
+        return fail(meta_error, "project.json 不可用,无法接入素材层")
+    src = os.path.join(proj, "src")
+    pages = [name for name in ("index.html", "sub.html")
+             if os.path.isfile(os.path.join(src, name))]
+    if not pages:
+        return fail("MISSING_PAGES", "项目缺少 src/index.html,无法接入素材层")
+    layout = meta.get("layout") or "center-band"
+    if layout == "legacy":
+        layout = "center-band"
+    with open(os.path.join(src, pages[0]), encoding="utf-8") as fh:
+        existing = _asset_count(fh.read())
+    if existing >= _GA.ASSET_MAX_COUNT:
+        return fail("ASSET_LIMIT",
+                    "一页最多 %d 个素材层;再多就是噪音" % _GA.ASSET_MAX_COUNT,
+                    assets=existing)
+    idx = existing + 1
+    mode = args.mode
+    stats = {}
+    if mode == "pattern":
+        tile_im, open_error = _GA.open_rgba(args.image)
+        if tile_im is None:
+            return fail(open_error or "ASSET_DECODE_FAILED",
+                        "--image 需要可解码的 PNG/JPEG/WebP", image=args.image)
+        from PIL import Image as _PILImage
+        side = max(64, int(args.tile))
+        shrink = side / float(max(tile_im.width, tile_im.height))
+        if shrink < 1.0:
+            tile_im = tile_im.resize((max(1, round(tile_im.width * shrink)),
+                                      max(1, round(tile_im.height * shrink))), _PILImage.LANCZOS)
+        data_uri, uri_error = _GA.to_data_uri(tile_im)
+        stats = {"mode": "pattern", "tile": side}
+        slot_want = "whole"
+        img_w, img_h = tile_im.width, tile_im.height
+    else:
+        if mode == "cutout":
+            result = _GA.cutout(args.image)
+            if not result["ok"]:
+                return fail(result["error"], result["hint"],
+                            **{"stats": result.get("stats")})
+            image = _GA.trim(result["image"])
+            stats = result["stats"]
+        else:
+            image, open_error = _GA.open_rgba(args.image)
+            if image is None:
+                return fail(open_error or "ASSET_DECODE_FAILED",
+                            "--image 需要可解码的 PNG/JPEG/WebP", image=args.image)
+            image = _GA.trim(image, pad=0)
+        data_uri, uri_error = _GA.to_data_uri(image)
+        if uri_error:
+            return fail(uri_error, "素材压不到内联预算内;先降分辨率再试", image=args.image)
+        slot_want = args.slot
+        img_w, img_h = image.width, image.height
+    # 两阶段:先把两页的落位全部算出来并校验,再统一写盘。
+    # 半途失败(比如次条没有这个槽位)不能把主封改了一半——那会让项目处于不一致状态。
+    plan = []
+    for name in pages:
+        page_key = "main" if name == "index.html" else "sub"
+        picked = _GA.pick_slot(layout, page_key, slot_want, img_w, img_h, args.scale)
+        if not picked["ok"]:
+            by_page = {key: sorted(entry["slots"])
+                       for key, entry in _ga_layout_pages(layout)}
+            if slot_want not in set().union(*by_page.values()):
+                return fail("BAD_ASSET_SLOT",
+                            "%s 不是 %s 的槽位;可用:%s"
+                            % (slot_want, layout,
+                               ", ".join(sorted(set().union(*by_page.values())))),
+                            **{"available": sorted(set().union(*by_page.values())),
+                               "by_page": by_page})
+            # 该页没有这个槽位(如 corner 只属于主封)→ 用该页默认槽位,不算失败
+            picked = _GA.pick_slot(layout, page_key, "", img_w, img_h, args.scale)
+            if not picked["ok"]:
+                return fail(picked["error"], picked["hint"], page=page_key)
+            fallback = True
+        else:
+            fallback = False
+        # 不透明度按"解析后的槽位"决定,不能按用户传的字符串(留空时两页槽位可能不同)
+        opacity = args.opacity
+        if opacity is None:
+            opacity = (0.18 if mode == "pattern"
+                       else (0.16 if picked["slot"] == "whole" else 1.0))
+        capped = False
+        if picked["slot"] == "whole" and opacity > _GA.WHOLE_MAX_OPACITY:
+            # whole 是满幅氛围层,压在所有文字下面;不压暗到 25% 以下就没法读字。
+            opacity, capped = _GA.WHOLE_MAX_OPACITY, True
+        plan.append({"name": name, "slot": picked["slot"], "box": picked["box"],
+                     "opacity": opacity, "fallback": fallback,
+                     "capped": capped})
+    patched = []
+    placements = {}
+    for item in plan:
+        name = item["name"]
+        css = _GA.asset_css(item["box"], item["opacity"], mode,
+                            max(64, int(args.tile)), idx)
+        tag = _GA.img_tag(data_uri, mode, item["slot"], idx)
+        path = os.path.join(src, name)
+        with open(path, encoding="utf-8") as fh:
+            html = fh.read()
+        try:
+            html = _poster_inner_insert(html, tag)
+        except ValueError as exc:
+            return fail("ASSET_ATTACH_FAILED", str(exc), page=name)
+        style = "<style>\n" + _GA.BASE_CSS + css + "\n</style>\n"
+        html = html.replace("</head>", style + "</head>", 1)
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(html)
+        patched.append(name)
+        placements[name] = {"slot": item["slot"], "box": item["box"],
+                            "opacity": item["opacity"],
+                            "fallback": item["fallback"],
+                            "opacity_capped": item["capped"]}
+    assets = meta.get("assets") if isinstance(meta.get("assets"), list) else []
+    assets.append({"index": idx, "mode": mode,
+                   "slot": placements.get("index.html", {}).get("slot", ""),
+                   "opacity": placements.get("index.html", {}).get("opacity"),
+                   "pages": patched})
+    meta["assets"] = assets
+    with open(os.path.join(proj, "project.json"), "w", encoding="utf-8") as fh:
+        json.dump(meta, fh, ensure_ascii=False, indent=2)
+    emit({"ok": True, "project": proj, "assets": idx, "mode": mode,
+          "patched": patched, "placements": placements, "stats": stats,
+          "next": "python scripts/gzh_cover.py check \"%s\" && "                  "python scripts/gzh_cover.py export \"%s\"" % (proj, proj)})
+    return 0
+
+
+def cmd_asset_prompt(args) -> int:
+    """给 AI 生图工具出「可自动抠图」的素材提示词(插画 / 无缝图案)。"""
+    proj = resolve_project(args.project) if args.project else ""
+    meta = {}
+    if args.project and not proj:
+        return fail("PROJECT_NOT_FOUND", "传项目目录或 slug", project=args.project)
+    if proj:
+        meta, meta_error = load_project_manifest(proj)
+        if meta_error:
+            return fail(meta_error, "project.json 不可用")
+    theme_name, theme = _resolve_theme(meta.get("theme", "ink"))
+    if theme is None:
+        theme_name, theme = "ink", THEMES.get("ink", {})
+    layout = meta.get("layout") or "center-band"
+    if layout == "legacy":
+        layout = "center-band"
+    subject = args.subject or "one symbolic object that matches the cover topic"
+    style = args.style or "flat vector illustration with subtle grain"
+    prompts = _GA.illustration_prompts(theme, subject, style)
+    suggestion = _GA.SLOTS.get(layout, _GA.SLOTS["center-band"])["main"]["default"]
+    payload = {"ok": True, "theme": theme_name, "layout": layout,
+               "suggested_slot": suggestion,
+               "file_contract": "1024x1024 单元素 / 平底 #FFFFFF / 四周留 8% 白边 / 无文字",
+               "prompts": prompts,
+               "next": "python scripts/gzh_cover.py asset-attach \"%s\" --image <图> --mode cutout" % (proj or "<项目>")}
+    if proj:
+        path = os.path.join(proj, "asset-prompt.txt")
+        body = ("# 素材提示词(插画 / 图案)\n\n## 插画(抠图用)\n" + prompts["illustration"] +
+                "\n\n## 无缝图案(平铺用)\n" + prompts["pattern"] + "\n")
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(body)
+        payload["path"] = path
+    emit(payload)
+    return 0
+
+
 def cmd_export(args) -> int:
     proj = resolve_project(args.project)
     if not proj:
@@ -2662,12 +2870,39 @@ def _parse_safe_y_box(html: str, canvas_h: int) -> tuple[float, float, str]:
     return 0, canvas_h, "unparsed vertical anchors"
 
 
+def _asset_alpha_coverage(srcs):
+    """解码素材 data URI,断言它真的被抠过(透明像素 ≥5%),而不是把白底图直接贴上去。"""
+    if _GA.Image is None:
+        return True, "Pillow 不可用,跳过透明像素测量"
+    ratios = []
+    for src in srcs:
+        head, _, payload = src.partition(",")
+        if "base64" not in head:
+            return False, "素材不是 base64 data URI"
+        try:
+            raw = base64.b64decode(payload)
+            with _GA.Image.open(io.BytesIO(raw)) as im:
+                if "A" not in im.getbands():
+                    return False, "素材不含 alpha 通道:白底没被抠掉"
+                alpha = im.convert("RGBA").getchannel("A")
+                hist = alpha.histogram()
+                clear = sum(hist[:8])
+                ratios.append(clear / float(max(1, im.width * im.height)))
+        except Exception:  # noqa: BLE001
+            return False, "素材 data URI 无法解码"
+    worst = min(ratios) if ratios else 0.0
+    return (worst >= 0.05,
+        "素材透明像素 %.0f%%(≥5%%,确为抠图)" % (worst * 100) if worst >= 0.05
+        else "素材透明像素仅 %.0f%%:看起来是整张矩形,没有抠图" % (worst * 100))
+
+
 def check_one(html_path: str, canvas_w: int, layout: str,
               project_fx: str | None = None) -> list[dict]:
     """对单张封面做静态断言。返回 [{id, ok, detail}]。"""
     with open(html_path, "r", encoding="utf-8") as f:
         html = f.read()
     canvas_h = MAIN_H if canvas_w == MAIN_W else SUB_H
+    page_kind = "main" if canvas_w == MAIN_W else "sub"
     res = []
 
     def add(cid, ok, detail):
@@ -3005,6 +3240,75 @@ def check_one(html_path: str, canvas_w: int, layout: str,
         "背景规则全部离线(CSS 渐变/遮罩)" if bg_offline
         else "背景规则含外链或 @import")
 
+    # 8e 素材层(v1.27):AI 生图插画/图案。四条硬约束——数量、离线、真抠图、不压字。
+    asset_tags = re.findall(r'<(?:img|div)[^>]*class="ab-asset[^"]*"[^>]*>', html)
+    add("asset-budget", len(asset_tags) <= _GA.ASSET_MAX_COUNT,
+        f"素材层 {len(asset_tags)} 个(≤{_GA.ASSET_MAX_COUNT})")
+    asset_srcs = []
+    for tag in asset_tags:
+        if not tag.startswith("<img"):
+            continue
+        src_match = re.search(r'src="([^"]*)"', tag)
+        if src_match:
+            asset_srcs.append(src_match.group(1))
+    asset_offline = all(src.startswith("data:image/") for src in asset_srcs)
+    add("asset-offline", asset_offline,
+        "素材全部内联为 data URI" if asset_offline
+        else "素材含非内联 src(离线导出会丢图)")
+    cut_ok, cut_detail = True, "未使用素材层"
+    if asset_srcs:
+        cut_ok, cut_detail = _asset_alpha_coverage(asset_srcs)
+    elif asset_tags:
+        cut_detail = "素材为图案平铺(pattern 不需要 alpha)"
+    add("asset-cutout-real", cut_ok, cut_detail)
+    protect_rect = _GA.PROTECTED.get(layout, {}).get(page_kind)
+    worst, worst_idx = 0.0, 0
+    tag_pattern = r'class="ab-asset[^"]*" data-asset="(\d+)"[^>]*data-asset-slot="([^"]*)"'
+    for tag_match in re.finditer(tag_pattern, html):
+        aidx, aslot = int(tag_match.group(1)), tag_match.group(2)
+        if aslot == "whole" or not protect_rect:
+            continue
+        rule = re.search(r'data-asset="%d"\]\s*\{([^}]*)\}' % aidx, css_text)
+        if not rule:
+            continue
+        box = []
+        for key in ("left", "top", "width", "height"):
+            value = re.search(key + r":\s*(-?[\d.]+)px", rule.group(1))
+            box.append(float(value.group(1)) if value else 0.0)
+        ratio = _GA.overlap_ratio(box, protect_rect)
+        if ratio > worst:
+            worst, worst_idx = ratio, aidx
+    add("asset-text-safe", worst <= 0.02,
+        ("素材 #%d 与文字安全区重叠 %.0f%%(≤2%%)" % (worst_idx, worst * 100))
+        if worst else "素材未压文字安全区(whole 氛围层除外)")
+    # 素材层的层序靠 z-index:0 压过 `.poster > *` 的 1,不靠 DOM 位置(素材是 append 到末尾的)
+    asset_z = re.findall(r"\.ab-asset[^{]*\{[^}]*z-index:\s*(-?\d+)", css_text)
+    z_bad = [z for z in asset_z if int(z) > 0]
+    # whole 满幅层必须压暗,否则文字被素材糊掉(手改 HTML 也要拦住)
+    whole_idx = [int(m.group(1)) for m in re.finditer(
+        r'class="ab-asset[^"]*" data-asset="(\d+)"[^>]*data-asset-slot="whole"', html)]
+    whole_ops = []
+    for aidx in whole_idx:
+        rule = re.search(r'data-asset="%d"\]\s*\{([^}]*)}' % aidx, css_text)
+        if not rule:
+            continue
+        raw = re.search(r"opacity:\s*([\d.]+)", rule.group(1))
+        if raw:
+            whole_ops.append(float(raw.group(1)))
+    whole_bad = [o for o in whole_ops if o > _GA.WHOLE_MAX_OPACITY]
+    if not whole_ops:
+        whole_detail = "未使用满幅素材层"
+    elif whole_bad:
+        whole_detail = ("whole 满幅层不透明度 %s 超过 %.2f,文字会糊"
+                        % (whole_bad, _GA.WHOLE_MAX_OPACITY))
+    else:
+        whole_detail = ("whole 满幅层 opacity=%.2f(≤%.2f)"
+                        % (max(whole_ops), _GA.WHOLE_MAX_OPACITY))
+    add("asset-whole-dim", not whole_bad, whole_detail)
+    add("asset-below-text", not z_bad,
+        ("素材层 z-index=0,永远在文字之下" if asset_z else "未使用素材层")
+        if not z_bad else f"素材层 z-index 越过文字层 {z_bad}")
+
 
     # 左文带必须有主封副题,否则左边只有标题而右侧信息栏落空。
     if layout == "legacy":
@@ -3253,6 +3557,23 @@ def main() -> int:
     pa.add_argument("project")
     pa.add_argument("--image", required=True, help="本地 PNG/JPEG/WebP 背景图")
     pa.set_defaults(func=cmd_bg_attach)
+    pap = sub.add_parser("asset-prompt", help="生成可自动抠图的插画/图案提示词(交给 AI 生图)")
+    pap.add_argument("project", nargs="?", default="", help="可选:项目目录或 slug(带则写 asset-prompt.txt 并读主题色)")
+    pap.add_argument("--subject", default="", help="主体:一个具体物件,如 a lone paper plane")
+    pap.add_argument("--style", default="", help="画风,如 flat vector illustration / ink line art")
+    pap.set_defaults(func=cmd_asset_prompt)
+    paa = sub.add_parser("asset-attach", help="AI 生图素材→自动抠图→按版式槽位落位(可叠在背景层之上)")
+    paa.add_argument("project", help="项目目录或 slug")
+    paa.add_argument("--image", required=True, help="本地 PNG/JPEG/WebP 素材图(插画或图案)")
+    paa.add_argument("--mode", default="cutout", choices=["cutout", "rect", "pattern"],
+                     help="cutout=平底抠图(默认);rect=整张矩形贴入;pattern=缩小平铺")
+    paa.add_argument("--slot", default="",
+                     help="目标槽位(留空=该版式默认槽位);whole/top/bottom/left/right/plate/corner")
+    paa.add_argument("--scale", type=float, default=1.0, help="在槽位内的缩放系数(默认 1.0)")
+    paa.add_argument("--opacity", type=float, default=None,
+                     help="不透明度;默认 whole=0.16(水印感) 其它槽=1.0 图案=0.18")
+    paa.add_argument("--tile", type=int, default=320, help="pattern 模式的平铺单元边长(px,默认 320)")
+    paa.set_defaults(func=cmd_asset_attach)
     pe = sub.add_parser("export", help="导出:默认只出一张合并图(长封面在左+方形在右);--split 出三张单图")
     pe.add_argument("project", help="项目目录或 slug")
     pe.add_argument("--only", default="", choices=["", "main", "sub", "merged"],

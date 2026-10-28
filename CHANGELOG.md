@@ -1,5 +1,41 @@
 # Changelog
 
+## v1.27.1 (未发布) — 次条方图:块高预算逐族给,眉题在卡片上不再隐形
+
+### Fixed
+
+- **次条标题块高不再是全族一个 72%(v1.26.3 的遗留)**:`fit_sub_title` 新增 `block_h` / `line_h` 参数,各族传入自己的预算 —— `center-band` 278、`band-editorial` 282、`stack-cards` 236、`giant-caps` 250、`kraft-note` 274、`plate-page` 274,行高统一 1.12。次条可用高度本来就被「眉题贴顶 6px + 副题贴底 10px」占掉约 41px,各版式 `.safe` 盒高又不同,一个 0.72 比例必然在某些族溢出或过小;实测 4 字字号 124 / 125 / 105 / 111 / 122 / 97px。
+- **`giant-caps` 次条副题被强调胶囊压住**:该族次条标题带 `background: var(--c-accent)` 胶囊,278px 块高会一路长到 y≈330,正好盖住贴底 10px 的副题(深字压在蓝块上读不出)。块高预算压到 250px(4 字 → 111px),副题落回胶囊下方的深色底。
+- **`stack-cards` 次条标题不居中**:`SC_CSS_SUB` 的 `.safe` 是 `justify-content: flex-start`,标题贴顶、下方大片留白,违反「方图标题永远垂直居中」铁律 → 改 `center`。
+- **`stack-cards` 次条眉题隐形**:次条卡片是白底(`--c-contrast`),而 `sub_center_css()` 按主题给眉题深底亮色 `var(--c-muted)` → 白字白底。`SC_CSS_SUB` 增加高特异性 `.poster .safe > .kicker { color: var(--c-bg); }` 压回墨色。
+- **`stack-cards` 次条不再渲染内色条**:眉题绝对定位在卡片顶 6px、居中大标题顶边在 y74,色条 45–101 会和标题抢同一块地。`stack-cards` 次条 markup 不再输出 `.band`(CSS 规则保留 —— `check` 要求结构选择器各只有一条规则)。
+
+### Changed
+
+- 文档:次条块高预算按族写进 `references/gzh-cover-layouts.md §2.4`(含各版式 `.safe` 盒高与实测字号表)与 `references/formats/gzh-cover.md §4.1`,族别小节里的「块高 72%」全部替换为实际预算值;`README` 无改动。
+
+## v1.27.0 (未发布) — 双封面素材层:AI 出插画 → 自动抠图 → 按版式落位
+## v1.27.0 (未发布) — 双封面素材层:AI 出插画 → 自动抠图 → 按版式落位
+
+### Added
+
+- **`gzh_cover.py asset-attach`**:AI 生图插画/图案 → **纯 PIL 平底抠图**(边框取中位色 + 90th 分位色散判是否平底,BFS 四连通去底,`MinFilter(3)`+`GaussianBlur(0.8)` 收边)→ 去透明留白 → 按版式槽位等比装入 → 缩到内联预算(≤2.6MB)→ 以 data URI 同时挂进 `src/index.html` 与 `src/sub.html`(两页各按自己的画布算 CSS)。三种模式:`cutout`(默认)/`rect`(不抠)/`pattern`(平铺纹理)。
+- **`gzh_cover.py asset-prompt`**:出「可自动抠图」的生图提示词(1024×1024 单元素 / 纯白平底 / 主体 70–80% / 四周 8% 白边 / 边界锐利 / 禁文字水印),配色自动取自 `_gzh_theme.py` 的 `bg/ink/accent`;带项目时写 `<项目>/asset-prompt.txt` 并给该版式的建议槽位。
+- **`scripts/_gzh_assets.py`**:素材层模块 —— `cutout` / `trim` / `to_data_uri` / `contain_box` / `overlap_ratio` / `pick_slot` / `asset_css` / `img_tag` / `illustration_prompts`,槽位表 `SLOTS` 与文字安全区表 `PROTECTED` 按 6 套版式逐一对应。
+- **check 新增 6 条硬断言**:`asset-budget`(≤2)、`asset-offline`(必须 `data:image/`)、`asset-cutout-real`(解码后透明像素 ≥5%,证明真抠了)、`asset-text-safe`(非 `whole` 槽位与文字安全区重叠 ≤2%)、`asset-whole-dim`(`whole` 满幅层 opacity ≤0.25)、`asset-below-text`(素材 z-index ≤0)。
+
+### Fixed
+
+- **`asset-attach` 写盘改为两阶段**:先把两页(主封/次条)的槽位与不透明度全部算完并校验,全部通过才写 HTML。修掉「次条没有该槽位 → 主封已改完才失败」留下的半改项目。
+- **槽位回退**:某槽位只属于主封时,次条自动改用其默认槽位并在 `placements[*].fallback` 标记;只有整套版式都没有该槽位才报 `BAD_ASSET_SLOT`(带回 `available` / `by_page`)。
+- **`whole` 满幅层不透明度上限 0.25**:传更大的 `--opacity` 会被压到 0.25 并在 `opacity_capped` 标记 —— 满幅素材压过 25% 文字就没法读。
+- **`giant-caps` 删除 `corner` 槽位**:该槽位落在巨字文字安全区内(check 实测重叠 83%),巨字版只保留 `whole` 氛围层;要放实体物件的请换 `band-editorial` / `kraft-note`。
+- **`references/gzh-cover-assets.md`**:素材层全链路(何时用素材 vs 背景、生图契约、槽位表、失败码、与背景/主题同用)。
+
+### Why
+
+背景层只能解决「氛围」;海报级画面还需要一个**看得见的主体物**。让生图工具直接出整张封面会失去排版与中文锐利度,所以链路固定为:**AI 只出纯色平底的单体素材,Artboard 负责抠图、落位、内联、验字**。抠图不用 rembg——本机无 numpy/rembg,且全自动链路不能联网拉模型;GPT 出的插画天然纯白平底,边界连通 + 容差足够且结果确定可回归。
+
 ## v1.26.3 (未发布) — 双封面:次条标题居中 + 主封满版
 
 ### Changed
